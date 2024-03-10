@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KV Nexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        nav {
+            background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+            text-align: center;
+            padding: 10px 0;
+            display: flex;
+            justify-content: center;
+            border-radius: 0 0 10px 10px;
+        }
+        
+        nav a {
+            color: #333;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            transition: background-color 0.3s;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(120deg, #f093fb 0%, #f5576c 100%);
+            margin: 10px;
+        }
+        
+        nav a:hover {
+            background: linear-gradient(120deg, #f093fb 0%, #f5576c 50%);
+        }
+        
+        .card {
+            background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            transition: transform 0.3s, background-color 0.3s;
+            margin: 10px;
+            color: #333;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 50%);
+        }
+        
+        footer {
+            background: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
+            color: #333;
+            text-align: center;
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            border-radius: 0 0 10px 10px;
+        }
+        
+    </style>
+</head>
+<body>
+    <header>
+        <h1>KV Nexus</h1>
+    </header>
+    <nav>
+        <a href="/chef" class="card">
+            <h2>Chef</h2>
+            <p>Generate recipes and cooking instructions</p>
+        </a>
+        <a href="/chat" class="card">
+            <h2>Chat</h2>
+            <p>Chat with a friendly AI assistant</p>
+        </a>
+        <a href="/story_generator" class="card">
+            <h2>Story Generator</h2>
+            <p>Generate creative stories and plots</p>
+        </a>
+    </nav>
+    <nav>
+        <a href="/code_generation" class="card">
+            <h2>Code Generator</h2>
+            <p>Generate code snippets and solutions</p>
+        </a>
+        <a href="/algorithm_generation" class="card">
+            <h2>Algorithm Generator</h2>
+            <p>Generate algorithms for various problems</p>
+        </a>
+        <a href="/psychology_prediction" class="card">
+            <h2>Psychology Prediction</h2>
+            <p>Predict psychological traits based on inputs</p>
+        </a>
+    </nav>
+    <footer>
+        <p>© KV. Modernize the thinking.</p>
+    </footer>
+</body>
+</html>

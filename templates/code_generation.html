@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Code Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .code-container {
+            display: none; /* Hide the container initially */
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            width: 400px;
+            max-width: 100%;
+            animation: slideIn 0.5s ease-out;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        input[type="submit"] {
+            padding: 8px 20px;
+            margin-top: 10px;
+            background-color: #444;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        input[type="submit"]:hover {
+            background-color: #666;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+            overflow-wrap: break-word;
+            animation: fadeIn 0.5s ease-out;
+            overflow-y: auto; /* Add vertical scrollbar */
+            max-height: 400px; /* Set maximum height for the box */
+            text-align: left; /* Align text to the left */
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="code-container" id="codeContainer">
+        <h1>Code Generator</h1>
+        <form id="codeForm">
+            <label for="codeType">Enter code type:</label>
+            <input type="text" id="codeType" name="codeType" placeholder="e.g., quick sort, insertion sort, rsa, merge sort, linked list">
+            <label for="language">Select programming language:</label>
+            <select id="language" name="language">
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="javascript">JavaScript</option>
+                <option value="c">C</option>
+                <option value="c++">C++</option>
+                <option value="Html">HTML</option>
+                <option value="Ruby">Ruby</option>
+                <!-- Add more options as needed -->
+            </select>
+            <input type="submit" value="Generate Code">
+        </form>
+        <div id="output"></div>
+    </div>
+    <script>
+        // Array of technology images
+        const techImages = [
+            'https://source.unsplash.com/1920x1080/?technology',
+            'https://source.unsplash.com/1920x1080/?code'
+        ];
+
+        // Randomly select a technology image
+        const randomIndex = Math.floor(Math.random() * techImages.length);
+        const randomTechImage = techImages[randomIndex];
+
+        // Load the background image first
+        const backgroundImage = new Image();
+        backgroundImage.src = randomTechImage;
+        backgroundImage.onload = function() {
+            // Set background image of body after loading
+            document.body.style.backgroundImage = `url(${randomTechImage})`;
+            // Show the container and its contents after the image is loaded
+            document.getElementById('codeContainer').style.display = 'block';
+        };
+
+        // Form submission handling
+        document.getElementById('codeForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const codeType = document.getElementById('codeType').value;
+            const language = document.getElementById('language').value;
+            const response = await fetch('/code_generation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `codeType=${codeType}&language=${language}`
+            });
+            const data = await response.json();
+            const response_text = data.response;
+            document.getElementById('output').innerText = response_text;
+        });
+    </script>
+</body>
+</html>

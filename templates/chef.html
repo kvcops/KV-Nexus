@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chef</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .chef-container {
+            display: none; /* Hide the container initially */
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            width: 80%; /* Adjust width as needed */
+            max-width: 800px; /* Limit maximum width */
+            margin: 0 auto; /* Center the container */
+            animation: slideIn 0.5s ease-out;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        input[type="submit"] {
+            padding: 8px 20px;
+            margin-top: 10px;
+            background-color: #444;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        input[type="submit"]:hover {
+            background-color: #666;
+        }
+        #output {
+            display: none; /* Hide the output initially */
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+            overflow-wrap: break-word;
+            animation: fadeIn 0.5s ease-out;
+            overflow-y: auto; /* Add vertical scrollbar */
+            max-height: 400px; /* Set maximum height for the box */
+            text-align: left; /* Align text to the left */
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chef-container" id="chefContainer">
+        <h1>Chef</h1>
+        <form id="chefForm">
+            <label for="user_ingredients">Enter the ingredients:</label>
+            <input type="text" id="user_ingredients" name="user_ingredients">
+            <input type="submit" value="Generate Recipe">
+        </form>
+        <div id="output"></div>
+    </div>
+    <script>
+        // Array of food images
+        const foodImages = [
+            'https://source.unsplash.com/1920x1080/?food',
+            'https://source.unsplash.com/1920x1080/?recipe'
+        ];
+
+        // Randomly select a food image
+        const randomIndex = Math.floor(Math.random() * foodImages.length);
+        const randomFoodImage = foodImages[randomIndex];
+
+        // Set background image of body
+        document.body.style.backgroundImage = `url(${randomFoodImage})`;
+
+        // Load the background image first
+        const backgroundImage = new Image();
+        backgroundImage.src = randomFoodImage;
+        backgroundImage.onload = function() {
+            // Show the container and its contents after the image is loaded
+            document.getElementById('chefContainer').style.display = 'block';
+        };
+
+        // Form submission handling
+        document.getElementById('chefForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const user_ingredients = document.getElementById('user_ingredients').value;
+            const response = await fetch('/chef', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `user_ingredients=${user_ingredients}`
+            });
+            const data = await response.json();
+            const response_text = data.response;
+            // Format response
+            const formatted_response = response_text.replace(/(\*\*[^*]+\*\*|\*[^\*]+\*)/g, '<br><strong>$1</strong>');
+            document.getElementById('output').innerHTML = formatted_response;
+            // Show the output after receiving the response
+            document.getElementById('output').style.display = 'block';
+        });
+    </script>
+</body>
+</html>

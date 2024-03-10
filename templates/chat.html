@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .chat-container {
+            display: none; /* Hide the container initially */
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            width: 400px;
+            max-width: 100%;
+            animation: slideIn 0.5s ease-out;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        input[type="submit"] {
+            padding: 8px 20px;
+            margin-top: 10px;
+            background-color: #444;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        input[type="submit"]:hover {
+            background-color: #666;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+            overflow-wrap: break-word;
+            animation: fadeIn 0.5s ease-out;
+            overflow-y: auto; /* Add vertical scrollbar */
+            max-height: 500px; /* Set maximum height for the box */
+            text-align: left; /* Align text to the left */
+        }        
+        #output strong {
+            font-weight: bold;
+        }
+        #output ul {
+            padding-left: 20px; /* Add some padding to the list items */
+        }
+        #output li {
+            margin-bottom: 5px; /* Add some spacing between list items */
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container" id="chatContainer">
+        <h1>Chat</h1>
+        <form id="chatForm">
+            <label for="user_query">Enter your query:</label>
+            <input type="text" id="user_query" name="user_query">
+            <input type="submit" value="Send">
+        </form>
+        <div id="output"></div>
+    </div>
+    <script>
+        // Array of nature images
+        const natureImages = [
+            'https://source.unsplash.com/1920x1080/?nature',
+            'https://source.unsplash.com/1920x1080/?forest',
+            'https://source.unsplash.com/1920x1080/?mountain',
+            'https://source.unsplash.com/1920x1080/?waterfall'
+        ];
+
+        // Randomly select a nature image
+        const randomIndex = Math.floor(Math.random() * natureImages.length);
+        const randomNatureImage = natureImages[randomIndex];
+
+        // Load the background image first
+        const backgroundImage = new Image();
+        backgroundImage.src = randomNatureImage;
+        backgroundImage.onload = function() {
+            // Set background image of body after loading
+            document.body.style.backgroundImage = `url(${randomNatureImage})`;
+            // Show the container and its contents after the image is loaded
+            document.getElementById('chatContainer').style.display = 'block';
+        };
+
+        // Form submission handling
+        document.getElementById('chatForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const user_query = document.getElementById('user_query').value;
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `user_query=${user_query}`
+            });
+            const data = await response.json();
+            const response_text = data.response;
+            // Format response
+            const formatted_response = response_text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                                                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                                                    .replace(/(\d+\.\s+)/g, '<br>$1')
+                                                    .replace(/\n/g, '<br>');
+            document.getElementById('output').innerHTML = formatted_response;
+        });
+    </script>
+</body>
+</html>
