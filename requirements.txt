@@ -2,4 +2,4 @@ Flask==2.1.1
 google-generativeai==0.4.0
 python-dotenv
 gunicorn==20.1.0
-werkzeug==1.0.1
+werkzeug
