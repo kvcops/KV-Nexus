@@ -1,9 +1,17 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "app.py",
-      "use": "@vercel/python"
-    }
-  ]
+    "version": 2,
+    "builds": [
+        {
+            "src": "app.py",
+            "use": "@now/python",
+            "config": { "maxLambdaSize": "15mb", "pythonVersion": "3.7" }
+        }
+    ],
+    "routes": [
+        { "handle": "filesystem" },
+        {
+            "src": "/(.*)",
+            "dest": "/app.py"
+        }
+    ]
 }
