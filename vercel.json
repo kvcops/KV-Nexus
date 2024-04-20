@@ -1,20 +1,9 @@
 {
     "version": 2,
     "builds": [
-        {
-            "src": "app.py",
-            "use": "@vercel/python",
-            "config": {
-                "runtime": "python3.7",
-                "pythonBin": ".vercel/python/bin/python3.7"
-            }
-        }
+        {"src": "app.py", "use": "@vercel/python"}
     ],
     "routes": [
-        { "handle": "filesystem" },
-        {
-            "src": "/(.*)",
-            "dest": "/app.py"
-        }
+        {"src": "/(.*)", "dest": "app.py"}
     ]
 }
