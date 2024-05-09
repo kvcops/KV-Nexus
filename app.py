@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 api_key = os.environ.get("API_KEY")
-OPENWEATHERMAP_API_KEY = os.environ.get("OPENWEATHERMAP_API_KEY")
+
 genai.configure(api_key=api_key)
 
 chat_generation_config = {
@@ -60,7 +60,16 @@ def format_response(response_text):
 @app.route('/')
 def index():
     return render_template('index.html')
+    
+@app.route('/api/weather')
+def get_weather():
+    api_key = os.getenv('OPENWEATHERMAP_API_KEY')
+    ip = request.headers.get('x-real-ip')  # Get client's IP address
 
+    # Your weather API logic here using the api_key and ip
+    # Return the weather information as JSON
+    return jsonify({'weather': 'sunny', 'temperature': '25'})
+    
 @app.route('/chat', methods=['GET', 'POST'])
 def chat():
     if request.method == 'POST':
