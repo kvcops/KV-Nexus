@@ -147,64 +147,37 @@
     <div class="weather-info" id="weatherInfo"></div>
     <div class="ip-info" id="ipInfo"></div>
 
-    <script>
-        async function getWeatherInfo(ip) {
-            try {
-                const locationResponse = await fetch(`https://ipapi.co/${ip}/json/`);
-                const locationData = await locationResponse.json();
-                const { city, country } = locationData;
-        
-                const weatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city},${country}&appid=${process.env.OPENWEATHERMAP_API_KEY}&units=metric`);
-                const weatherData = await weatherResponse.json();
-                const { description } = weatherData.weather[0]; // Access the first weather object for description
-                const { temp } = weatherData.main; // Access the 'main' object for temperature
-                const icon = getWeatherIcon(description); // Get the weather icon name based on description
-        
-                document.getElementById('weatherInfo').innerHTML = `
-                    <i class="fas ${icon}"></i> Weather: ${description}, Temperature: ${temp.toFixed(2)}°C
-                `;
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('weatherInfo').innerHTML = 'Weather information not available';
-            }
-        }
-        
-        function getWeatherIcon(description) {
-            // Map weather descriptions to corresponding Font Awesome icons
-            const iconMap = {
-                'clear sky': 'fa-sun',
-                'few clouds': 'fa-cloud-sun',
-                'scattered clouds': 'fa-cloud',
-                'broken clouds': 'fa-clouds',
-                'shower rain': 'fa-cloud-showers-heavy',
-                'rain': 'fa-cloud-rain',
-                'thunderstorm': 'fa-bolt',
-                'snow': 'fa-snowflake',
-                'mist': 'fa-smog'
-            };
-        
-            // Default icon if no match found
-            const defaultIcon = 'fa-question';
-        
-            // Check if the description is in the iconMap, otherwise use the default icon
-            return iconMap[description.toLowerCase()] || defaultIcon;
-        }
-        
+  
+<script>
+    async function getWeatherInfo() {
+        try {
+            const response = await fetch('/api/weather');
+            const data = await response.json();
+            const { weather, temperature } = data;
 
-        async function getIP() {
-            try {
-                const response = await fetch('https://api64.ipify.org?format=json');
-                const data = await response.json();
-                const { ip } = data;
-                document.getElementById('ipInfo').innerHTML = `Your IP address: ${ip}`;
-                getWeatherInfo(ip);
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('weatherInfo').innerHTML = 'IP address not available';
-            }
+            document.getElementById('weatherInfo').innerHTML = `
+                Weather: ${weather}, Temperature: ${temperature}°C
+            `;
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('weatherInfo').innerHTML = 'Weather information not available';
         }
+    }
 
-        getIP();
-    </script>
+    async function getIP() {
+        try {
+            const response = await fetch('https://api64.ipify.org?format=json');
+            const data = await response.json();
+            const { ip } = data;
+            document.getElementById('ipInfo').innerHTML = `Your IP address: ${ip}`;
+            getWeatherInfo();
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('weatherInfo').innerHTML = 'IP address not available';
+        }
+    }
+
+    getIP();
+</script>
 </body>
 </html>
