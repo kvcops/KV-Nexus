@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 api_key = os.environ.get("API_KEY")
-
+OPENWEATHERMAP_API_KEY = os.environ.get("OPENWEATHERMAP_API_KEY")
 genai.configure(api_key=api_key)
 
 chat_generation_config = {
