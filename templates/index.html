@@ -148,15 +148,13 @@
     <div class="ip-info" id="ipInfo"></div>
 
     <script>
-        const apiKey = process.env.OPENWEATHERMAP_API_KEY;
-
         async function getWeatherInfo(ip) {
             try {
                 const locationResponse = await fetch(`https://ipapi.co/${ip}/json/`);
                 const locationData = await locationResponse.json();
                 const { city, country } = locationData;
         
-                const weatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city},${country}&appid=${apiKey}&units=metric`);
+                const weatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city},${country}&appid=${process.env.OPENWEATHERMAP_API_KEY}&units=metric`);
                 const weatherData = await weatherResponse.json();
                 const { description } = weatherData.weather[0]; // Access the first weather object for description
                 const { temp } = weatherData.main; // Access the 'main' object for temperature
