@@ -3,6 +3,8 @@
 <head>
     <title>KV Nexus</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -83,7 +85,26 @@
             width: 100%;
             border-radius: 0 0 10px 10px;
         }
-        
+
+        .weather-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .ip-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -122,5 +143,70 @@
         <p>© KV. Modernize the thinking.</p>
         <a href="https://vamsikrishna28.vercel.app/" target="_blank">About Me</a></p>
     </footer>
+
+    <div class="weather-info" id="weatherInfo"></div>
+    <div class="ip-info" id="ipInfo"></div>
+
+    <script>
+        const apiKey = process.env.OPENWEATHERMAP_API_KEY;
+
+        async function getWeatherInfo(ip) {
+            try {
+                const locationResponse = await fetch(`https://ipapi.co/${ip}/json/`);
+                const locationData = await locationResponse.json();
+                const { city, country } = locationData;
+        
+                const weatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city},${country}&appid=${apiKey}&units=metric`);
+                const weatherData = await weatherResponse.json();
+                const { description } = weatherData.weather[0]; // Access the first weather object for description
+                const { temp } = weatherData.main; // Access the 'main' object for temperature
+                const icon = getWeatherIcon(description); // Get the weather icon name based on description
+        
+                document.getElementById('weatherInfo').innerHTML = `
+                    <i class="fas ${icon}"></i> Weather: ${description}, Temperature: ${temp.toFixed(2)}°C
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('weatherInfo').innerHTML = 'Weather information not available';
+            }
+        }
+        
+        function getWeatherIcon(description) {
+            // Map weather descriptions to corresponding Font Awesome icons
+            const iconMap = {
+                'clear sky': 'fa-sun',
+                'few clouds': 'fa-cloud-sun',
+                'scattered clouds': 'fa-cloud',
+                'broken clouds': 'fa-clouds',
+                'shower rain': 'fa-cloud-showers-heavy',
+                'rain': 'fa-cloud-rain',
+                'thunderstorm': 'fa-bolt',
+                'snow': 'fa-snowflake',
+                'mist': 'fa-smog'
+            };
+        
+            // Default icon if no match found
+            const defaultIcon = 'fa-question';
+        
+            // Check if the description is in the iconMap, otherwise use the default icon
+            return iconMap[description.toLowerCase()] || defaultIcon;
+        }
+        
+
+        async function getIP() {
+            try {
+                const response = await fetch('https://api64.ipify.org?format=json');
+                const data = await response.json();
+                const { ip } = data;
+                document.getElementById('ipInfo').innerHTML = `Your IP address: ${ip}`;
+                getWeatherInfo(ip);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('weatherInfo').innerHTML = 'IP address not available';
+            }
+        }
+
+        getIP();
+    </script>
 </body>
 </html>
