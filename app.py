@@ -5,10 +5,13 @@ import os
 from werkzeug.utils import secure_filename
 from PIL import Image
 from io import BytesIO
+import logging
+
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 api_key = os.environ.get("API_KEY")
-
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 genai.configure(api_key=api_key)
 
 model_text = genai.GenerativeModel('gemini-pro')
@@ -158,52 +161,63 @@ def algorithm_generation():
         return jsonify({'response': response_text})
     return render_template('algorithm_generation.html')
 
-@app.route('/analyze', methods=['GET','POST'])
+@app.route('/analyze', methods=['GET', 'POST'])
 def analyze():
     if request.method == 'POST':
-        gender = request.form.get('gender')
-        symptoms = request.form.get('symptoms')
-        body_part = request.form.get('body-part')
-        layer = request.form.get('layer')
-        image = request.files.get('image')
-        additional_symptoms = request.form.get('additionalSymptoms')
-        final_symptoms = request.form.get('finalSymptoms')
-    
-        stage = 'initial'
-        if additional_symptoms:
-            stage = 'intermediate'
-            symptoms += f", {additional_symptoms}"
-        if final_symptoms:
-            stage = 'final'
-            symptoms += f", {final_symptoms}"
-    
-        user_data['gender'] = gender
-        user_data['symptoms'] = symptoms
-        user_data['body_part'] = body_part
-        user_data['layer'] = layer
-    
-        if image:
-            # Process the image in memory
-            img = Image.open(BytesIO(image.read()))
-            prompt = [f"**In English**, analyze the image and user description for a person experiencing {symptoms}. Focus on the {body_part} area. Identify the most likely **medical condition** causing these symptoms and explain the potential **causes** behind it. Additionally, predict any potential **further symptoms** that might develop. **Do not provide prescriptions or treatment advice.**", img]
-            response = model_vision.generate_content(prompt)
-        else:
-            prompt = f"In English, Analyze symptoms for {gender} with symptoms: {symptoms}, affected body part: {body_part}, and layer: {layer}. Provide potential health issues and educational information."
-            response = model_text.generate_content([prompt])
-    
-        # Extracting text from the response
-        if response.candidates and response.candidates[0].content.parts:
-            analysis_text = response.candidates[0].content.parts[0].text
-        else:
-            analysis_text = "No valid response found."
+        try:
+            gender = request.form.get('gender')
+            symptoms = request.form.get('symptoms')
+            body_part = request.form.get('body-part')
+            layer = request.form.get('layer')
+            image = request.files.get('image')
+            additional_symptoms = request.form.get('additionalSymptoms')
+            final_symptoms = request.form.get('finalSymptoms')
 
-        analysis = analysis_text.split('\n')  # Split the response into lines
-        analysis_html = '<ul>'
-        for line in analysis:
-            analysis_html += f'<li>{line}</li>'
-        analysis_html += '</ul>'
+            stage = 'initial'
+            if additional_symptoms:
+                stage = 'intermediate'
+                symptoms += f", {additional_symptoms}"
+            if final_symptoms:
+                stage = 'final'
+                symptoms += f", {final_symptoms}"
 
-    return jsonify({'analysis': analysis_html, 'stage': stage})
+            user_data['gender'] = gender
+            user_data['symptoms'] = symptoms
+            user_data['body_part'] = body_part
+            user_data['layer'] = layer
+
+            if image:
+                try:
+                    # Process the image in memory (temporary, consider cloud storage)
+                    img = Image.open(BytesIO(image.read()))
+                    prompt = [f"**In English**, analyze the image and user description for a person experiencing {symptoms}. Focus on the {body_part} area. Identify the most likely **medical condition** causing these symptoms and explain the potential **causes** behind it. Additionally, predict any potential **further symptoms** that might develop. **Do not provide prescriptions or treatment advice.**", img]
+                    response = model.generate_content(prompt, generation_config=generation_config) 
+                except Exception as e:
+                    logging.error(f"Error processing image: {e}")
+                    return jsonify({'error': "Image processing failed"}), 500
+            else:
+                try:
+                    prompt = f"In English, Analyze symptoms for {gender} with symptoms: {symptoms}, affected body part: {body_part}, and layer: {layer}. Provide potential health issues and educational information."
+                    response = model.generate_content([prompt], generation_config=generation_config)
+                except Exception as e:
+                    logging.error(f"Error generating text response: {e}")
+                    return jsonify({'error': "Text generation failed"}), 500
+
+            # ... (your existing code for extracting and formatting response) ...
+            analysis_text = response.candidates[0].content.parts[0].text if response.candidates and response.candidates[0].content.parts else "No valid response found."
+            analysis = analysis_text.split('\n')
+            analysis_html = '<ul>'
+            for line in analysis:
+                analysis_html += f'<li>{line}</li>'
+            analysis_html += '</ul>'
+
+            return jsonify({'analysis': analysis_html, 'stage': stage}) 
+        
+        except Exception as e:
+            logging.error(f"Error in /analyze route: {e}")
+            return jsonify({'error': "Internal Server Error"}), 500
+
+    return render_template('analyze.html')
 if __name__ == '__main__':
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    #os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)
