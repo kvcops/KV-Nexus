@@ -6,11 +6,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
             margin: 0;
             padding: 0;
-            background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+            background: linear-gradient(120deg, #84fab0, #8fd3f4, #84fab0, #8fd3f4);
+            background-size: 200% 200%;
+            animation: gradient 15s ease infinite;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -81,6 +87,7 @@
             color: #333;
             position: relative;
             overflow: hidden;
+            animation: cardAnimation 0.5s ease-in-out;
         }
         
         .card:hover {
@@ -101,6 +108,17 @@
 
         .card:hover::before {
             left: 100%;
+        }
+
+        .card img {
+            width: 100%;
+            border-radius: 10px;
+            transition: transform 0.3s, filter 0.3s;
+        }
+
+        .card:hover img {
+            transform: scale(1.1);
+            filter: brightness(1.1);
         }
         
         footer {
@@ -148,8 +166,34 @@
             100% { opacity: 1; transform: translateY(0); }
         }
 
+        @keyframes cardAnimation {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .card, header, footer, .weather-info, .ip-info {
             animation: fadeIn 1s ease-in-out;
+        }
+
+        #scrollToTopBtn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            z-index: 99;
+            font-size: 18px;
+            border: none;
+            outline: none;
+            background-color: #555;
+            color: white;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+        }
+
+        #scrollToTopBtn:hover {
+            background-color: #333;
         }
     </style>
 </head>
@@ -159,30 +203,37 @@
     </header>
     <nav>
         <a href="/chef" class="card">
+            <i class="fas fa-utensils"></i>
             <h2>Chef</h2>
             <p>Generate recipes and cooking instructions</p>
         </a>
         <a href="/chat" class="card">
+            <i class="fas fa-comments"></i>
             <h2>Chat</h2>
             <p>Chat with a friendly AI assistant</p>
         </a>
         <a href="/story_generator" class="card">
+            <i class="fas fa-book"></i>
             <h2>Story Generator</h2>
             <p>Generate creative stories and plots</p>
         </a>
         <a href="/code_generation" class="card">
+            <i class="fas fa-code"></i>
             <h2>Code Generator</h2>
             <p>Generate code snippets and solutions</p>
         </a>
         <a href="/algorithm_generation" class="card">
+            <i class="fas fa-cogs"></i>
             <h2>Algorithm Generator</h2>
             <p>Generate algorithms for various problems</p>
         </a>
         <a href="/psychology_prediction" class="card">
+            <i class="fas fa-brain"></i>
             <h2>Psychology Prediction</h2>
             <p>Predict psychological traits based on inputs</p>
         </a>
         <a href="/analyze" class="card">
+            <i class="fas fa-heartbeat"></i>
             <h2>Health Analysis</h2>
             <p>Analyze the Symptoms of the Health Problem</p>
         </a>        
@@ -193,6 +244,8 @@
 
     <div class="weather-info" id="weatherInfo"></div>
     <div class="ip-info" id="ipInfo"></div>
+
+    <button id="scrollToTopBtn" title="Go to top"><i class="fas fa-arrow-up"></i></button>
 
     <script>
         async function getWeatherInfo() {
@@ -214,16 +267,36 @@
             try {
                 const response = await fetch('https://api64.ipify.org?format=json');
                 const data = await response.json();
-                const { ip } = data;
-                document.getElementById('ipInfo').innerHTML = `Your IP address: ${ip}`;
-                getWeatherInfo();
+                const ip = data.ip;
+
+                document.getElementById('ipInfo').innerHTML = `
+                    Your IP Address: ${ip}
+                `;
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('weatherInfo').innerHTML = 'IP address not available';
+                document.getElementById('ipInfo').innerHTML = 'IP information not available';
             }
         }
 
-        getIP();
+        window.onload = function() {
+            getWeatherInfo();
+            getIP();
+        };
+
+        window.onscroll = function() {scrollFunction()};
+
+        function scrollFunction() {
+            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                document.getElementById("scrollToTopBtn").style.display = "block";
+            } else {
+                document.getElementById("scrollToTopBtn").style.display = "none";
+            }
+        }
+
+        document.getElementById("scrollToTopBtn").onclick = function() {
+            document.body.scrollTop = 0;
+            document.documentElement.scrollTop = 0;
+        };
     </script>
 </body>
 </html>
