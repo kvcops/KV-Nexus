@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Healthcare Chatbot</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="image-preview">
+      <img id="image-preview" src="" alt="Uploaded Image">
+    </div>
+    <div class="chatbot-form">
+      <h1>Healthcare Chatbot</h1>
+      <form id="chatbot-form">
+        <label for="gender">Gender:</label>
+        <select id="gender" name="gender">
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+
+        <label for="symptoms">Symptoms:</label>
+        <input type="text" id="symptoms" name="symptoms" placeholder="Enter symptoms separated by commas">
+
+        <label for="body-part">Body Part:</label>
+        <input type="text" id="body-part" name="body-part" placeholder="Affected body part">
+
+        <label for="layer">Layer Affected:</label>
+        <select id="layer" name="layer">
+          <option value="internal">Internal</option>
+          <option value="external">External</option>
+        </select>
+
+        <label for="image">Upload Image:</label>
+        <input type="file" id="image" name="image" onchange="previewImage()">
+
+        <button type="submit">Submit</button>
+      </form>
+      <div id="response"></div>
+    </div>
+  </div>
+  <script src="/static/script.js"></script>
+  <script>
+    function previewImage() {
+      // Get the uploaded image
+      const image = document.getElementById('image').files[0];
+      
+      // Check if an image is uploaded
+      if (image) {
+        // Create a new FileReader object
+        const reader = new FileReader();
+
+        // Define function to handle successful image loading
+        reader.onload = function (e) {
+          const imageUrl = e.target.result;
+          const imagePreview = document.getElementById('image-preview');
+          imagePreview.src = imageUrl;
+        };
+
+        // Read the image as a data URL
+        reader.readAsDataURL(image);
+      } else {
+        // Clear the image preview if no image is uploaded
+        document.getElementById('image-preview').src = "";
+      }
+    }
+  </script>
+</body>
+</html>
