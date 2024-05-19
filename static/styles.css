@@ -16,7 +16,7 @@ body {
 }
 
 .image-preview {
-    width: auto; /* Adjusted the image container size */
+    width: 200px; /* Fixed size for image on mobile */
     text-align: center; /* Center the image */
 }
 
@@ -70,4 +70,19 @@ button:hover {
     padding: 20px;
     border-radius: 5px;
     background: #f0f0f0;
+    max-width: 100%; /* Ensure response doesn't overflow container */
+}
+/* Media Query for Mobile View */
+@media (max-width: 768px) {
+    .image-preview {
+        width: 100px; /* Adjusted fixed size for image on smaller screens */
+    }
+
+    .chatbot-form {
+        width: 80%; /* Adjusted form container size for smaller screens */
+    }
+
+    #response {
+        max-width: 100%; /* Ensure response doesn't overflow container */
+    }
 }
