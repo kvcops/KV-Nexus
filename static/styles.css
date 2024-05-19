@@ -12,6 +12,7 @@ body {
     align-items: center;
     height: 100vh;
     padding: 20px;
+    overflow: hidden; /* Added overflow property */
 }
 
 .image-preview {
@@ -26,6 +27,7 @@ body {
 
 .chatbot-form {
     width: 50%; /* Adjusted the form container size */
+    overflow: hidden; /* Added overflow property */
 }
 h1 {
     text-align: center;
