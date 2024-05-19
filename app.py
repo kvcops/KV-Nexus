@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 from werkzeug.utils import secure_filename
 from PIL import Image
+from io import BytesIO
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 api_key = os.environ.get("API_KEY")
@@ -157,11 +158,8 @@ def algorithm_generation():
         return jsonify({'response': response_text})
     return render_template('algorithm_generation.html')
 
-@app.route('/analyze', methods=['GET', 'POST'])
+@app.route('/analyze', methods=['POST'])
 def analyze():
-    if request.method == 'GET':
-        return render_template('analyze.html')
-
     gender = request.form.get('gender')
     symptoms = request.form.get('symptoms')
     body_part = request.form.get('body-part')
@@ -184,10 +182,8 @@ def analyze():
     user_data['layer'] = layer
 
     if image:
-        filename = secure_filename(image.filename)
-        image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        image.save(image_path)
-        img = Image.open(image_path)
+        # Process the image in memory
+        img = Image.open(BytesIO(image.read()))
         prompt = [f"**In English**, analyze the image and user description for a person experiencing {symptoms}. Focus on the {body_part} area. Identify the most likely **medical condition** causing these symptoms and explain the potential **causes** behind it. Additionally, predict any potential **further symptoms** that might develop. **Do not provide prescriptions or treatment advice.**", img]
         response = model_vision.generate_content(prompt)
     else:
