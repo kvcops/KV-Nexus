@@ -197,11 +197,11 @@ def analyze():
         else:
             analysis_text = "No valid response found."
 
-    analysis = analysis_text.split('\n')  # Split the response into lines
-    analysis_html = '<ul>'
-    for line in analysis:
-        analysis_html += f'<li>{line}</li>'
-    analysis_html += '</ul>'
+        analysis = analysis_text.split('\n')  # Split the response into lines
+        analysis_html = '<ul>'
+        for line in analysis:
+            analysis_html += f'<li>{line}</li>'
+        analysis_html += '</ul>'
 
     return jsonify({'analysis': analysis_html, 'stage': stage})
 if __name__ == '__main__':
