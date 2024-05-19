@@ -191,14 +191,14 @@ def analyze():
                     # Process the image in memory (temporary, consider cloud storage)
                     img = Image.open(BytesIO(image.read()))
                     prompt = [f"**In English**, analyze the image and user description for a person experiencing {symptoms}. Focus on the {body_part} area. Identify the most likely **medical condition** causing these symptoms and explain the potential **causes** behind it. Additionally, predict any potential **further symptoms** that might develop. **Do not provide prescriptions or treatment advice.**", img]
-                    response = model.generate_content(prompt, generation_config=generation_config) 
+                    response = model_vision.generate_content(prompt) 
                 except Exception as e:
                     logging.error(f"Error processing image: {e}")
                     return jsonify({'error': "Image processing failed"}), 500
             else:
                 try:
                     prompt = f"In English, Analyze symptoms for {gender} with symptoms: {symptoms}, affected body part: {body_part}, and layer: {layer}. Provide potential health issues and educational information."
-                    response = model.generate_content([prompt], generation_config=generation_config)
+                    response = model_text.generate_content([prompt])
                 except Exception as e:
                     logging.error(f"Error generating text response: {e}")
                     return jsonify({'error': "Text generation failed"}), 500
