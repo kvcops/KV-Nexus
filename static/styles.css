@@ -10,12 +10,11 @@ body {
 .container {
     display: flex;
     justify-content: space-around;
-    align-items: center;
+    align-items: flex-start; /* Align items at the start of the container */
     min-height: 100vh;
     padding: 20px;
-    overflow-y: auto; /* Allow vertical scrolling within the container */ 
+    overflow-y: auto; /* Allow vertical scrolling within the container */
 }
-
 .image-preview {
     width: 200px; /* Fixed size for image on mobile */
     text-align: center; /* Center the image */
