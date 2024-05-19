@@ -158,7 +158,7 @@ def algorithm_generation():
         return jsonify({'response': response_text})
     return render_template('algorithm_generation.html')
 
-@app.route('/analyze', methods=['POST'])
+@app.route('/analyze', methods=['GET','POST'])
 def analyze():
     gender = request.form.get('gender')
     symptoms = request.form.get('symptoms')
