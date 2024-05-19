@@ -11,11 +11,10 @@ body {
     display: flex;
     justify-content: space-around;
     align-items: center;
-    min-height: 100vh; /* Allow container to grow vertically */
+    min-height: 100vh;
     padding: 20px;
-    overflow: hidden;
+    overflow-y: auto; /* Allow vertical scrolling within the container */ 
 }
-
 
 .image-preview {
     width: 200px; /* Fixed size for image on mobile */
@@ -72,9 +71,10 @@ button:hover {
     padding: 20px;
     border-radius: 5px;
     background: #f0f0f0;
-    max-width: 100%; /* Ensure response doesn't overflow container */
-    word-wrap: break-word; /* Allow long words to wrap */
-    overflow-y: auto; /* Enable vertical scrolling */
+    max-width: 100%; 
+    word-wrap: break-word;
+    overflow-y: auto; /* Enable vertical scrolling for the response div */
+    max-height: 300px; /* Set a maximum height for the response div */
 }
 
 /* Media Query for Mobile View */
