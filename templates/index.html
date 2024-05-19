@@ -11,6 +11,12 @@
             margin: 0;
             padding: 0;
             background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
         }
         
         .container {
@@ -19,6 +25,7 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
+            align-items: center;
         }
         
         header {
@@ -29,49 +36,71 @@
             margin-bottom: 20px;
             border-radius: 10px;
             box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            transition: transform 0.3s;
         }
         
+        header:hover {
+            transform: scale(1.05);
+        }
+
         nav {
-            background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
-            text-align: center;
-            padding: 10px 0;
+            width: 100%;
             display: flex;
+            flex-wrap: wrap;
             justify-content: center;
-            border-radius: 0 0 10px 10px;
         }
         
         nav a {
-            color: #333;
+            color: #fff;
             text-decoration: none;
-            padding: 10px 20px;
-            margin: 0 10px;
-            transition: background-color 0.3s;
+            padding: 20px 40px;
+            margin: 10px;
             font-weight: bold;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
             background: linear-gradient(120deg, #f093fb 0%, #f5576c 100%);
-            margin: 10px;
+            transition: background-color 0.3s, transform 0.3s;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
         
         nav a:hover {
             background: linear-gradient(120deg, #f093fb 0%, #f5576c 50%);
+            transform: translateY(-5px);
         }
         
         .card {
             background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
             padding: 20px;
             width: 300px;
             text-align: center;
             transition: transform 0.3s, background-color 0.3s;
             margin: 10px;
             color: #333;
+            position: relative;
+            overflow: hidden;
         }
         
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-10px);
             background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 50%);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: left 0.3s;
+        }
+
+        .card:hover::before {
+            left: 100%;
         }
         
         footer {
@@ -86,24 +115,41 @@
             border-radius: 0 0 10px 10px;
         }
 
-        .weather-info {
+        footer a {
+            color: #333;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        footer a:hover {
+            color: #000;
+        }
+
+        .weather-info, .ip-info {
             position: absolute;
             top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.7);
             padding: 10px;
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .weather-info {
+            right: 20px;
         }
 
         .ip-info {
-            position: absolute;
-            top: 20px;
             left: 20px;
-            background: rgba(255, 255, 255, 0.7);
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .card, header, footer, .weather-info, .ip-info {
+            animation: fadeIn 1s ease-in-out;
         }
     </style>
 </head>
@@ -124,8 +170,6 @@
             <h2>Story Generator</h2>
             <p>Generate creative stories and plots</p>
         </a>
-    </nav>
-    <nav>
         <a href="/code_generation" class="card">
             <h2>Code Generator</h2>
             <p>Generate code snippets and solutions</p>
@@ -138,46 +182,48 @@
             <h2>Psychology Prediction</h2>
             <p>Predict psychological traits based on inputs</p>
         </a>
+        <a href="/analyze" class="card">
+            <h2>Health Analysis</h2>
+            <p>Analyze the Symptoms of the Health Problem</p>
+        </a>        
     </nav>
     <footer>
-        <p>© KV. Modernize the thinking.</p>
-        <a href="https://vamsikrishna28.vercel.app/" target="_blank">About Me</a></p>
+        <p>© KV. Modernize the thinking. <a href="https://vamsikrishna28.vercel.app/" target="_blank">About Me</a></p>
     </footer>
 
     <div class="weather-info" id="weatherInfo"></div>
     <div class="ip-info" id="ipInfo"></div>
 
-  
-<script>
-    async function getWeatherInfo() {
-        try {
-            const response = await fetch('/api/weather');
-            const data = await response.json();
-            const { weather, temperature } = data;
+    <script>
+        async function getWeatherInfo() {
+            try {
+                const response = await fetch('/api/weather');
+                const data = await response.json();
+                const { weather, temperature } = data;
 
-            document.getElementById('weatherInfo').innerHTML = `
-                Weather: ${weather}, Temperature: ${temperature}°C
-            `;
-        } catch (error) {
-            console.error('Error:', error);
-            document.getElementById('weatherInfo').innerHTML = 'Weather information not available';
+                document.getElementById('weatherInfo').innerHTML = `
+                    Weather: ${weather}, Temperature: ${temperature}°C
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('weatherInfo').innerHTML = 'Weather information not available';
+            }
         }
-    }
 
-    async function getIP() {
-        try {
-            const response = await fetch('https://api64.ipify.org?format=json');
-            const data = await response.json();
-            const { ip } = data;
-            document.getElementById('ipInfo').innerHTML = `Your IP address: ${ip}`;
-            getWeatherInfo();
-        } catch (error) {
-            console.error('Error:', error);
-            document.getElementById('weatherInfo').innerHTML = 'IP address not available';
+        async function getIP() {
+            try {
+                const response = await fetch('https://api64.ipify.org?format=json');
+                const data = await response.json();
+                const { ip } = data;
+                document.getElementById('ipInfo').innerHTML = `Your IP address: ${ip}`;
+                getWeatherInfo();
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('weatherInfo').innerHTML = 'IP address not available';
+            }
         }
-    }
 
-    getIP();
-</script>
+        getIP();
+    </script>
 </body>
 </html>
