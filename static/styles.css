@@ -74,7 +74,6 @@ button:hover {
     max-width: 100%; 
     word-wrap: break-word;
     overflow-y: auto; /* Enable vertical scrolling for the response div */
-    max-height: 300px; /* Set a maximum height for the response div */
 }
 
 /* Media Query for Mobile View */
