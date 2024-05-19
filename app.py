@@ -2,11 +2,17 @@ from flask import Flask, render_template, request, jsonify
 import google.generativeai as genai
 from dotenv import load_dotenv
 import os
+from werkzeug.utils import secure_filename
+from PIL import Image
 app = Flask(__name__)
-
+app.config['UPLOAD_FOLDER'] = 'uploads/'
 api_key = os.environ.get("API_KEY")
 
 genai.configure(api_key=api_key)
+
+model_text = genai.GenerativeModel('gemini-pro')
+model_vision = genai.GenerativeModel('gemini-pro-vision')
+user_data = {}
 
 chat_generation_config = {
     "temperature": 0.9,
@@ -151,6 +157,56 @@ def algorithm_generation():
         return jsonify({'response': response_text})
     return render_template('algorithm_generation.html')
 
+@app.route('/analyze', methods=['GET', 'POST'])
+def analyze():
+    if request.method == 'GET':
+        return render_template('analyze.html')
 
+    gender = request.form.get('gender')
+    symptoms = request.form.get('symptoms')
+    body_part = request.form.get('body-part')
+    layer = request.form.get('layer')
+    image = request.files.get('image')
+    additional_symptoms = request.form.get('additionalSymptoms')
+    final_symptoms = request.form.get('finalSymptoms')
+
+    stage = 'initial'
+    if additional_symptoms:
+        stage = 'intermediate'
+        symptoms += f", {additional_symptoms}"
+    if final_symptoms:
+        stage = 'final'
+        symptoms += f", {final_symptoms}"
+
+    user_data['gender'] = gender
+    user_data['symptoms'] = symptoms
+    user_data['body_part'] = body_part
+    user_data['layer'] = layer
+
+    if image:
+        filename = secure_filename(image.filename)
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        image.save(image_path)
+        img = Image.open(image_path)
+        prompt = [f"**In English**, analyze the image and user description for a person experiencing {symptoms}. Focus on the {body_part} area. Identify the most likely **medical condition** causing these symptoms and explain the potential **causes** behind it. Additionally, predict any potential **further symptoms** that might develop. **Do not provide prescriptions or treatment advice.**", img]
+        response = model_vision.generate_content(prompt)
+    else:
+        prompt = f"In English, Analyze symptoms for {gender} with symptoms: {symptoms}, affected body part: {body_part}, and layer: {layer}. Provide potential health issues and educational information."
+        response = model_text.generate_content([prompt])
+
+    # Extracting text from the response
+    if response.candidates and response.candidates[0].content.parts:
+        analysis_text = response.candidates[0].content.parts[0].text
+    else:
+        analysis_text = "No valid response found."
+
+    analysis = analysis_text.split('\n')  # Split the response into lines
+    analysis_html = '<ul>'
+    for line in analysis:
+        analysis_html += f'<li>{line}</li>'
+    analysis_html += '</ul>'
+
+    return jsonify({'analysis': analysis_html, 'stage': stage})
 if __name__ == '__main__':
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)
