@@ -1,0 +1,95 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-size: cover; /* Ensure the background image covers the entire viewport */
+    background-attachment: fixed; /* Keep the background fixed while scrolling */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    transition: background-image 1s ease-in-out; /* Smooth transition between images */
+}
+
+.container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.9); /* Semi-transparent background for better readability */
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Enhanced box shadow */
+    animation: slideIn 1s ease; /* Entrance animation for the container */
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.chatbox {
+    display: flex;
+    flex-direction: column;
+}
+
+.messages {
+    flex-grow: 1;
+    padding: 10px;
+    background: #f1f1f1;
+    border-radius: 4px;
+    overflow-y: auto;
+    height: 300px;
+    margin-bottom: 10px;
+}
+
+.messages .message {
+    margin-bottom: 10px;
+    padding: 8px;
+    border-radius: 4px;
+    background: #e1e1e1;
+    animation: fadeInUp 0.5s ease; /* Entrance animation for each message */
+}
+
+@keyframes fadeInUp {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.messages .message.user {
+    background: #d1f5d3;
+    animation: fadeInUp 0.5s ease;
+    text-align: right; /* Align user messages to the right */
+}
+
+#user_input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+#send_button {
+    padding: 10px 15px;
+    border: none;
+    background: #4caf50;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.1s; /* Added a transform transition for the hover effect */
+}
+
+#send_button:hover {
+    background: #45a049;
+    transform: scale(1.05); /* Slight scaling effect on hover */
+}
