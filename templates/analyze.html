@@ -44,25 +44,16 @@
   <script src="/static/script.js"></script>
   <script>
     function previewImage() {
-      // Get the uploaded image
       const image = document.getElementById('image').files[0];
-      
-      // Check if an image is uploaded
       if (image) {
-        // Create a new FileReader object
         const reader = new FileReader();
-
-        // Define function to handle successful image loading
         reader.onload = function (e) {
           const imageUrl = e.target.result;
           const imagePreview = document.getElementById('image-preview');
           imagePreview.src = imageUrl;
         };
-
-        // Read the image as a data URL
         reader.readAsDataURL(image);
       } else {
-        // Clear the image preview if no image is uploaded
         document.getElementById('image-preview').src = "";
       }
     }
