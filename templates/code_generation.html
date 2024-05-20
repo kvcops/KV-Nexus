@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Code Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -10,19 +11,20 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh; /* Ensure background covers the entire screen */
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
         }
         .code-container {
-            display: none; /* Hide the container initially */
+            display: none; 
             background-color: rgba(255, 255, 255, 0.8);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
             padding: 20px;
-            width: 400px;
-            max-width: 100%;
+            width: 90%; /* Adjust for smaller screens */
+            max-width: 800px; 
+            margin: 0 auto; 
             animation: slideIn 0.5s ease-out;
         }
         h1 {
@@ -36,6 +38,7 @@
         }
         label {
             font-weight: bold;
+            margin-bottom: 5px; /* Adjusted for better spacing */
         }
         input[type="text"], select {
             width: 100%;
@@ -43,6 +46,7 @@
             margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            box-sizing: border-box; /* Include padding/border in width */
         }
         input[type="submit"] {
             padding: 8px 20px;
@@ -66,9 +70,9 @@
             max-width: 100%;
             overflow-wrap: break-word;
             animation: fadeIn 0.5s ease-out;
-            overflow-y: auto; /* Add vertical scrollbar */
-            max-height: 400px; /* Set maximum height for the box */
-            text-align: left; /* Align text to the left */
+            overflow-y: auto; 
+            max-height: 400px; 
+            text-align: left; 
         }
         
         @keyframes slideIn {
@@ -87,6 +91,16 @@
             }
             to {
                 opacity: 1;
+            }
+        }
+
+        /* Media query for smaller screens */
+        @media (max-width: 600px) {
+            .code-container {
+                width: 95%; 
+            }
+            input[type="text"], select, input[type="submit"] {
+                font-size: 16px; 
             }
         }
     </style>
