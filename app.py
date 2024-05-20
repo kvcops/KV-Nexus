@@ -13,7 +13,11 @@ api_key = os.environ.get("API_KEY")
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 genai.configure(api_key=api_key)
+#setting up for chat
+model = genai.GenerativeModel('gemini-pro')
+chat_history = []
 
+#setting for health analysis
 model_text = genai.GenerativeModel('gemini-pro')
 model_vision = genai.GenerativeModel('gemini-pro-vision')
 user_data = {}
@@ -80,14 +84,17 @@ def get_weather():
     # Return the weather information as JSON
     return jsonify({'weather': 'sunny', 'temperature': '25'})
     
-@app.route('/chat', methods=['GET', 'POST'])
+@app.route('/chat', methods=['GET','POST'])
 def chat():
     if request.method == 'POST':
-        user_query = request.form['user_query']
-        prompt = f"{user_query}"
-        response = chat_model.generate_content([prompt])
-        response_text = format_response(response.text)
-        return jsonify({'response': response_text})
+        user_message = request.json['message']
+        chat_history.append({"role": "user", "message": user_message})
+        context = "\n".join([f"{msg['role']}: {msg['message']}" for msg in chat_history])
+        prompt = f"{context}\nbot:"
+        response = model.generate_content(prompt)
+        reply = response.text.strip()
+        chat_history.append({"role": "bot", "message": reply})
+        return jsonify({"reply": reply, "chat_history": chat_history})
     return render_template('chat.html')
 
 @app.route('/chef', methods=['GET', 'POST'])
