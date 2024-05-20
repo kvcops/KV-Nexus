@@ -1,41 +1,55 @@
 /* Base Styles */
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #f5f5f5;
+    background-color: #f0f8ff;
     margin: 0;
     padding: 0;
-    overflow-y: auto;  /* Enable scrolling for the body */
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
 }
 
 .container {
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     display: flex;
-    justify-content: space-around;
-    align-items: flex-start; /* Align items at the start of the container */
-    min-height: 100vh;
+    flex-direction: column;
     padding: 20px;
-    overflow-y: auto; /* Allow vertical scrolling within the container */
+    width: 90%;
+    max-width: 600px;
 }
+
 .image-preview {
-    width: 200px; /* Fixed size for image on mobile */
-    text-align: center; /* Center the image */
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
 }
 
 .image-preview img {
-    max-width: 100%; /* Make the image responsive */
+    border-radius: 10px;
+    max-width: 100%;
     height: auto;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .chatbot-form {
-    width: 50%; /* Adjusted the form container size */
-    overflow: hidden; /* Added overflow property */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
+
 h1 {
     text-align: center;
     color: #333;
     font-size: 2em;
+    margin-bottom: 20px;
 }
 
 form {
+    width: 100%;
     display: flex;
     flex-direction: column;
 }
@@ -51,6 +65,12 @@ input, select, button {
     margin-top: 5px;
     border-radius: 5px;
     border: 1px solid #ddd;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+input, select {
+    background-color: #f9f9f9;
 }
 
 button {
@@ -59,6 +79,7 @@ button {
     border: none;
     cursor: pointer;
     transition: background 0.3s ease;
+    margin-top: 15px;
 }
 
 button:hover {
@@ -70,23 +91,15 @@ button:hover {
     padding: 20px;
     border-radius: 5px;
     background: #f0f0f0;
-    max-width: 100%; 
+    width: 100%;
     word-wrap: break-word;
-    overflow-y: auto; /* Enable vertical scrolling for the response div */
-    max-height: 200px; /* Set a maximum height for the response div */
+    overflow-y: auto;
+    max-height: 200px;
 }
 
 /* Media Query for Mobile View */
 @media (max-width: 768px) {
-    .image-preview {
-        width: 100px; /* Adjusted fixed size for image on smaller screens */
-    }
-
-    .chatbot-form {
-        width: 80%; /* Adjusted form container size for smaller screens */
-    }
-
-    #response {
-        max-width: 100%; /* Ensure response doesn't overflow container */
+    .container {
+        width: 100%;
     }
 }
