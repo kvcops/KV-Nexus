@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>KV Nexus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
@@ -22,9 +23,9 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            overflow: hidden;
+            overflow-x: hidden;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -32,8 +33,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            perspective: 1000px; /* For 3D tilt effect */
         }
-        
+
         header {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             color: #333;
@@ -45,9 +47,9 @@
             width: 100%;
             transition: transform 0.3s;
         }
-        
+
         header:hover {
-            transform: scale(1.05);
+            transform: scale(1.05) rotateY(5deg); /* 3D tilt */
         }
 
         nav {
@@ -56,31 +58,34 @@
             flex-wrap: wrap;
             justify-content: center;
         }
-        
+
         nav a {
             color: #fff;
             text-decoration: none;
-            padding: 20px 40px;
+            padding: 20px;
             margin: 10px;
             font-weight: bold;
             border: none;
             border-radius: 10px;
             background: linear-gradient(120deg, #f093fb 0%, #f5576c 100%);
-            transition: background-color 0.3s, transform 0.3s;
+            transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 300px;
         }
-        
+
         nav a:hover {
             background: linear-gradient(120deg, #f093fb 0%, #f5576c 50%);
-            transform: translateY(-5px);
+            transform: translateY(-5px) scale(1.02); /* Added scaling */
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); /* Larger shadow */
         }
-        
+
         .card {
             background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
             border-radius: 10px;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
             padding: 20px;
-            width: 300px;
             text-align: center;
             transition: transform 0.3s, background-color 0.3s;
             margin: 10px;
@@ -88,26 +93,12 @@
             position: relative;
             overflow: hidden;
             animation: cardAnimation 0.5s ease-in-out;
+            width: calc(100% - 20px); /* Full width minus margins */
         }
-        
+
         .card:hover {
-            transform: translateY(-10px);
+            transform: translateY(-10px) scale(1.02); /* Added scaling */
             background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 50%);
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.3);
-            transition: left 0.3s;
-        }
-
-        .card:hover::before {
-            left: 100%;
         }
 
         .card img {
@@ -120,7 +111,7 @@
             transform: scale(1.1);
             filter: brightness(1.1);
         }
-        
+
         footer {
             background: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
             color: #333;
@@ -153,6 +144,15 @@
             background: rgba(255, 255, 255, 0.7);
         }
 
+        .weather-info, .ip-info {
+            position: absolute;
+            top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.7);
+        }
+
         .weather-info {
             right: 20px;
         }
@@ -160,7 +160,6 @@
         .ip-info {
             left: 20px;
         }
-
         @keyframes fadeIn {
             0% { opacity: 0; transform: translateY(20px); }
             100% { opacity: 1; transform: translateY(0); }
@@ -195,9 +194,58 @@
         #scrollToTopBtn:hover {
             background-color: #333;
         }
+
+        /* --- Added for Particle Effects --- */
+        #particles-js {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Put it behind other elements */
+        }
+
+        /* Media Queries for Mobile View */
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .card {
+                width: 90%; /* Adjust the width for smaller screens */
+                margin: 10px 0;
+            }
+
+            header, footer {
+                width: 100%;
+                padding: 10px 0;
+            }
+
+            nav a {
+                padding: 15px;
+                font-size: 14px;
+                width: 90%; /* Adjust the width for smaller screens */
+            }
+
+            .weather-info, .ip-info {
+                font-size: 12px;
+                top: 10px;
+                padding: 5px;
+            }
+
+            #scrollToTopBtn {
+                bottom: 10px;
+                right: 20px;
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Particle Background -->
+    <div id="particles-js"></div>
+
     <header>
         <h1>KV Nexus</h1>
     </header>
@@ -230,23 +278,46 @@
         <a href="/psychology_prediction" class="card">
             <i class="fas fa-brain"></i>
             <h2>Psychology Prediction</h2>
-            <p>Predict psychological traits based on inputs</p>
+            <p>Predict psychological behaviors</p>
         </a>
         <a href="/analyze" class="card">
             <i class="fas fa-heartbeat"></i>
             <h2>Health Analysis</h2>
             <p>Analyze the Symptoms of the Health Problem</p>
-        </a>        
+        </a>  
     </nav>
     <footer>
         <p>© KV. Modernize the thinking. <a href="https://vamsikrishna28.vercel.app/" target="_blank">About Me</a></p>
     </footer>
-
     <div class="weather-info" id="weatherInfo"></div>
-    <div class="ip-info" id="ipInfo"></div>
 
-    <button id="scrollToTopBtn" title="Go to top"><i class="fas fa-arrow-up"></i></button>
+    <!-- Scroll to Top Button -->
+    <button onclick="scrollToTop()" id="scrollToTopBtn" title="Go to top"><i class="fas fa-angle-up"></i></button>
 
+    <script>
+        // Scroll to top function
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Show button when scrolled down
+        window.onscroll = function() {
+            const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                scrollToTopBtn.style.display = 'block';
+            } else {
+                scrollToTopBtn.style.display = 'none';
+            }
+        };
+    </script>
+
+    <!-- Particle.js CDN -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        particlesJS.load('particles-js', 'particles.json', function() {
+            console.log('particles.json loaded...');
+        });
+    </script>
     <script>
         async function getWeatherInfo() {
             try {
