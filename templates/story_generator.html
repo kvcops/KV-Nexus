@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Story Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -10,7 +11,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh; /* Ensure background covers the entire screen */
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
@@ -21,7 +22,7 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
             padding: 20px;
-            width: 80%; /* Adjust width as needed */
+            width: 90%; /* Adjust width for smaller screens */
             max-width: 800px; /* Limit maximum width */
             margin: 0 auto; /* Center the container */
             animation: slideIn 0.5s ease-out;
@@ -37,6 +38,7 @@
         }
         label {
             font-weight: bold;
+            margin-bottom: 5px;
         }
         input[type="text"] {
             width: 100%;
@@ -44,6 +46,7 @@
             margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            box-sizing: border-box; /* Include padding and border in width */
         }
         input[type="button"] {
             padding: 8px 20px;
@@ -61,19 +64,19 @@
         #output {
             display: none; /* Hide the output initially */
             margin-top: 20px;
-            padding: 20px; /* Increased padding for better spacing */
+            padding: 20px; 
             background-color: #f9f9f9;
             border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             max-width: 100%;
-            overflow-wrap: break-word; /* Break words that are too long */
-            word-wrap: break-word; /* Fallback for older browsers */
+            overflow-wrap: break-word;
+            word-wrap: break-word;
             animation: fadeIn 0.5s ease-out;
-            text-align: left; /* Align text to the left */
-            font-size: 16px; /* Increased font size for better readability */
-            line-height: 1.6; /* Increased line height for better spacing */
-            max-height: 400px; /* Limit height of the output box */
-            overflow-y: auto; /* Enable vertical scrollbar if content exceeds height */
+            text-align: left;
+            font-size: 16px; 
+            line-height: 1.6; 
+            max-height: 400px;
+            overflow-y: auto; 
         }
 
         @keyframes slideIn {
@@ -84,6 +87,16 @@
             to {
                 transform: translateY(0);
                 opacity: 1;
+            }
+        }
+
+        /* Media query for smaller screens */
+        @media (max-width: 600px) {
+            .story-container {
+                width: 95%; /* Further adjust width for smaller screens */
+            }
+            input[type="text"], input[type="button"] {
+                font-size: 16px; /* Adjust font size for smaller screens */
             }
         }
     </style>
