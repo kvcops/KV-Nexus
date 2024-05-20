@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Chef</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -10,7 +11,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
@@ -21,7 +22,7 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
             padding: 20px;
-            width: 80%; /* Adjust width as needed */
+            width: 90%; /* Adjust width for smaller screens */
             max-width: 800px; /* Limit maximum width */
             margin: 0 auto; /* Center the container */
             animation: slideIn 0.5s ease-out;
@@ -37,6 +38,7 @@
         }
         label {
             font-weight: bold;
+            margin-bottom: 5px;
         }
         input[type="text"] {
             width: 100%;
@@ -44,6 +46,7 @@
             margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
         }
         input[type="submit"] {
             padding: 8px 20px;
@@ -89,6 +92,16 @@
             }
             to {
                 opacity: 1;
+            }
+        }
+
+        /* Media query for smaller screens */
+        @media (max-width: 600px) {
+            .chef-container {
+                width: 95%; /* Adjust width for smaller screens */
+            }
+            input[type="text"], input[type="submit"] {
+                font-size: 16px; /* Adjust font size for smaller screens */
             }
         }
     </style>
