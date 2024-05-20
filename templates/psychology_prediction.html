@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Psychology Prediction</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -10,24 +11,24 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh; /* Ensure background covers full screen */
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
-            overflow-x: hidden; /* Hide horizontal scrollbar */
+            overflow-x: hidden;
         }
         .psychology-container {
-            display: none; /* Hide the container initially */
+            display: none; 
             background-color: rgba(255, 255, 255, 0.8);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
             padding: 20px;
-            width: 80%; /* Adjust width as needed */
-            max-width: 800px; /* Limit maximum width */
-            margin: 0 auto; /* Center the container */
+            width: 90%; /* Adjust for smaller screens */
+            max-width: 800px; 
+            margin: 0 auto; 
             animation: slideIn 0.5s ease-out;
-            overflow: auto; /* Add scrollbar */
-            max-height: 80vh; /* Limit maximum height */
+            overflow-y: auto; 
+            max-height: 80vh; 
         }
         h1 {
             text-align: center;
@@ -40,7 +41,7 @@
         }
         label {
             font-weight: bold;
-            margin-top: 10px;
+            margin-bottom: 5px; /* Adjusted for better spacing */
         }
         input[type="text"], select {
             width: 100%;
@@ -48,6 +49,7 @@
             margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            box-sizing: border-box; /* Include padding/border in width */
         }
         input[type="submit"] {
             padding: 8px 20px;
@@ -64,20 +66,19 @@
         }
         #output {
             margin-top: 20px;
-            padding: 20px; /* Increased padding for better spacing */
+            padding: 20px;
             background-color: #f9f9f9;
             border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             max-width: 100%;
-            overflow-wrap: break-word; /* Break words that are too long */
-            word-wrap: break-word; /* Fallback for older browsers */
+            overflow-wrap: break-word;
+            word-wrap: break-word;
             animation: fadeIn 0.5s ease-out;
-            text-align: left; /* Align text to the left */
-            font-size: 16px; /* Increased font size for better readability */
-            line-height: 1.6; /* Increased line height for better spacing */
-            max-height: 400px; /* Limit height of the output box */
-            overflow-y: auto; /* Add vertical scrollbar */
-            max-height: 60vh; /* Limit maximum height */
+            text-align: left; 
+            font-size: 16px; 
+            line-height: 1.6; 
+            overflow-y: auto;
+            max-height: 60vh; 
         }
 
         @keyframes slideIn {
@@ -96,6 +97,16 @@
             }
             to {
                 opacity: 1;
+            }
+        }
+
+        /* Media query for smaller screens */
+        @media (max-width: 600px) {
+            .psychology-container {
+                width: 95%; 
+            }
+            input[type="text"], select, input[type="submit"] {
+                font-size: 16px; 
             }
         }
     </style>
