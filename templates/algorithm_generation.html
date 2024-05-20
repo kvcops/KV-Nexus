@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Algorithm</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -10,19 +11,20 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh; /* Ensure background image covers full screen height */
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
         }
         .algo-container {
-            display: none; /* Hide the container initially */
+            display: none; 
             background-color: rgba(255, 255, 255, 0.8);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
             padding: 20px;
-            width: 400px;
-            max-width: 100%;
+            width: 90%; /* Adjusted for smaller screens */
+            max-width: 800px; 
+            margin: 0 auto; 
             animation: slideIn 0.5s ease-out;
         }
         h1 {
@@ -36,6 +38,7 @@
         }
         label {
             font-weight: bold;
+            margin-bottom: 5px; /* Adjusted for better spacing */
         }
         input[type="text"] {
             width: 100%;
@@ -43,6 +46,7 @@
             margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            box-sizing: border-box; /* Include padding/border in width */
         }
         input[type="submit"] {
             padding: 8px 20px;
@@ -66,10 +70,10 @@
             max-width: 100%;
             overflow-wrap: break-word;
             animation: fadeIn 0.5s ease-out;
-            overflow-y: auto; /* Add vertical scrollbar */
-            max-height: 400px; /* Set maximum height for the box */
-            white-space: pre-wrap; /* Preserve formatting */
-            font-family: monospace; /* Use monospace font for code */
+            overflow-y: auto; 
+            max-height: 400px;
+            white-space: pre-wrap; 
+            font-family: monospace; 
         }
         
         @keyframes slideIn {
@@ -90,13 +94,23 @@
                 opacity: 1;
             }
         }
+
+        /* Media query for smaller screens */
+        @media (max-width: 600px) {
+            .algo-container {
+                width: 95%; 
+            }
+            input[type="text"], input[type="submit"] {
+                font-size: 16px; 
+            }
+        }
     </style>
 </head>
 <body>
     <div class="algo-container" id="algoContainer">
         <h1>Algorithm Generator</h1>
         <form id="algoForm">
-            <label for="algorithm">Which algorithm do you want :</label>
+            <label for="algorithm">Which algorithm do you want:</label>
             <input type="text" id="algorithm" name="algorithm">
             <input type="submit" value="Generate Algorithm">
         </form>
@@ -125,13 +139,13 @@
         // Form submission handling
         document.getElementById('algoForm').addEventListener('submit', async function(event) {
             event.preventDefault();
-            const algorithm = document.getElementById('algorithm').value; // Corrected variable name
+            const algorithm = document.getElementById('algorithm').value;
             const response = await fetch('/algorithm_generation', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                body: `algorithm=${algorithm}` // Corrected variable name
+                body: `algorithm=${algorithm}` 
             });
             const data = await response.json();
             const response_text = data.response;
