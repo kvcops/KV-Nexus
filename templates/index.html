@@ -100,6 +100,19 @@
             transform: translateY(-10px) scale(1.02); /* Added scaling */
             background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 50%);
         }
+        .card:hover::before {
+            left: 100%;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: left 0.3s;
+        }
 
         .card img {
             width: 100%;
@@ -312,12 +325,14 @@
     </script>
 
     <!-- Particle.js CDN -->
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/dist/particles.min.js"></script>
+
     <script>
+        // Initialize particles.js
         particlesJS.load('particles-js', 'particles.json', function() {
-            console.log('particles.json loaded...');
+            console.log('particles.js loaded - callback');
         });
-    </script>
+    </script> 
     <script>
         async function getWeatherInfo() {
             try {
