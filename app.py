@@ -111,10 +111,20 @@ def chef():
 def story_generator():
     if request.method == 'POST':
         user_input_words = request.form['keywords']
-        prompt = f"Generate a story based on the following words {user_input_words}...the story should be entertaining."
-        response = story_model.generate_content([prompt])
-        response_text = format_response(response.text)
-        return jsonify({'response': response_text})
+        genre = request.form['genre']
+        prompt = f"Generate a story based on the following words {user_input_words} with genre {genre}..."
+
+        try:
+            response = chat_model.generate_content([prompt])
+            if response.candidates and response.candidates[0].content.parts:
+                response_text = format_response(response.candidates[0].content.parts[0].text)
+            else:
+                logging.error(f"No valid response found for prompt: {prompt}")
+                response_text = "Sorry, I couldn't generate a story with the provided input."
+            return jsonify({'response': response_text})
+        except Exception as e:
+            logging.error(f"Error generating story: {e}")
+            return jsonify({'error': "Internal Server Error"}), 500
     return render_template('story_generator.html')
 
 @app.route('/psychology_prediction', methods=['GET', 'POST'])
