@@ -96,6 +96,21 @@
             max-height: 400px;
             overflow-y: auto;
         }
+        .loader {
+            display: none;
+            position: relative;
+            width: 50px;
+            height: 50px;
+            margin: 20px auto;
+            border: 5px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 5px solid #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
         @keyframes slideIn {
             from {
                 transform: translateY(-100%);
@@ -139,6 +154,7 @@
             </select>
             <input type="button" value="Generate Story" id="generateBtn" class="animate__animated animate__pulse">
         </form>
+        <div class="loader" id="loader"></div>
         <div id="output" class="animate__animated animate__fadeInUp"></div>
     </div>
     <script>
@@ -164,21 +180,31 @@
                 alert('Please enter some keywords');
                 return;
             }
-            const response = await fetch('/story_generator', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: `keywords=${keywords}&genre=${genre}`
-            });
-            const data = await response.json();
-            const response_text = data.response;
-            const formatted_response = response_text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                                                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                                                    .replace(/(\d+\.\s+)/g, '<br>$1')
-                                                    .replace(/\n/g, '<br>');
-            document.getElementById('output').innerHTML = formatted_response;
-            document.getElementById('output').style.display = 'block';
+            document.getElementById('loader').style.display = 'block'; // Show loader
+            document.getElementById('output').style.display = 'none'; // Hide output
+            try {
+                const response = await fetch('/story_generator', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `keywords=${keywords}&genre=${genre}`
+                });
+                const data = await response.json();
+                const response_text = data.response;
+                const formatted_response = response_text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                                                        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                                                        .replace(/(\d+\.\s+)/g, '<br>$1')
+                                                        .replace(/\n/g, '<br>');
+                document.getElementById('output').innerHTML = formatted_response;
+                document.getElementById('output').style.display = 'block';
+            } catch (error) {
+                console.error('Error fetching story:', error);
+                document.getElementById('output').innerHTML = 'Error generating story. Please try again later.';
+                document.getElementById('output').style.display = 'block';
+            } finally {
+                document.getElementById('loader').style.display = 'none'; // Hide loader
+            }
         }
 
         document.getElementById('generateBtn').addEventListener('click', fetchResponse);
