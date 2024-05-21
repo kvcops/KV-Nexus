@@ -181,7 +181,10 @@
             const data = await response.json();
             const response_text = data.response;
             // Format response
-            const formatted_response = response_text.replace(/(\*\*[^*]+\*\*|\*[^\*]+\*)/g, '<br><strong>$1</strong>');
+            const formatted_response = response_text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/(\d+\.\s+)/g, '<br>$1')
+            .replace(/\n/g, '<br>');
             document.getElementById('output').innerHTML = formatted_response;
         });
     </script>
