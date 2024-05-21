@@ -3,68 +3,86 @@
 <head>
     <title>Story Generator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh; /* Ensure background covers the entire screen */
+            min-height: 100vh;
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
+            background-color: #f0f0f0;
+            transition: background 1s;
         }
         .story-container {
-            display: none; /* Hide the container initially */
-            background-color: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            padding: 20px;
-            width: 90%; /* Adjust width for smaller screens */
-            max-width: 800px; /* Limit maximum width */
-            margin: 0 auto; /* Center the container */
-            animation: slideIn 0.5s ease-out;
+            display: none;
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 800px;
+            margin: 0 auto;
+            animation: slideIn 0.8s ease-out;
+            backdrop-filter: blur(10px);
         }
         h1 {
             text-align: center;
             margin-bottom: 20px;
+            font-size: 2.5em;
+            color: #333;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
         form {
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 15px;
         }
         label {
             font-weight: bold;
             margin-bottom: 5px;
+            color: #444;
         }
-        input[type="text"] {
+        input[type="text"], select {
             width: 100%;
-            padding: 8px;
+            padding: 12px;
             margin-top: 5px;
             border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box; /* Include padding and border in width */
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, select:focus {
+            border-color: #4CAF50;
+            outline: none;
         }
         input[type="button"] {
-            padding: 8px 20px;
-            margin-top: 10px;
-            background-color: #444;
+            padding: 12px 25px;
+            margin-top: 15px;
+            background-color: #4CAF50;
             color: #fff;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, transform 0.2s;
+            font-size: 1em;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
         }
         input[type="button"]:hover {
-            background-color: #666;
+            background-color: #45a049;
+            transform: scale(1.05);
         }
         #output {
-            display: none; /* Hide the output initially */
+            display: none;
             margin-top: 20px;
-            padding: 20px; 
+            padding: 20px;
             background-color: #f9f9f9;
             border-radius: 10px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -73,12 +91,11 @@
             word-wrap: break-word;
             animation: fadeIn 0.5s ease-out;
             text-align: left;
-            font-size: 16px; 
-            line-height: 1.6; 
+            font-size: 16px;
+            line-height: 1.6;
             max-height: 400px;
-            overflow-y: auto; 
+            overflow-y: auto;
         }
-
         @keyframes slideIn {
             from {
                 transform: translateY(-100%);
@@ -89,52 +106,60 @@
                 opacity: 1;
             }
         }
-
-        /* Media query for smaller screens */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
         @media (max-width: 600px) {
             .story-container {
-                width: 95%; /* Further adjust width for smaller screens */
+                width: 95%;
             }
-            input[type="text"], input[type="button"] {
-                font-size: 16px; /* Adjust font size for smaller screens */
+            input[type="text"], input[type="button"], select {
+                font-size: 16px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="story-container" id="storyContainer">
-        <h1>Story Generator</h1>
+    <div class="story-container animate__animated animate__fadeInDown" id="storyContainer">
+        <h1 class="animate__animated animate__pulse">Story Generator</h1>
         <form id="storyForm">
             <label for="keywords">Enter keywords:</label>
-            <input type="text" id="keywords" name="keywords">
-            <input type="button" value="Generate Story" id="generateBtn">
+            <input type="text" id="keywords" name="keywords" placeholder="e.g., adventure, mystery, magic...">
+            <label for="genre">Select genre:</label>
+            <select id="genre" name="genre">
+                <option value="fantasy">Fantasy</option>
+                <option value="sci-fi">Sci-Fi</option>
+                <option value="mystery">Mystery</option>
+                <!-- Add more genres as needed -->
+            </select>
+            <input type="button" value="Generate Story" id="generateBtn" class="animate__animated animate__pulse">
         </form>
-        <div id="output"></div>
+        <div id="output" class="animate__animated animate__fadeInUp"></div>
     </div>
     <script>
-        // Array of anime character images
         const animeCharacterImages = [
             'https://source.unsplash.com/1920x1080/?anime-character',
-            'https://source.unsplash.com/1920x1080/?anime'
-            // Add more anime image URLs as needed
+            'https://source.unsplash.com/1920x1080/?anime',
+            'https://source.unsplash.com/1920x1080/?fantasy',
+            'https://source.unsplash.com/1920x1080/?sci-fi'
         ];
-
-        // Randomly select an anime character image
         const randomIndex = Math.floor(Math.random() * animeCharacterImages.length);
         const randomAnimeCharacterImage = animeCharacterImages[randomIndex];
-
-        // Load the background image first
         const backgroundImage = new Image();
         backgroundImage.src = randomAnimeCharacterImage;
         backgroundImage.onload = function() {
-            // Set background image of body after loading
             document.body.style.backgroundImage = `url(${randomAnimeCharacterImage})`;
-            // Show the container and its contents after the image is loaded
             document.getElementById('storyContainer').style.display = 'block';
         };
 
         async function fetchResponse() {
             const keywords = document.getElementById('keywords').value;
+            const genre = document.getElementById('genre').value;
             if (keywords.trim() === '') {
                 alert('Please enter some keywords');
                 return;
@@ -144,17 +169,15 @@
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                body: `keywords=${keywords}`
+                body: `keywords=${keywords}&genre=${genre}`
             });
             const data = await response.json();
             const response_text = data.response;
-            // Format response
             const formatted_response = response_text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                                                     .replace(/\*(.+?)\*/g, '<em>$1</em>')
                                                     .replace(/(\d+\.\s+)/g, '<br>$1')
                                                     .replace(/\n/g, '<br>');
             document.getElementById('output').innerHTML = formatted_response;
-            // Show the output after receiving the response
             document.getElementById('output').style.display = 'block';
         }
 
