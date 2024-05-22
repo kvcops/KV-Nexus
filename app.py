@@ -204,25 +204,24 @@ def analyze():
             additional_symptoms = request.form.get('additionalSymptoms')
             final_symptoms = request.form.get('finalSymptoms')
             stage = 'initial'
-            
             if additional_symptoms:
                 stage = 'intermediate'
                 symptoms += f", {additional_symptoms}"
-                
             if final_symptoms:
                 stage = 'final'
                 symptoms += f", {final_symptoms}"
-                
             user_data['gender'] = gender
             user_data['symptoms'] = symptoms
             user_data['body_part'] = body_part
             user_data['layer'] = layer
-            
             if image:
                 try:
                     img = Image.open(BytesIO(image.read()))
                     prompt = [f"**In English**, analyze the image and user description for a person experiencing {symptoms}...", img]
                     response = model_vision.generate_content(prompt)
+                except PIL.UnidentifiedImageError as e:
+                    logging.error(f"Error processing image: {e}")
+                    return jsonify({'error': "Image format not recognized"}), 400
                 except Exception as e:
                     logging.error(f"Error processing image: {e}")
                     return jsonify({'error': "Image processing failed"}), 500
@@ -233,7 +232,6 @@ def analyze():
                 except Exception as e:
                     logging.error(f"Error generating text response: {e}")
                     return jsonify({'error': "Text generation failed"}), 500
-            
             analysis_text = response.candidates[0].content.parts[0].text if response.candidates and response.candidates[0].content.parts else "No valid response found."
             analysis = analysis_text.split('\n')
             analysis_html = '<ul>'
@@ -245,6 +243,7 @@ def analyze():
             logging.error(f"Error in /analyze route: {e}")
             return jsonify({'error': "Internal Server Error"}), 500
     return render_template('analyze.html')
+
 
 
 if __name__ == '__main__':
