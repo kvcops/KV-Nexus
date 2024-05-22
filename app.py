@@ -9,7 +9,6 @@ import logging
 from langdetect import detect
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads/'
 
 # Load environment variables
 load_dotenv()
@@ -216,16 +215,16 @@ def analyze():
             user_data['body_part'] = body_part
             user_data['layer'] = layer
             if image:
-                filename = secure_filename(image.filename)
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                image.save(filepath)
-                user_data['image_path'] = filepath
-                image_analysis_prompt = f"Analyze the image: {filepath}"
+                image_bytes = BytesIO()
+                image.save(image_bytes)
+                image_bytes.seek(0)
+                image_data = image_bytes.getvalue()
+                user_data['image_data'] = image_data
+                image_analysis_prompt = f"Analyze the image data."
                 image_response = model_vision.generate_content([image_analysis_prompt])
                 user_data['image_analysis'] = image_response.text
             analysis_prompt = f"Gender: {gender}\nSymptoms: {symptoms}\nBody Part: {body_part}\nLayer: {layer}"
-            analysis_response = model_text.generate_content([analysis_prompt])
-            user_data['analysis'] = analysis_response.text
+            analysis_response = model.generate_content([analysis_prompt])
             response_text = format_response(analysis_response.text)
             return jsonify({'response': response_text})
         except Exception as e:
