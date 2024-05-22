@@ -215,21 +215,30 @@ def analyze():
             user_data['body_part'] = body_part
             user_data['layer'] = layer
             if image:
-                image_bytes = BytesIO()
-                image.save(image_bytes)
-                image_bytes.seek(0)
-                image_data = image_bytes.getvalue()
-                user_data['image_data'] = image_data
-                image_analysis_prompt = f"Analyze the image data."
-                image_response = model_vision.generate_content([image_analysis_prompt])
-                user_data['image_analysis'] = image_response.text
-            analysis_prompt = f"Gender: {gender}\nSymptoms: {symptoms}\nBody Part: {body_part}\nLayer: {layer}"
-            analysis_response = model.generate_content([analysis_prompt])
-            response_text = format_response(analysis_response.text)
-            return jsonify({'response': response_text})
+                try:
+                    img = Image.open(BytesIO(image.read()))
+                    prompt = [f"**In English**, analyze the image and user description for a person experiencing {symptoms}...", img]
+                    response = model_vision.generate_content(prompt)
+                except Exception as e:
+                    logging.error(f"Error processing image: {e}")
+                    return jsonify({'error': "Image processing failed"}), 500
+            else:
+                try:
+                    prompt = f"In English, Analyze symptoms for {gender} with symptoms: {symptoms}..."
+                    response = model_text.generate_content([prompt])
+                except Exception as e:
+                    logging.error(f"Error generating text response: {e}")
+                    return jsonify({'error': "Text generation failed"}), 500
+            analysis_text = response.candidates[0].content.parts[0].text if response.candidates and response.candidates[0].content.parts else "No valid response found."
+            analysis = analysis_text.split('\n')
+            analysis_html = '<ul>'
+            for line in analysis:
+                analysis_html += f'<li>{line}</li>'
+            analysis_html += '</ul>'
+            return jsonify({'analysis': analysis_html, 'stage': stage})
         except Exception as e:
-            logging.error(f"Error during analysis: {e}")
-            return jsonify({'error': 'Analysis failed'}), 500
+            logging.error(f"Error in /analyze route: {e}")
+            return jsonify({'error': "Internal Server Error"}), 500
     return render_template('analyze.html')
 
 if __name__ == '__main__':
