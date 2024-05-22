@@ -11,38 +11,72 @@ from langdetect import detect
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 
-load_dotenv()  # Load environment variables from .env file
-
-api_key = os.getenv("API_KEY")
-openweathermap_api_key = os.getenv('OPENWEATHERMAP_API_KEY')
+# Load environment variables
+load_dotenv()
+api_key = os.environ.get("API_KEY")
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
-if not api_key:
-    logging.error("API_KEY environment variable not set")
-    raise EnvironmentError("API_KEY environment variable not set")
-
+# Configure the Google Generative AI API
 genai.configure(api_key=api_key)
+model = genai.GenerativeModel('gemini-pro')
+chat_history = []  # Define chat_history here
+
 model_text = genai.GenerativeModel('gemini-pro')
 model_vision = genai.GenerativeModel('gemini-pro-vision')
 user_data = {}
 
-# Define generation configurations
-generation_configs = {
-    "chat": {"temperature": 0.9, "top_p": 1, "top_k": 1, "max_output_tokens": 2048},
-    "chef": {"temperature": 0.9, "top_p": 1, "top_k": 1, "max_output_tokens": 2048},
-    "story": {"temperature": 0.9, "top_p": 1, "top_k": 1, "max_output_tokens": 2048},
-    "psychology": {"temperature": 0.9, "top_p": 1, "top_k": 1, "max_output_tokens": 1024},
-    "code": {"temperature": 0.9, "top_p": 1, "top_k": 1, "max_output_tokens": 2048},
-    "algorithm": {"temperature": 0.7, "top_p": 1, "top_k": 1, "max_output_tokens": 1024},
+# Generation configurations for different models
+chat_generation_config = {
+    "temperature": 0.9,
+    "top_p": 1,
+    "top_k": 1,
+    "max_output_tokens": 2048,
+}
+chef_generation_config = {
+    "temperature": 0.9,
+    "top_p": 1,
+    "top_k": 1,
+    "max_output_tokens": 2048,
+}
+story_generation_config = {
+    "temperature": 0.9,
+    "top_p": 1,
+    "top_k": 1,
+    "max_output_tokens": 2048,
+}
+psychology_generation_config = {
+    "temperature": 0.9,
+    "top_p": 1,
+    "top_k": 1,
+    "max_output_tokens": 1024,
+}
+code_generation_config = {
+    "temperature": 0.9,
+    "top_p": 1,
+    "top_k": 1,
+    "max_output_tokens": 2048,
+}
+algorithm_generation_config = {
+    "temperature": 0.7,
+    "top_p": 1,
+    "top_k": 1,
+    "max_output_tokens": 1024,
 }
 
-models = {key: genai.GenerativeModel("gemini-pro", generation_config=config) for key, config in generation_configs.items()}
+# Create model instances with configurations
+chat_model = genai.GenerativeModel("gemini-pro", generation_config=chat_generation_config)
+chef_model = genai.GenerativeModel("gemini-pro", generation_config=chef_generation_config)
+story_model = genai.GenerativeModel("gemini-pro", generation_config=story_generation_config)
+psychology_model = genai.GenerativeModel("gemini-pro", generation_config=psychology_generation_config)
+code_model = genai.GenerativeModel("gemini-pro", generation_config=code_generation_config)
+algorithm_model = genai.GenerativeModel("gemini-pro", generation_config=algorithm_generation_config)
 
 def format_response(response_text):
     """Formats the response text for display, handling potential language issues."""
     lines = [line.strip() for line in response_text.split('\n') if line.strip()]
+
     try:
         language = detect(response_text)
         formatted_text = '<br>'.join(lines)
@@ -50,23 +84,22 @@ def format_response(response_text):
     except Exception as e:
         logging.error(f"Language detection failed: {e}")
         formatted_text = '<br>'.join(lines)
+
     return formatted_text
 
 @app.route('/')
 def index():
     return render_template('index.html')
-
+    
 @app.route('/api/weather')
 def get_weather():
-    if not openweathermap_api_key:
-        logging.error("OPENWEATHERMAP_API_KEY environment variable not set")
-        return jsonify({'error': "Weather API key not set"}), 500
-
+    api_key = os.getenv('OPENWEATHERMAP_API_KEY')
     ip = request.headers.get('x-real-ip')  # Get client's IP address
-    # Your weather API logic here using the openweathermap_api_key and ip
+
+    # Your weather API logic here using the api_key and ip
     # Return the weather information as JSON
     return jsonify({'weather': 'sunny', 'temperature': '25'})
-
+    
 @app.route('/chat', methods=['GET', 'POST'])
 def chat():
     if request.method == 'POST':
@@ -74,7 +107,7 @@ def chat():
         chat_history.append({"role": "user", "message": user_message})
         context = "\n".join([f"{msg['role']}: {msg['message']}" for msg in chat_history])
         prompt = f"{context}\nbot:"
-        response = models["chat"].generate_content(prompt)
+        response = model.generate_content(prompt)
         reply = response.text.strip()
         chat_history.append({"role": "bot", "message": reply})
         return jsonify({"reply": reply, "chat_history": chat_history})
@@ -84,8 +117,8 @@ def chat():
 def chef():
     if request.method == 'POST':
         user_ingredients = request.form['user_ingredients']
-        prompt = f"Generate a recipe based on the following ingredients {user_ingredients} and explain the steps to cook it in a stepwise manner and formatted manner. Also explain who can eat and who shouldn't eat."
-        response = models["chef"].generate_content([prompt])
+        prompt = f"Generate a recipe based on the following ingredients {user_ingredients} and explain the steps to cook it in a stepwise manner and formatted manner ..also explain who can eat and who shouldn't eat."
+        response = chef_model.generate_content([prompt])
         response_text = format_response(response.text)
         return jsonify({'response': response_text})
     return render_template('chef.html')
@@ -96,8 +129,9 @@ def story_generator():
         user_input_words = request.form['keywords']
         genre = request.form['genre']
         prompt = f"Generate a story based on the following words {user_input_words} with genre {genre}..."
+
         try:
-            response = models["story"].generate_content([prompt])
+            response = story_model.generate_content([prompt])
             if response.candidates and response.candidates[0].content.parts:
                 response_text = format_response(response.candidates[0].content.parts[0].text)
             else:
@@ -118,10 +152,12 @@ def psychology_prediction():
         gender = request.form['gender']
         occupation = request.form['occupation']
         keywords = request.form['keywords']
+
         # Construct the prompt based on user input
         prompt = f"Predict psychological behavior for {name}, a {age}-year-old {gender} working as a {occupation}. Keywords: {keywords}"
+        
         # Generate prediction using the psychology model
-        response = models["psychology"].generate_content([prompt])
+        response = psychology_model.generate_content([prompt])
         response_text = format_response(response.text)
         return jsonify({'response': response_text})
     return render_template('psychology_prediction.html')
@@ -132,11 +168,13 @@ def code_generation():
         code_type = request.form['codeType']
         language = request.form['language']
         prompt = f"Write a {language} code to implement {code_type}."
-        response = models["code"].generate_content([prompt])
+        response = code_model.generate_content([prompt])
+        
         if response.candidates and response.candidates[0].content.parts:
             response_text = response.candidates[0].content.parts[0].text
         else:
             response_text = "No valid response found."
+        
         return jsonify({'response': response_text})
     return render_template('code_generation.html')
 
@@ -145,11 +183,13 @@ def algorithm_generation():
     if request.method == 'POST':
         algo = request.form['algorithm']
         prompt = f"Write a Python function to implement the {algo} algorithm. Ensure the function is well-structured and follows best practices for readability and efficiency."
-        response = models["algorithm"].generate_content([prompt])
+        response = algorithm_model.generate_content([prompt])
+        
         if response.candidates and response.candidates[0].content.parts:
             response_text = response.candidates[0].content.parts[0].text
         else:
             response_text = "No valid response found."
+        
         return jsonify({'response': response_text})
     return render_template('algorithm_generation.html')
 
@@ -187,13 +227,11 @@ def analyze():
             analysis_response = model_text.generate_content([analysis_prompt])
             user_data['analysis'] = analysis_response.text
             response_text = format_response(analysis_response.text)
-            return jsonify({'response': response_text, 'stage': stage})
+            return jsonify({'response': response_text})
         except Exception as e:
             logging.error(f"Error during analysis: {e}")
-            return jsonify({'error': "Internal Server Error"}), 500
+            return jsonify({'error': 'Analysis failed'}), 500
     return render_template('analyze.html')
 
-if __name__ == "__main__":
-    if not os.path.exists(app.config['UPLOAD_FOLDER']):
-        os.makedirs(app.config['UPLOAD_FOLDER'])
+if __name__ == '__main__':
     app.run(debug=True)
