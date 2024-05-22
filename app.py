@@ -6,18 +6,18 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 from io import BytesIO
 import logging
-
+from langdetect import detect
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
+
 api_key = os.environ.get("API_KEY")
 # Set up logging
 logging.basicConfig(level=logging.INFO)
+
 genai.configure(api_key=api_key)
-#setting up for chat
 model = genai.GenerativeModel('gemini-pro')
 chat_history = []
 
-#setting for health analysis
 model_text = genai.GenerativeModel('gemini-pro')
 model_vision = genai.GenerativeModel('gemini-pro-vision')
 user_data = {}
@@ -67,9 +67,19 @@ code_model = genai.GenerativeModel("gemini-pro", generation_config=code_generati
 algorithm_model = genai.GenerativeModel("gemini-pro", generation_config=algorithm_generation_config)
 
 def format_response(response_text):
+    """Formats the response text for display, handling potential language issues."""
     lines = [line.strip() for line in response_text.split('\n') if line.strip()]
-    formatted_text = '<br>'.join(lines)
+
+    try:
+        language = detect(response_text)
+        formatted_text = '<br>'.join(lines)
+        logging.info(f"Detected language: {language}")
+    except Exception as e:
+        logging.error(f"Language detection failed: {e}")
+        formatted_text = '<br>'.join(lines)
+
     return formatted_text
+
 
 @app.route('/')
 def index():
@@ -189,7 +199,6 @@ def analyze():
             image = request.files.get('image')
             additional_symptoms = request.form.get('additionalSymptoms')
             final_symptoms = request.form.get('finalSymptoms')
-
             stage = 'initial'
             if additional_symptoms:
                 stage = 'intermediate'
@@ -197,43 +206,35 @@ def analyze():
             if final_symptoms:
                 stage = 'final'
                 symptoms += f", {final_symptoms}"
-
             user_data['gender'] = gender
             user_data['symptoms'] = symptoms
             user_data['body_part'] = body_part
             user_data['layer'] = layer
-
             if image:
                 try:
-                    # Process the image in memory (temporary, consider cloud storage)
                     img = Image.open(BytesIO(image.read()))
-                    prompt = [f"**In English**, analyze the image and user description for a person experiencing {symptoms}. Focus on the {body_part} area. Identify the most likely **medical condition** causing these symptoms and explain the potential **causes** behind it. Additionally, predict any potential **further symptoms** that might develop. **Do not provide prescriptions or treatment advice.**", img]
-                    response = model_vision.generate_content(prompt) 
+                    prompt = [f"**In English**, analyze the image and user description for a person experiencing {symptoms}...", img]
+                    response = model_vision.generate_content(prompt)
                 except Exception as e:
                     logging.error(f"Error processing image: {e}")
                     return jsonify({'error': "Image processing failed"}), 500
             else:
                 try:
-                    prompt = f"In English, Analyze symptoms for {gender} with symptoms: {symptoms}, affected body part: {body_part}, and layer: {layer}. Provide potential health issues and educational information."
+                    prompt = f"In English, Analyze symptoms for {gender} with symptoms: {symptoms}..."
                     response = model_text.generate_content([prompt])
                 except Exception as e:
                     logging.error(f"Error generating text response: {e}")
                     return jsonify({'error': "Text generation failed"}), 500
-
-            # ... (your existing code for extracting and formatting response) ...
             analysis_text = response.candidates[0].content.parts[0].text if response.candidates and response.candidates[0].content.parts else "No valid response found."
             analysis = analysis_text.split('\n')
             analysis_html = '<ul>'
             for line in analysis:
                 analysis_html += f'<li>{line}</li>'
             analysis_html += '</ul>'
-
-            return jsonify({'analysis': analysis_html, 'stage': stage}) 
-        
+            return jsonify({'analysis': analysis_html, 'stage': stage})
         except Exception as e:
             logging.error(f"Error in /analyze route: {e}")
             return jsonify({'error': "Internal Server Error"}), 500
-
     return render_template('analyze.html')
 if __name__ == '__main__':
     #os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
