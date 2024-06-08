@@ -18,9 +18,9 @@
     </div>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>
-        // Function to fetch a random image from Unsplash
+        // Function to fetch a random image from Lorem Picsum
         function getRandomImage() {
-            fetch('https://source.unsplash.com/random/1600x900')
+            fetch('https://picsum.photos/1600/900')
                 .then(response => {
                     document.body.style.backgroundImage = `url(${response.url})`;
                 })
