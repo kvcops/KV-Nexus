@@ -16,7 +16,15 @@ document.addEventListener("DOMContentLoaded", function () {
             })
                 .then(response => response.json())
                 .then(data => {
-                    appendMessage("bot", data.reply);
+                    const formattedResponse = data.reply.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                        .replace(/(\d+\.\s+)/g, '<br>$1')
+                        .replace(/\n/g, '<br>');
+                    appendMessage("bot", formattedResponse);
+                })
+                .catch(error => {
+                    console.error('Error fetching response:', error);
+                    appendMessage("bot", 'Error generating response. Please try again later.');
                 });
         }
         userInput.value = "";
@@ -26,7 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const messageElement = document.createElement("div");
         messageElement.classList.add("message");
         messageElement.classList.add(role);
-        messageElement.textContent = message;
+        messageElement.innerHTML = message;  // Use innerHTML to insert formatted message
         messagesContainer.appendChild(messageElement);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
