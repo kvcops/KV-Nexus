@@ -98,10 +98,10 @@ def get_weather():
     """
     Gets weather details from OpenWeatherMap API using user's IP address.
     """
-
-    # Get user's IP address
-    user_ip = requests.get('https://api.ipify.org').text
-
+    
+    # Get user's IP address from request headers
+    user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    
     # Use IP-API to get the city name based on IP
     ip_api_url = f"http://ip-api.com/json/{user_ip}"
     ip_api_response = requests.get(ip_api_url)
