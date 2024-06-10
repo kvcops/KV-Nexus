@@ -133,8 +133,8 @@
                 <option value="javascript">JavaScript</option>
                 <option value="c">C</option>
                 <option value="c++">C++</option>
-                <option value="Html">HTML</option>
-                <option value="Ruby">Ruby</option>
+                <option value="html">HTML</option>
+                <option value="ruby">Ruby</option>
                 <!-- Add more options as needed -->
             </select>
             <input type="submit" value="Generate Code">
@@ -143,25 +143,36 @@
         <div id="output"></div>
     </div>
     <script>
-        // Array of technology images
-        const techImages = [
-            'https://source.unsplash.com/1920x1080/?technology',
-            'https://source.unsplash.com/1920x1080/?code'
-        ];
+        // Function to fetch a random coding image
+        async function fetchRandomCodingImage() {
+            try {
+                const response = await fetch('/fetch_image?genre=coding');
+                const data = await response.json();
+                if (data.image_url) {
+                    return data.image_url;
+                } else {
+                    console.error('Error fetching image:', data.error);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Failed to fetch image:', error);
+                return null;
+            }
+        }
 
-        // Randomly select a technology image
-        const randomIndex = Math.floor(Math.random() * techImages.length);
-        const randomTechImage = techImages[randomIndex];
-
-        // Load the background image first
-        const backgroundImage = new Image();
-        backgroundImage.src = randomTechImage;
-        backgroundImage.onload = function() {
-            // Set background image of body after loading
-            document.body.style.backgroundImage = `url(${randomTechImage})`;
-            // Show the container and its contents after the image is loaded
-            document.getElementById('codeContainer').style.display = 'block';
-        };
+        // Load the background image
+        fetchRandomCodingImage().then(imageUrl => {
+            if (imageUrl) {
+                const backgroundImage = new Image();
+                backgroundImage.src = imageUrl;
+                backgroundImage.onload = function() {
+                    // Set background image of body after loading
+                    document.body.style.backgroundImage = `url(${imageUrl})`;
+                    // Show the container and its contents after the image is loaded
+                    document.getElementById('codeContainer').style.display = 'block';
+                };
+            }
+        });
 
         // Form submission handling
         document.getElementById('codeForm').addEventListener('submit', async function(event) {
