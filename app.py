@@ -265,7 +265,7 @@ def analyze():
             if image:
                 try:
                     img = Image.open(BytesIO(image.read()))
-                    prompt = [f"**In English**, analyze the image and user description for a person experiencing {symptoms}. And give a General overview of the issue and further Expected symptoms. If the information of the symptoms is enough then give a perfect overall analysis. ", img]
+                    prompt = [f"**In English**, analyze the image and user description for a person experiencing the following symptoms: {symptoms}. Provide a general overview of the potential causes and further expected symptoms. If the provided information is sufficient, give a detailed and precise analysis of the health issue. Please include any immediate actions the user should take. ", img]
                     response = model_vision.generate_content(prompt)
                 except PIL.UnidentifiedImageError as e:
                     logging.error(f"Error processing image: {e}")
