@@ -158,20 +158,35 @@
         <div id="output" class="animate__animated animate__fadeInUp"></div>
     </div>
     <script>
-        const animeCharacterImages = [
-            'https://source.unsplash.com/1920x1080/?anime-character',
-            'https://source.unsplash.com/1920x1080/?anime',
-            'https://source.unsplash.com/1920x1080/?fantasy',
-            'https://source.unsplash.com/1920x1080/?sci-fi'
-        ];
-        const randomIndex = Math.floor(Math.random() * animeCharacterImages.length);
-        const randomAnimeCharacterImage = animeCharacterImages[randomIndex];
-        const backgroundImage = new Image();
-        backgroundImage.src = randomAnimeCharacterImage;
-        backgroundImage.onload = function() {
-            document.body.style.backgroundImage = `url(${randomAnimeCharacterImage})`;
-            document.getElementById('storyContainer').style.display = 'block';
-        };
+        async function fetchRandomStoryImage() {
+            try {
+                const response = await fetch('/fetch_image?genre=anime');
+                const data = await response.json();
+                if (data.image_url) {
+                    return data.image_url;
+                } else {
+                    console.error('Error fetching image:', data.error);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Failed to fetch image:', error);
+                return null;
+            }
+        }
+
+        // Load the background image
+        fetchRandomStoryImage().then(imageUrl => {
+            if (imageUrl) {
+                const backgroundImage = new Image();
+                backgroundImage.src = imageUrl;
+                backgroundImage.onload = function() {
+                    // Set background image of body after loading
+                    document.body.style.backgroundImage = `url(${imageUrl})`;
+                    // Show the container and its contents after the image is loaded
+                    document.getElementById('storyContainer').style.display = 'block';
+                };
+            }
+        });
 
         async function fetchResponse() {
             const keywords = document.getElementById('keywords').value;
