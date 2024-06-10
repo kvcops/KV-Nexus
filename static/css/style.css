@@ -1,13 +1,18 @@
 /* General Styles */
 body {
     font-family: 'Roboto', sans-serif;
-    background: linear-gradient(to right, #ff758c, #ff7eb3);
+    background: linear-gradient(to right, #6dd5ed, #2193b0);
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
     overflow: hidden;
+    transition: background 0.5s ease;
+}
+
+body:hover {
+    background: linear-gradient(to right, #2193b0, #6dd5ed);
 }
 
 /* Container Styles */
@@ -16,20 +21,25 @@ body {
     max-width: 600px;
     height: 70%;
     max-height: 600px;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.98);
     border-radius: 20px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     position: relative;
     overflow: hidden;
-    animation: popUp 0.7s ease;
+    animation: popUp 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 }
 
+/* Pop Up Animation */
 @keyframes popUp {
-    from {
-        transform: scale(0.8);
+    0% {
+        transform: scale(0.5);
         opacity: 0;
     }
-    to {
+    60% {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
+    100% {
         transform: scale(1);
         opacity: 1;
     }
@@ -48,12 +58,12 @@ body {
 .messages {
     flex-grow: 1;
     padding: 15px;
-    background: #f9f9f9;
+    background: #ffffff;
     border-radius: 8px;
     overflow-y: auto;
     margin-bottom: 15px;
-    border: 1px solid #ccc;
-    box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .messages .message {
@@ -61,16 +71,27 @@ body {
     padding: 12px;
     border-radius: 8px;
     background: #e0f7fa;
-    animation: fadeInUp 0.5s ease;
+    animation: fadeInUp 0.5s ease forwards;
     position: relative;
     width: fit-content;
     max-width: 80%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .messages .message.user {
     background: #d1f5d3;
     align-self: flex-end;
     text-align: right;
+}
+
+.messages .message:not(.user):hover {
+    background: #e0f7fa;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.messages .message.user:hover {
+    background: #c8e6c9;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .messages .message .timestamp {
@@ -83,11 +104,11 @@ body {
 
 /* Fade In Animation */
 @keyframes fadeInUp {
-    from {
-        transform: translateY(15px);
+    0% {
+        transform: translateY(20px);
         opacity: 0;
     }
-    to {
+    100% {
         transform: translateY(0);
         opacity: 1;
     }
@@ -96,35 +117,37 @@ body {
 /* Input Styles */
 #user_input {
     padding: 12px;
-    border: 1px solid #ccc;
+    border: 2px solid #ddd;
     border-radius: 50px;
     margin-bottom: 15px;
     outline: none;
     width: calc(100% - 100px);
     box-sizing: border-box;
-    transition: border-color 0.3s;
+    transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 #user_input:focus {
-    border-color: #ff758c;
+    border-color: #6dd5ed;
+    box-shadow: 0 0 8px rgba(109, 213, 237, 0.5);
 }
 
 /* Button Styles */
 #send_button {
     padding: 12px 18px;
     border: none;
-    background: linear-gradient(45deg, #FF512F, #DD2476);
+    background: linear-gradient(45deg, #ff512f, #dd2476);
     color: white;
     border-radius: 50px;
     cursor: pointer;
-    transition: background 0.3s, transform 0.1s;
+    transition: background 0.3s, transform 0.1s, box-shadow 0.3s;
     width: 80px;
     margin-left: 10px;
 }
 
 #send_button:hover {
-    background: linear-gradient(45deg, #DD2476, #FF512F);
+    background: linear-gradient(45deg, #dd2476, #ff512f);
     transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(221, 36, 118, 0.4);
 }
 
 /* Flexbox for Input and Button */
@@ -132,11 +155,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
-
-/* Additional Styles for Vibrant Look */
-body, .container, .chatbox, .messages, #user_input, #send_button {
-    transition: all 0.3s ease;
 }
 
 /* Responsive Styles */
