@@ -155,25 +155,35 @@
         <div id="output"></div>
     </div>
     <script>
-        // Array of psychology-related images
-        const psychologyImages = [
-            'https://source.unsplash.com/1920x1080/?psychology',
-            'https://source.unsplash.com/1920x1080/?mind'
-        ];
-
-        // Randomly select a psychology image
-        const randomIndex = Math.floor(Math.random() * psychologyImages.length);
-        const randomPsychologyImage = psychologyImages[randomIndex];
+        async function fetchRandomPsychologyImage() {
+            try {
+                const response = await fetch('/fetch_image?genre=psychology');
+                const data = await response.json();
+                if (data.image_url) {
+                    return data.image_url;
+                } else {
+                    console.error('Error fetching image:', data.error);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Failed to fetch image:', error);
+                return null;
+            }
+        }
 
         // Load the background image first
-        const backgroundImage = new Image();
-        backgroundImage.src = randomPsychologyImage;
-        backgroundImage.onload = function() {
-            // Set background image of body after loading
-            document.body.style.backgroundImage = `url(${randomPsychologyImage})`;
-            // Show the container and its contents after the image is loaded
-            document.getElementById('psychologyContainer').style.display = 'block';
-        };
+        fetchRandomPsychologyImage().then(imageUrl => {
+            if (imageUrl) {
+                const backgroundImage = new Image();
+                backgroundImage.src = imageUrl;
+                backgroundImage.onload = function() {
+                    // Set background image of body after loading
+                    document.body.style.backgroundImage = `url(${imageUrl})`;
+                    // Show the container and its contents after the image is loaded
+                    document.getElementById('psychologyContainer').style.display = 'block';
+                };
+            }
+        });
 
         // Form submission handling
         document.getElementById('psychologyForm').addEventListener('submit', async function(event) {
