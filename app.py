@@ -4,16 +4,19 @@ from dotenv import load_dotenv
 import os
 from werkzeug.utils import secure_filename
 from PIL import Image
+import PIL
 from io import BytesIO
 import logging
 from langdetect import detect
-
+import requests
+from requests import get
 app = Flask(__name__)
 
 # Load environment variables
 load_dotenv()
 api_key = os.environ.get("API_KEY")
-
+unsplash_api_key = os.getenv('UNSPLASH_API_KEY')
+API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
@@ -92,12 +95,57 @@ def index():
     
 @app.route('/api/weather')
 def get_weather():
-    api_key = os.getenv('OPENWEATHERMAP_API_KEY')
-    ip = request.headers.get('x-real-ip')  # Get client's IP address
+    """
+    Gets weather details from OpenWeatherMap API using user's IP address.
+    """
 
-    # Your weather API logic here using the api_key and ip
-    # Return the weather information as JSON
-    return jsonify({'weather': 'sunny', 'temperature': '25'})
+    # Get user's IP address
+    user_ip = requests.get('https://api.ipify.org').text
+
+    # Use IP-API to get the city name based on IP
+    ip_api_url = f"http://ip-api.com/json/{user_ip}"
+    ip_api_response = requests.get(ip_api_url)
+    if ip_api_response.status_code == 200:
+        ip_api_data = ip_api_response.json()
+        city = ip_api_data.get('city')
+        if not city:
+            return jsonify({'error': 'City not found based on IP'}), 404
+    else:
+        return jsonify({'error': 'Failed to get location from IP'}), 404
+
+    # Build OpenWeatherMap API URL
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
+
+    # Make API request
+    response = requests.get(url)
+
+    # Check for successful response
+    if response.status_code == 200:
+        data = response.json()
+
+        # Extract relevant weather information
+        weather = {
+            'city': data['name'],  # Include the city name
+            'temperature': data['main']['temp'],
+            'description': data['weather'][0]['description'] if 'weather' in data and len(data['weather']) > 0 else 'N/A',
+            'icon': f"http://openweathermap.org/img/wn/{data['weather'][0]['icon']}@2x.png" if 'weather' in data and len(data['weather']) > 0 else 'N/A'
+        }
+
+        return jsonify(weather)
+    else:
+        return jsonify({'error': 'City not found or API request failed'}), 404
+
+@app.route('/fetch_image')
+def fetch_image():
+    genre = request.args.get('genre', 'recipe')  # Default to 'recipe' if no genre is provided
+    url = f"https://api.unsplash.com/photos/random?query={genre}&client_id={unsplash_api_key}&w=1920&h=1080"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        image_url = data['urls']['regular']
+        return jsonify({'image_url': image_url})
+    else:
+        return jsonify({'error': 'Failed to fetch image'}), 500
     
 @app.route('/chat', methods=['GET', 'POST'])
 def chat():
