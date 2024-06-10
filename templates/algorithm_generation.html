@@ -133,24 +133,35 @@
         <div id="output"></div>
     </div>
     <script>
-        // Array of AI bot images
-        const botImages = [
-            'https://source.unsplash.com/1920x1080/?ai'
-        ];
-
-        // Randomly select a bot image
-        const randomIndex = Math.floor(Math.random() * botImages.length);
-        const randomBotImage = botImages[randomIndex];
+        async function fetchRandomAlgorithmImage() {
+            try {
+                const response = await fetch('/fetch_image?genre=coding');
+                const data = await response.json();
+                if (data.image_url) {
+                    return data.image_url;
+                } else {
+                    console.error('Error fetching image:', data.error);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Failed to fetch image:', error);
+                return null;
+            }
+        }
 
         // Load the background image first
-        const backgroundImage = new Image();
-        backgroundImage.src = randomBotImage;
-        backgroundImage.onload = function() {
-            // Set background image of body after loading
-            document.body.style.backgroundImage = `url(${randomBotImage})`;
-            // Show the container and its contents after the image is loaded
-            document.getElementById('algoContainer').style.display = 'block';
-        };
+        fetchRandomAlgorithmImage().then(imageUrl => {
+            if (imageUrl) {
+                const backgroundImage = new Image();
+                backgroundImage.src = imageUrl;
+                backgroundImage.onload = function() {
+                    // Set background image of body after loading
+                    document.body.style.backgroundImage = `url(${imageUrl})`;
+                    // Show the container and its contents after the image is loaded
+                    document.getElementById('algoContainer').style.display = 'block';
+                };
+            }
+        });
 
         // Form submission handling
         document.getElementById('algoForm').addEventListener('submit', async function(event) {
