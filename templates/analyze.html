@@ -9,7 +9,7 @@
 <body>
   <div class="container">
     <div class="image-preview">
-      <img id="image-preview" src="" alt="Uploaded Image">
+      <img id="image-preview" src="" hidden>
     </div>
     <div class="chatbot-form">
       <h1>Healthcare Chatbot</h1>
@@ -51,10 +51,13 @@
           const imageUrl = e.target.result;
           const imagePreview = document.getElementById('image-preview');
           imagePreview.src = imageUrl;
+          imagePreview.hidden = false; // Show the image when loaded
         };
         reader.readAsDataURL(image);
       } else {
-        document.getElementById('image-preview').src = "";
+        const imagePreview = document.getElementById('image-preview');
+        imagePreview.src = "";
+        imagePreview.hidden = true; // Hide the image when no file is selected
       }
     }
   </script>
