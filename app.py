@@ -281,12 +281,11 @@ def analyze():
                     logging.error(f"Error generating text response: {e}")
                     return jsonify({'error': "Text generation failed"}), 500
             analysis_text = response.candidates[0].content.parts[0].text if response.candidates and response.candidates[0].content.parts else "No valid response found."
-            analysis_lines = analysis_text.split('\n')
-            analysis_html = '<ul>'
-            for line in analysis_lines:
-                if line.strip():
-                    analysis_html += f'<li>{line.strip()}</li>'
-            analysis_html += '</ul>'
+            
+            # Convert text to HTML
+            from markdown import markdown
+            analysis_html = markdown(analysis_text)
+
             return jsonify({'analysis': analysis_html, 'stage': stage})
         except Exception as e:
             logging.error(f"Error in /analyze route: {e}")
