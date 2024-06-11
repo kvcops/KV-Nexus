@@ -281,10 +281,11 @@ def analyze():
                     logging.error(f"Error generating text response: {e}")
                     return jsonify({'error': "Text generation failed"}), 500
             analysis_text = response.candidates[0].content.parts[0].text if response.candidates and response.candidates[0].content.parts else "No valid response found."
-            analysis = analysis_text.split('\n')
+            analysis_lines = analysis_text.split('\n')
             analysis_html = '<ul>'
-            for line in analysis:
-                analysis_html += f'<li>{line}</li>'
+            for line in analysis_lines:
+                if line.strip():
+                    analysis_html += f'<li>{line.strip()}</li>'
             analysis_html += '</ul>'
             return jsonify({'analysis': analysis_html, 'stage': stage})
         except Exception as e:
