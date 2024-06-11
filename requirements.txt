@@ -5,3 +5,4 @@ gunicorn==20.1.0
 werkzeug==2.0.1
 Pillow==9.0.0
 langdetect==1.0.9
+Markdown==3.3.7
