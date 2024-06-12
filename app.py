@@ -163,12 +163,35 @@ def chat():
 @app.route('/chef', methods=['GET', 'POST'])
 def chef():
     if request.method == 'POST':
+        # Check if an image file is uploaded
+        if 'image' in request.files:
+            image = request.files['image']
+            if image.filename != '':
+                try:
+                    # Process the uploaded image
+                    img = Image.open(BytesIO(image.read()))
+                    prompt = [f"Generate a recipe based on the vegetables in the image and explain the steps to cook it in a stepwise manner and formatted manner. Also explain who can eat and who shouldn't eat.", img]
+                    response = model_vision.generate_content(prompt)
+                except PIL.UnidentifiedImageError as e:
+                    logging.error(f"Error processing image: {e}")
+                    return jsonify({'error': "Image format not recognized"}), 400
+                except Exception as e:
+                    logging.error(f"Error processing image: {e}")
+                    return jsonify({'error': "Image processing failed"}), 500
+
+                response_text = format_response(response.text)
+                return jsonify({'response': response_text})
+        
+        # If no image is uploaded, use the ingredients provided by the user
         user_ingredients = request.form['user_ingredients']
-        prompt = f"Generate a recipe based on the following ingredients {user_ingredients} and explain the steps to cook it in a stepwise manner and formatted manner ..also explain who can eat and who shouldn't eat."
+        prompt = f"Generate a recipe based on the following ingredients {user_ingredients} and explain the steps to cook it in a stepwise manner and formatted manner. Also explain who can eat and who shouldn't eat."
         response = chef_model.generate_content([prompt])
         response_text = format_response(response.text)
         return jsonify({'response': response_text})
+    
     return render_template('chef.html')
+
+
 
 @app.route('/story_generator', methods=['GET', 'POST'])
 def story_generator():
