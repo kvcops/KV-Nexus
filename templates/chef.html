@@ -15,6 +15,8 @@
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
+            background-color: #f0f0f0; /* Set a default background color */
+            transition: background-color 0.3s; /* Smooth transition for background color change */
         }
         .chef-container {
             display: none; /* Hide the container initially */
@@ -31,6 +33,11 @@
             text-align: center;
             margin-bottom: 20px;
         }
+        p {
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
         form {
             display: flex;
             flex-direction: column;
@@ -40,26 +47,30 @@
             font-weight: bold;
             margin-bottom: 5px;
         }
-        input[type="text"] {
-            width: 100%;
+        input[type="text"], input[type="file"] {
+            width: calc(100% - 16px); /* Adjust width for smaller screens */
             padding: 8px;
             margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 5px;
             box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            transition: border-color 0.3s; /* Smooth transition for border color change */
+        }
+        input[type="text"]:focus, input[type="file"]:focus {
+            border-color: #3498db; /* Change border color on focus */
         }
         input[type="submit"] {
             padding: 8px 20px;
-            margin-top: 10px;
-            background-color: #444;
+            margin-top: 20px;
+            background-color: #3498db; /* Set a modern button color */
             color: #fff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s; /* Smooth transition for button color change */
         }
         input[type="submit"]:hover {
-            background-color: #666;
+            background-color: #2980b9; /* Change button color on hover */
         }
         #output {
             display: none; /* Hide the output initially */
@@ -114,18 +125,46 @@
             .chef-container {
                 width: 95%; /* Adjust width for smaller screens */
             }
-            input[type="text"], input[type="submit"] {
+            input[type="text"], input[type="file"], input[type="submit"] {
                 font-size: 16px; /* Adjust font size for smaller screens */
             }
+        }
+
+        /* Styles for the file input button */
+        .file-upload {
+            position: relative;
+            overflow: hidden;
+            margin: 20px 0;
+            display: inline-block;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 10px 20px;
+            background-color: #3498db; /* Set button background color */
+            color: white; /* Set button text color */
+            transition: background-color 0.3s; /* Smooth transition for background color change */
+        }
+        .file-upload input[type="file"] {
+            position: absolute;
+            font-size: 100px;
+            right: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .file-upload:hover {
+            background-color: #2980b9; /* Change button background color on hover */
         }
     </style>
 </head>
 <body>
     <div class="chef-container" id="chefContainer">
         <h1>Chef</h1>
-        <form id="chefForm">
+        <p>Enter the ingredients manually or upload a photo of them.</p>
+        <form id="chefForm" enctype="multipart/form-data">
             <label for="user_ingredients">Enter the ingredients:</label>
-            <input type="text" id="user_ingredients" name="user_ingredients">
+            <input type="text" id="user_ingredients" name="user_ingredients" placeholder="e.g., tomatoes, onions, garlic">
+            <label for="image">Upload an image:</label>
+            <input type="file" id="image" name="image" accept="image/*">
             <input type="submit" value="Generate Recipe">
         </form>
         <div class="loader" id="loader"></div> 
@@ -172,15 +211,18 @@
         document.getElementById('chefForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             const user_ingredients = document.getElementById('user_ingredients').value;
+            const imageFile = document.getElementById('image').files[0];
+            const formData = new FormData();
+            formData.append('user_ingredients', user_ingredients);
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
             document.getElementById('loader').style.display = 'block'; 
             document.getElementById('output').style.display = 'none'; 
             try {
                 const response = await fetch('/chef', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: `user_ingredients=${user_ingredients}`
+                    body: formData
                 });
                 const data = await response.json();
                 const response_text = data.response;
