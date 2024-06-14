@@ -19,6 +19,7 @@ document.getElementById('chatbot-form').addEventListener('submit', async functio
             addInputField('additionalSymptoms', 'Enter additional symptoms based on initial analysis');
         } else if (result.stage === 'intermediate') {
             addInputField('finalSymptoms', 'Enter final symptoms based on intermediate analysis');
+            addInputField('additionalSymptoms2', 'Enter additional symptoms based on intermediate analysis');
         }
     } catch (error) {
         responseElement.innerHTML = `<p>Error: ${error.message}</p>`;
@@ -30,5 +31,10 @@ function addInputField(name, placeholder) {
     newInput.type = 'text';
     newInput.name = name;
     newInput.placeholder = placeholder;
-    document.getElementById('chatbot-form').appendChild(newInput);
+
+    const existingInput = document.querySelector(`input[name=${name}]`);
+    if (!existingInput) {
+        const form = document.getElementById('chatbot-form');
+        form.insertBefore(newInput, form.querySelector('button')); // Insert new input before the submit button
+    }
 }
