@@ -11,7 +11,7 @@ from langdetect import detect
 import requests
 from requests import get
 app = Flask(__name__)
-
+from markdown import markdown
 # Load environment variables
 load_dotenv()
 api_key = os.environ.get("API_KEY")
@@ -68,12 +68,12 @@ algorithm_generation_config = {
 }
 
 # Create model instances with configurations
-chat_model = genai.GenerativeModel("gemini-pro", generation_config=chat_generation_config)
-chef_model = genai.GenerativeModel("gemini-pro", generation_config=chef_generation_config)
-story_model = genai.GenerativeModel("gemini-pro", generation_config=story_generation_config)
-psychology_model = genai.GenerativeModel("gemini-pro", generation_config=psychology_generation_config)
-code_model = genai.GenerativeModel("gemini-pro", generation_config=code_generation_config)
-algorithm_model = genai.GenerativeModel("gemini-pro", generation_config=algorithm_generation_config)
+chat_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=chat_generation_config)
+chef_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=chef_generation_config)
+story_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=story_generation_config)
+psychology_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=psychology_generation_config)
+code_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=code_generation_config)
+algorithm_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=algorithm_generation_config)
 
 def format_response(response_text):
     """Formats the response text for display, handling potential language issues."""
@@ -170,8 +170,9 @@ def chef():
                 try:
                     # Process the uploaded image
                     img = Image.open(BytesIO(image.read()))
-                    prompt = [f"Generate a recipe based on the vegetables in the image and explain the steps to cook it in a stepwise manner and formatted manner. Also explain who can eat and who shouldn't eat.", img]
-                    response = model_vision.generate_content(prompt)
+                    prompt = ["Generate a recipe based on the vegetables in the image and explain the steps to cook it in a stepwise manner and formatted manner. Also explain who can eat and who shouldn't eat.", img]
+                    response = model_vision.generate_content(prompt, stream=True)
+                    response.resolve()
                 except PIL.UnidentifiedImageError as e:
                     logging.error(f"Error processing image: {e}")
                     return jsonify({'error': "Image format not recognized"}), 400
@@ -190,7 +191,6 @@ def chef():
         return jsonify({'response': response_text})
     
     return render_template('chef.html')
-
 
 
 @app.route('/story_generator', methods=['GET', 'POST'])
@@ -263,6 +263,9 @@ def algorithm_generation():
         return jsonify({'response': response_text})
     return render_template('algorithm_generation.html')
 
+model_text = genai.GenerativeModel('gemini-pro')
+model_vision = genai.GenerativeModel('gemini-pro-vision')
+
 @app.route('/analyze', methods=['GET', 'POST'])
 def analyze():
     if request.method == 'POST':
@@ -272,41 +275,49 @@ def analyze():
             body_part = request.form.get('body-part')
             layer = request.form.get('layer')
             image = request.files.get('image')
+            stage = request.form.get('stage', 'initial')
             additional_symptoms = request.form.get('additionalSymptoms')
             final_symptoms = request.form.get('finalSymptoms')
-            stage = 'initial'
-            if additional_symptoms:
-                stage = 'intermediate'
+            additional_symptoms2 = request.form.get('additionalSymptoms2')
+
+            # Combine symptoms based on the stage
+            if stage == 'intermediate' and additional_symptoms:
                 symptoms += f", {additional_symptoms}"
-            if final_symptoms:
-                stage = 'final'
-                symptoms += f", {final_symptoms}"
-            user_data['gender'] = gender
-            user_data['symptoms'] = symptoms
-            user_data['body_part'] = body_part
-            user_data['layer'] = layer
+            if stage == 'final' and (final_symptoms or additional_symptoms2):
+                final_symptoms = final_symptoms or ""
+                additional_symptoms2 = additional_symptoms2 or ""
+                symptoms += f", {final_symptoms}, {additional_symptoms2}"
+
+            user_data = {
+                'gender': gender,
+                'symptoms': symptoms,
+                'body_part': body_part,
+                'layer': layer
+            }
+
             if image:
                 try:
                     img = Image.open(BytesIO(image.read()))
-                    prompt = [f"**In English**, analyze the image and user description for a person experiencing the following symptoms: {symptoms}. Provide a general overview of the potential causes and further expected symptoms. If the provided information is sufficient, give a detailed and precise analysis of the health issue. Please include any immediate actions the user should take. ", img]
+                    prompt = [
+                        f"**For educational and experimental purposes only.** This is a hypothetical analysis of the following symptoms: {symptoms}. Analyze the image provided and describe potential causes and expected symptoms. Please note that this information is part of an experiment and is not intended for medical use.", 
+                        img
+                    ]
                     response = model_vision.generate_content(prompt)
-                except PIL.UnidentifiedImageError as e:
-                    logging.error(f"Error processing image: {e}")
-                    return jsonify({'error': "Image format not recognized"}), 400
+
                 except Exception as e:
                     logging.error(f"Error processing image: {e}")
                     return jsonify({'error': "Image processing failed"}), 500
             else:
                 try:
-                    prompt = f"In English, Analyze symptoms for {gender} with symptoms: {symptoms}..."
+                    prompt = f"**For educational and experimental purposes only.** This is a hypothetical analysis of symptoms for a {gender} with the following symptoms: {symptoms}. Describe potential causes and expected symptoms. Please note that this information is part of an experiment and is not intended for medical use."
                     response = model_text.generate_content([prompt])
                 except Exception as e:
                     logging.error(f"Error generating text response: {e}")
                     return jsonify({'error': "Text generation failed"}), 500
+
             analysis_text = response.candidates[0].content.parts[0].text if response.candidates and response.candidates[0].content.parts else "No valid response found."
-            
+
             # Convert text to HTML
-            from markdown import markdown
             analysis_html = markdown(analysis_text)
 
             return jsonify({'analysis': analysis_html, 'stage': stage})
@@ -314,8 +325,6 @@ def analyze():
             logging.error(f"Error in /analyze route: {e}")
             return jsonify({'error': "Internal Server Error"}), 500
     return render_template('analyze.html')
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
