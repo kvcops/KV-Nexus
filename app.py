@@ -22,10 +22,10 @@ logging.basicConfig(level=logging.INFO)
 
 # Configure the Google Generative AI API
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-pro')
+model = genai.GenerativeModel('gemini-1.5-flash')
 chat_history = []  # Define chat_history here
 
-model_text = genai.GenerativeModel('gemini-pro')
+model_text = genai.GenerativeModel('gemini-1.5-flash')
 model_vision = genai.GenerativeModel('gemini-1.5-flash')
 user_data = {}
 
@@ -70,8 +70,8 @@ algorithm_generation_config = {
 # Create model instances with configurations
 chat_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=chat_generation_config)
 chef_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=chef_generation_config)
-story_model = genai.GenerativeModel("gemini-pro", generation_config=story_generation_config)
-psychology_model = genai.GenerativeModel("gemini-pro", generation_config=psychology_generation_config)
+story_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=story_generation_config)
+psychology_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=psychology_generation_config)
 code_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=code_generation_config)
 algorithm_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=algorithm_generation_config)
 
