@@ -26,7 +26,7 @@ model = genai.GenerativeModel('gemini-pro')
 chat_history = []  # Define chat_history here
 
 model_text = genai.GenerativeModel('gemini-pro')
-model_vision = genai.GenerativeModel(name='gemini-1.5-flash’)
+model_vision = genai.GenerativeModel('gemini-1.5-flash')
 user_data = {}
 
 # Generation configurations for different models
@@ -264,7 +264,7 @@ def algorithm_generation():
     return render_template('algorithm_generation.html')
 
 model_text = genai.GenerativeModel('gemini-pro')
-model_vision = genai.GenerativeModel(name='gemini-1.5-flash’)
+model_vision = genai.GenerativeModel('gemini-1.5-flash')
 
 @app.route('/analyze', methods=['GET', 'POST'])
 def analyze():
