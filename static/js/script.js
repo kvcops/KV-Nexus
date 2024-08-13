@@ -20,11 +20,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         .replace(/\*(.+?)\*/g, '<em>$1</em>')
                         .replace(/(\d+\.\s+)/g, '<br>$1')
                         .replace(/\n/g, '<br>');
-                    appendMessage("bot", formattedResponse);
+                    appendMessage(formattedResponse);
                 })
                 .catch(error => {
                     console.error('Error fetching response:', error);
-                    appendMessage("bot", 'Error generating response. Please try again later.');
+                    appendMessage('Error generating response. Please try again later.');
                 });
         }
         userInput.value = "";
