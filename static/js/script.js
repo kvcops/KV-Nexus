@@ -58,12 +58,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then(data => {
                     removeTypingIndicator();
                     const formattedResponse = formatResponse(data.reply);
-                    appendMessage("Kv :", formattedResponse);
+                    appendMessage("bot", formattedResponse);
                 })
                 .catch(error => {
                     console.error('Error fetching response:', error);
                     removeTypingIndicator();
-                    appendMessage("Kv :", 'Error generating response. Please try again later.');
+                    appendMessage("bot", 'Error generating response. Please try again later.');
                 });
         }
     }
