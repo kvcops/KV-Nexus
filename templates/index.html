@@ -1,321 +1,383 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>KV Nexus</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
+    <title>Kv Nexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.21/vanta.net.min.js"></script>
     <style>
-        html {
-            scroll-behavior: smooth;
+        .weather-info {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+        }
+        
+        .weather-info img {
+            width: 30px;
+            height: 30px;
+            margin-right: 5px;
+        }
+        :root {
+            --primary-color: #00ffff;
+            --secondary-color: #ff00ff;
+            --bg-color: #0a0a0a;
+            --text-color: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(120deg, #84fab0, #8fd3f4, #84fab0, #8fd3f4);
-            background-size: 200% 200%;
-            animation: gradient 15s ease infinite;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             overflow-x: hidden;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            perspective: 1000px; /* For 3D tilt effect */
+            padding: 0 2rem;
         }
 
         header {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            color: #333;
-            text-align: center;
-            padding: 20px 0;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.1);
+            position: fixed;
             width: 100%;
-            transition: transform 0.3s;
+            z-index: 1000;
+            padding: 1rem 0;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(10px);
         }
-
-        header:hover {
-            transform: scale(1.05) rotateY(5deg); /* 3D tilt */
+        header nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
         }
 
         nav {
-            width: 100%;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        nav a {
-            color: #fff;
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: var(--primary-color);
             text-decoration: none;
-            padding: 20px;
-            margin: 10px;
-            font-weight: bold;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(120deg, #f093fb 0%, #f5576c 100%);
-            transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            width: 100%;
-            max-width: 300px;
         }
 
-        nav a:hover {
-            background: linear-gradient(120deg, #f093fb 0%, #f5576c 50%);
-            transform: translateY(-5px) scale(1.02); /* Added scaling */
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); /* Larger shadow */
+        .nav-links a {
+            margin-left: 1.5rem;
         }
 
-        .card {
-            background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
-            border-radius: 10px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            padding: 20px;
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
+
+        #hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            transition: transform 0.3s, background-color 0.3s;
-            margin: 10px;
-            color: #333;
+            position: relative;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0;
+        }
+
+        .hero-content p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            opacity: 0;
+        }
+
+        .cta-btn {
+            display: inline-block;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: var(--bg-color);
+            padding: 1rem 2rem;
+            text-decoration: none;
+            font-weight: 700;
+            border-radius: 50px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            opacity: 0;
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        #features {
+            padding: 6rem 0;
+        }
+
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: relative;
             overflow: hidden;
-            animation: cardAnimation 0.5s ease-in-out;
-            width: calc(100% - 20px); /* Full width minus margins */
         }
 
-        .card:hover {
-            transform: translateY(-10px) scale(1.02); /* Added scaling */
-            background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 50%);
-        }
-        .card:hover::before {
-            left: 100%;
-        }
-        .card::before {
+        .feature-card::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.3);
-            transition: left 0.3s;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, var(--primary-color), transparent 30%);
+            animation: rotate 4s linear infinite;
         }
 
-        .card img {
-            width: 100%;
-            border-radius: 10px;
-            transition: transform 0.3s, filter 0.3s;
+        .feature-card::after {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            background: var(--bg-color);
+            border-radius: 15px;
+            z-index: 1;
         }
 
-        .card:hover img {
-            transform: scale(1.1);
-            filter: brightness(1.1);
+        .feature-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes rotate {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .feature-card h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         footer {
-            background: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
-            color: #333;
+            background-color: rgba(255, 255, 255, 0.05);
             text-align: center;
-            padding: 10px 0;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            border-radius: 0 0 10px 10px;
+            padding: 2rem 0;
         }
 
-        footer a {
-            color: #333;
-            text-decoration: none;
-            font-weight: bold;
-            transition: color 0.3s;
-        }
-
-        footer a:hover {
-            color: #000;
-        }
-
-        .weather-info, .ip-info {
-            position: absolute;
-            top: 20px;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            background: rgba(255, 255, 255, 0.7);
-        }
-
-        .weather-info, .ip-info {
-            position: absolute;
-            top: 20px;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            background: rgba(255, 255, 255, 0.7);
-        }
-
-        .weather-info {
-            right: 20px;
-        }
-
-        .ip-info {
-            left: 20px;
-        }
-        @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(20px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes cardAnimation {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .card, header, footer, .weather-info, .ip-info {
-            animation: fadeIn 1s ease-in-out;
-        }
-
-        #scrollToTopBtn {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 30px;
-            z-index: 99;
-            font-size: 18px;
-            border: none;
-            outline: none;
-            background-color: #555;
-            color: white;
-            cursor: pointer;
-            padding: 15px;
-            border-radius: 10px;
-            transition: background-color 0.3s;
-        }
-
-        #scrollToTopBtn:hover {
-            background-color: #333;
-        }
-
-        /* --- Added for Particle Effects --- */
-        #particles-js {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1; /* Put it behind other elements */
-        }
-
-        /* Media Queries for Mobile View */
         @media (max-width: 768px) {
-            nav {
-                flex-direction: column;
-                align-items: center;
+            h1 {
+                font-size: 3rem;
             }
 
-            .card {
-                width: 90%; /* Adjust the width for smaller screens */
-                margin: 10px 0;
+            .hero-content p {
+                font-size: 1rem;
             }
 
-            header, footer {
-                width: 100%;
-                padding: 10px 0;
-                position: static; /* Change position to static for footer */
-                border-radius: 0; /* Remove border radius to match header */
-            }
-
-            nav a {
-                padding: 15px;
-                font-size: 14px;
-                width: 90%; /* Adjust the width for smaller screens */
-            }
-
-            .weather-info, .ip-info {
-                font-size: 12px;
-                top: 10px;
-                padding: 5px;
-            }
-
-            #scrollToTopBtn {
-                bottom: 10px;
-                right: 20px;
-                padding: 10px;
+            .feature-grid {
+                grid-template-columns: 1fr;
             }
         }
+  
     </style>
 </head>
 <body>
-    <!-- Particle Background -->
-    <div id="particles-js"></div>
-
+    
     <header>
-        <h1>KV Nexus</h1>
+        <nav class="container">
+            <a href="#" class="logo">NexusAI</a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="weather-info" id="weatherInfo"></div>
+        </nav>
     </header>
-    <nav>
-        <a href="/chef" class="card">
-            <i class="fas fa-utensils"></i>
-            <h2>Chef</h2>
-            <p>Generate recipes and cooking instructions</p>
-        </a>
-        <a href="/chat" class="card">
-            <i class="fas fa-comments"></i>
-            <h2>Chat</h2>
-            <p>Chat with a friendly AI assistant</p>
-        </a>
-        <a href="/story_generator" class="card">
-            <i class="fas fa-book"></i>
-            <h2>Story Generator</h2>
-            <p>Generate creative stories and plots</p>
-        </a>
-        <a href="/code_generation" class="card">
-            <i class="fas fa-code"></i>
-            <h2>Code Generator</h2>
-            <p>Generate code snippets and solutions</p>
-        </a>
-        <a href="/algorithm_generation" class="card">
-            <i class="fas fa-cogs"></i>
-            <h2>Algorithm Generator</h2>
-            <p>Generate algorithms for various problems</p>
-        </a>
-        <a href="/psychology_prediction" class="card">
-            <i class="fas fa-brain"></i>
-            <h2>Psychology Prediction</h2>
-            <p>Predict psychological behaviors</p>
-        </a>
-        <a href="/analyze" class="card">
-            <i class="fas fa-heartbeat"></i>
-            <h2>Health Analysis</h2>
-            <p>Analyze the Symptoms of the Health Problem</p>
-        </a>  
-    </nav>
+
+    <main>
+        
+        <section id="hero">
+            <div class="hero-content">
+                <h1>The Future of AI is Here</h1>
+                <p>Experience the next generation of artificial intelligence, powering innovations beyond imagination.</p>
+                <a href="#features" class="cta-btn">Explore Our AI Suite</a>
+            </div>
+        </section>
+
+        <section id="features">
+            <div class="container">
+                <h2>Cutting-Edge AI Tools</h2>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-content">
+                            <div class="feature-icon">🧠</div>
+                            <h3>Health Analyzer</h3>
+                            <p>Diagnose potential health concerns with AI-powered analysis.</p>
+                            <a href="/analyze" class="cta-btn">Analyze</a>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-content">
+                            <div class="feature-icon">💬</div>
+                            <h3>Conversational AI</h3>
+                            <p>Engage in natural language conversations with our intelligent chatbot.</p>
+                            <a href="/chat" class="cta-btn">Chat</a>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-content">
+                            <div class="feature-icon">🍳</div>
+                            <h3>Creative Chef</h3>
+                            <p>Discover culinary inspiration and generate delicious recipes with ease.</p>
+                            <a href="/chef" class="cta-btn">Generate Recipe</a>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-content">
+                            <div class="feature-icon">📖</div>
+                            <h3>Story Weaver</h3>
+                            <p>Craft captivating tales and unlock your creative potential with AI assistance.</p>
+                            <a href="/story_generator" class="cta-btn">Generate Story</a>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-content">
+                            <div class="feature-icon">🔍</div>
+                            <h3>Psychology Insights</h3>
+                            <p>Gain valuable insights into human behavior and personality traits with AI-driven predictions.</p>
+                            <a href="/psychology_prediction" class="cta-btn">Predict</a>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-content">
+                            <div class="feature-icon">💻</div>
+                            <h3>Code Architect</h3>
+                            <p>Generate code in multiple languages to automate tasks and bring your ideas to life.</p>
+                            <a href="/code_generation" class="cta-btn">Generate Code</a>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-content">
+                            <div class="feature-icon">🤖</div>
+                            <h3>Algorithm Builder</h3>
+                            <p>Create algorithms and implement them in Python for various applications.</p>
+                            <a href="/algorithm_generation" class="cta-btn">Generate Algorithm</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="about">
+            <div class="container">
+                <center>
+                <h2>About NexusAI</h2>
+                <p>NexusAI is at the forefront of artificial intelligence. Our suite of AI tools is designed to provide users with intuitive, powerful, and efficient ways to interact with technology, making the impossible possible.</p>
+                </center>
+            </div>
+        </section>
+
+        <section id="contact">
+            <div class="container">
+                <h2>Contact Us</h2>
+                <center>
+                <p>Have questions or Suggest changes? Reach out to our team, and we'll be happy to assist you.</p>
+                <p>Email: 21131A05C6@gvpce.ac.in</p>
+                </center>
+            </div>
+        </section>
+    </main>
+
     <footer>
         <p>© KV. Modernize the thinking. <a href="https://vamsikrishna28.vercel.app/" target="_blank">About Me</a></p>
     </footer>
+
     <div class="weather-info" id="weatherInfo"></div>
 
     <!-- Scroll to Top Button -->
     <button onclick="scrollToTop()" id="scrollToTopBtn" title="Go to top"><i class="fas fa-angle-up"></i></button>
 
     <script>
-        // Scroll to top function
+        async function getWeatherInfo() {
+            try {
+                const response = await fetch('/api/weather');
+                const data = await response.json();
+        
+                if (data.error) {
+                    document.getElementById('weatherInfo').innerHTML = 'Weather information not available';
+                    return;
+                }
+        
+                const weatherHtml = `
+                    <img src="${data.icon}" alt="${data.description}">
+                    <span>${data.city}: ${data.description}, ${data.temperature.toFixed(1)}°C</span>
+                `;
+        
+                document.getElementById('weatherInfo').innerHTML = weatherHtml;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('weatherInfo').innerHTML = 'Weather information not available';
+            }
+        }
+        
+        getWeatherInfo();
+        // Scroll to top functionality
         function scrollToTop() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // Show button when scrolled down
         window.onscroll = function() {
             const scrollToTopBtn = document.getElementById('scrollToTopBtn');
             if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
@@ -324,52 +386,36 @@
                 scrollToTopBtn.style.display = 'none';
             }
         };
-    </script>
 
-    <!-- Particle.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/dist/particles.min.js"></script>
+        // GSAP animations
+        document.addEventListener('DOMContentLoaded', () => {
+            gsap.fromTo("header", { y: -100 }, { y: 0, duration: 0.5, ease: "power4.out" });
+            gsap.fromTo(".hero-content h1", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1, ease: "power4.out", delay: 0.5 });
+            gsap.fromTo(".hero-content p", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1, ease: "power4.out", delay: 1 });
+            gsap.fromTo(".cta-btn", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1, ease: "power4.out", delay: 1.5 });
 
-    <script>
-        // Initialize particles.js
-        particlesJS.load('particles-js', 'particles.json', function() {
-            console.log('particles.js loaded - callback');
+            ScrollTrigger.create({
+                trigger: "#features",
+                start: "top center",
+                onEnter: () => {
+                    gsap.fromTo(".feature-card", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1, stagger: 0.2, ease: "power4.out" });
+                }
+            });
         });
-    </script> 
-    <script>
-        async function getWeatherInfo() {
-            try {
-                const response = await fetch('/api/weather');
-                const data = await response.json();
 
-                const description = data.description || 'N/A';
-                const temperature = data.temperature || 'N/A';
-                const city = data.city || 'N/A'; // Get city name
-
-                document.getElementById('weatherInfo').innerHTML = `
-                    ${city}, Weather: ${description}, Temperature: ${temperature}°C
-                `;
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('weatherInfo').innerHTML = 'Weather information not available';
-            }
-        }
-
-        getWeatherInfo(); // Call the function to fetch and display weather data
-
-        window.onscroll = function() {scrollFunction()};
-
-        function scrollFunction() {
-            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-                document.getElementById("scrollToTopBtn").style.display = "block";
-            } else {
-                document.getElementById("scrollToTopBtn").style.display = "none";
-            }
-        }
-
-        document.getElementById("scrollToTopBtn").onclick = function() {
-            document.body.scrollTop = 0;
-            document.documentElement.scrollTop = 0;
-        };
+        // Vanta.js background
+        VANTA.NET({
+            el: "#hero",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x00ffff,
+            backgroundColor: 0x0a0a0a
+        });
     </script>
 </body>
 </html>
