@@ -3,32 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Futuristic Chat Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="static/css/style.css">
 </head>
 <body>
+    <div class="background-animation"></div>
     <div class="container">
-        <div class="chatbox">
-            <div class="messages" id="messages">
-                <!-- Messages will be dynamically inserted here -->
+        <div class="chat-header">
+            <h1>Quantum Chat</h1>
+            <div class="theme-toggle">
+                <input type="checkbox" id="theme-switch">
+                <label for="theme-switch" class="switch-label">
+                    <span class="sun">☀️</span>
+                    <span class="moon">🌙</span>
+                </label>
             </div>
-            <input type="text" id="user_input" placeholder="Type a message...">
-            <button id="send_button">Send</button>
+        </div>
+        <div class="chatbox">
+            <div id="messages" class="messages"></div>
+            <div class="input-container">
+                <input type="text" id="user_input" placeholder="Enter your message...">
+                <button id="send_button">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-    <script>
-        // Function to fetch a random image from Lorem Picsum
-        function getRandomImage() {
-            fetch('https://picsum.photos/1920/1080')
-                .then(response => {
-                    document.body.style.backgroundImage = `url(${response.url})`;
-                })
-                .catch(error => console.error('Error fetching image:', error));
-        }
-
-        // Call the function on page load and every refresh
-        getRandomImage(); 
-    </script>
+    <script src="static/js/script.js"></script>
 </body>
 </html>
