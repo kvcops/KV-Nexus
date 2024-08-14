@@ -4,8 +4,8 @@
     --bg-color: #000033;
     --text-color: #ffffff;
     --chat-bg: rgba(255, 255, 255, 0.05);
-    --user-message-bg: rgba(0, 255, 255, 0.2);
-    --bot-message-bg: rgba(255, 0, 255, 0.2);
+    --user-message-bg: rgba(0, 255, 255, 0.2);  /* User message background */
+    --bot-message-bg: rgba(255, 0, 255, 0.2);  /* Bot message background */
 }
 
 body {
@@ -149,13 +149,14 @@ body {
 
 .message {
     max-width: 85%;
-    padding: 8px 12px;
+    padding: 10px 15px;
     margin-bottom: 8px;
-    border-radius: 15px;
+    border-radius: 20px;
     font-size: 0.9em;
     line-height: 1.4;
     transition: all 0.3s ease;
     animation: messageAppear 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+    position: relative;  /* Needed for the pseudo-element */
 }
 
 @keyframes messageAppear {
@@ -177,13 +178,37 @@ body {
 .message.user {
     align-self: flex-end;
     background: var(--user-message-bg);
-    border-bottom-right-radius: 0;
+    border-bottom-right-radius: 0; /* Custom shape for user message bubble */
+}
+
+.message.user::after {
+    content: '';
+    position: absolute;
+    right: -10px;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 10px 0 10px 10px;
+    border-color: transparent transparent transparent var(--user-message-bg);
 }
 
 .message.bot {
     align-self: flex-start;
     background: var(--bot-message-bg);
-    border-bottom-left-radius: 0;
+    border-bottom-left-radius: 0; /* Custom shape for bot message bubble */
+}
+
+.message.bot::after {
+    content: '';
+    position: absolute;
+    left: -10px;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 10px 10px 10px 0;
+    border-color: transparent var(--bot-message-bg) transparent transparent;
 }
 
 .input-container {
