@@ -4,8 +4,8 @@
     --bg-color: #000033;
     --text-color: #ffffff;
     --chat-bg: rgba(255, 255, 255, 0.05);
-    --user-message-bg: rgba(0, 255, 255, 0.2);  /* User message background */
-    --bot-message-bg: rgba(255, 0, 255, 0.2);  /* Bot message background */
+    --user-message-bg: rgba(0, 255, 255, 0.2);
+    --bot-message-bg: rgba(255, 0, 255, 0.2);
 }
 
 body {
@@ -39,10 +39,11 @@ body {
     50% { transform: scale(1.2); }
 }
 
+/* Container styles for all screen sizes */
 .container {
-    width: 90%;
-    max-width: 800px;
-    height: 80vh;
+    width: 100%;
+    max-width: 800px; /* Limit width on larger screens */
+    height: 90vh; /* Use viewport height for better mobile experience */
     background: var(--chat-bg);
     border-radius: 20px;
     box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
@@ -54,7 +55,7 @@ body {
 
 .chat-header {
     background: rgba(0, 0, 0, 0.3);
-    padding: 15px;
+    padding: 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -79,7 +80,7 @@ body {
 
 .switch-label {
     cursor: pointer;
-    padding: 5px 10px;
+    padding: 3px 8px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     display: flex;
@@ -87,7 +88,7 @@ body {
 }
 
 .sun, .moon {
-    font-size: 1em;
+    font-size: 0.8em;
     transition: transform 0.3s ease;
 }
 
@@ -156,7 +157,7 @@ body {
     line-height: 1.4;
     transition: all 0.3s ease;
     animation: messageAppear 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
-    position: relative;  /* Needed for the pseudo-element */
+    position: relative;
 }
 
 @keyframes messageAppear {
@@ -178,7 +179,7 @@ body {
 .message.user {
     align-self: flex-end;
     background: var(--user-message-bg);
-    border-bottom-right-radius: 0; /* Custom shape for user message bubble */
+    border-bottom-right-radius: 0; 
 }
 
 .message.user::after {
@@ -196,7 +197,7 @@ body {
 .message.bot {
     align-self: flex-start;
     background: var(--bot-message-bg);
-    border-bottom-left-radius: 0; /* Custom shape for bot message bubble */
+    border-bottom-left-radius: 0; 
 }
 
 .message.bot::after {
@@ -274,44 +275,40 @@ body {
     100% { transform: translateY(-100vh); opacity: 0; }
 }
 
-/* Mobile-specific styles */
+/* Dark theme */
+body.dark-theme {
+    --primary-color: #ff00ff;
+    --secondary-color: #00ffff;
+    --bg-color: #1a1a2e;
+    --text-color: #e0e0e0;
+    --chat-bg: rgba(0, 0, 0, 0.3);
+    --user-message-bg: rgba(255, 0, 255, 0.2);
+    --bot-message-bg: rgba(0, 255, 255, 0.2);
+}
+
+/* Responsive Styles */
 @media (max-width: 768px) {
-    body {
-        align-items: flex-start;
-        padding-top: 20px;
-    }
-
     .container {
-        width: 95%;
-        height: 90vh;
-        border-radius: 15px;
-    }
-
-    .chat-header {
-        padding: 10px;
+        width: 85vw; /* Set width to 85% of viewport width */
+        height: 85vw; /* Set height to 85% of viewport width to maintain square aspect ratio */
+        max-width: none; /* Remove max-width limit */
+        max-height: none; /* Remove max-height limit */
     }
 
     .chat-header h1 {
-        font-size: 1.2em;
+        font-size: 1.2em; /* Adjusted font size for smaller screens */
     }
 
-    .switch-label {
-        padding: 3px 8px;
+    .theme-toggle {
+        padding: 2px 6px; /* Adjusted padding for smaller screens */
     }
 
     .sun, .moon {
-        font-size: 0.8em;
-    }
-
-    .message {
-        max-width: 90%;
-        font-size: 0.85em;
-        padding: 7px 10px;
+        font-size: 0.7em; /* Adjusted font size for smaller screens */
     }
 
     #user_input {
-        font-size: 0.85em;
-        padding: 8px 12px;
+        font-size: 0.8em; /* Adjusted font size for smaller screens */
     }
 
     #send_button {
@@ -323,15 +320,4 @@ body {
         width: 18px;
         height: 18px;
     }
-}
-
-/* Dark theme */
-body.dark-theme {
-    --primary-color: #ff00ff;
-    --secondary-color: #00ffff;
-    --bg-color: #1a1a2e;
-    --text-color: #e0e0e0;
-    --chat-bg: rgba(0, 0, 0, 0.3);
-    --user-message-bg: rgba(255, 0, 255, 0.2);
-    --bot-message-bg: rgba(0, 255, 255, 0.2);
 }
