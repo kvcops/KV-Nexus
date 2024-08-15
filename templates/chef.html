@@ -1,11 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Chef</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chef's Culinary Magic</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #ff6b6b;
+            --secondary-color: #4ecdc4;
+            --text-color: #2d3436;
+            --background-color: #f0f0f0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Poppins', sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
@@ -15,134 +24,156 @@
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
-            background-color: #f0f0f0; /* Set a default background color */
-            transition: background-color 0.3s; /* Smooth transition for background color change */
+            background-color: var(--background-color);
+            transition: background-color 0.5s ease;
+            overflow-x: hidden;
         }
+
         .chef-container {
-            display: none; /* Hide the container initially */
-            background-color: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            padding: 20px;
-            width: 90%; /* Adjust width for smaller screens */
-            max-width: 800px; /* Limit maximum width */
-            margin: 0 auto; /* Center the container */
-            animation: slideIn 0.5s ease-out;
+            display: none;
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 800px;
+            margin: 0 auto;
+            animation: slideIn 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            transform: perspective(1000px) rotateX(0deg);
+            transition: transform 0.5s ease;
         }
+
+        .chef-container:hover {
+            transform: perspective(1000px) rotateX(5deg);
+        }
+
         h1 {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            color: var(--primary-color);
+            font-size: 3rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            animation: colorChange 5s infinite alternate;
         }
+
         p {
             text-align: center;
-            font-size: 16px;
-            margin-bottom: 20px;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: var(--text-color);
         }
+
         form {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+
         label {
-            font-weight: bold;
-            margin-bottom: 5px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-color);
         }
+
         input[type="text"], input[type="file"] {
-            width: calc(100% - 16px); /* Adjust width for smaller screens */
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box; /* Include padding and border in the element's total width and height */
-            transition: border-color 0.3s; /* Smooth transition for border color change */
+            width: calc(100% - 20px);
+            padding: 12px;
+            margin-top: 10px;
+            border: 2px solid var(--secondary-color);
+            border-radius: 10px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            font-size: 1rem;
         }
+
         input[type="text"]:focus, input[type="file"]:focus {
-            border-color: #3498db; /* Change border color on focus */
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
         }
+
         input[type="submit"] {
-            padding: 8px 20px;
-            margin-top: 20px;
-            background-color: #3498db; /* Set a modern button color */
-            color: #fff;
+            padding: 12px 30px;
+            margin-top: 30px;
+            background-color: var(--primary-color);
+            color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 50px;
             cursor: pointer;
-            transition: background-color 0.3s; /* Smooth transition for button color change */
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
+
         input[type="submit"]:hover {
-            background-color: #2980b9; /* Change button color on hover */
+            background-color: #ff8787;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
         }
+
         #output {
-            display: none; /* Hide the output initially */
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             max-width: 100%;
             overflow-wrap: break-word;
             animation: fadeIn 0.5s ease-out;
-            overflow-y: auto; /* Add vertical scrollbar */
-            max-height: 400px; /* Set maximum height for the box */
-            text-align: left; /* Align text to the left */
+            overflow-y: auto;
+            max-height: 400px;
+            text-align: left;
         }
+
         .loader {
             display: none;
             position: relative;
-            width: 50px;
-            height: 50px;
-            margin: 20px auto;
-            border: 5px solid #f3f3f3;
+            width: 60px;
+            height: 60px;
+            margin: 30px auto;
+        }
+
+        .loader:before,
+        .loader:after {
+            content: '';
+            position: absolute;
             border-radius: 50%;
-            border-top: 5px solid #3498db;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        @keyframes slideIn {
-            from {
-                transform: translateY(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+            animation: pulsOut 1.8s ease-in-out infinite;
+            filter: drop-shadow(0 0 1rem rgba(255, 107, 107, 0.5));
         }
 
-        /* Media query for smaller screens */
-        @media (max-width: 600px) {
-            .chef-container {
-                width: 95%; /* Adjust width for smaller screens */
-            }
-            input[type="text"], input[type="file"], input[type="submit"] {
-                font-size: 16px; /* Adjust font size for smaller screens */
-            }
+        .loader:before {
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 107, 107, 0.6);
+            animation-delay: 0.5s;
         }
 
-        /* Styles for the file input button */
+        .loader:after {
+            width: 75%;
+            height: 75%;
+            background-color: rgba(255, 107, 107, 0.9);
+            top: 12.5%;
+            left: 12.5%;
+        }
+
         .file-upload {
             position: relative;
             overflow: hidden;
             margin: 20px 0;
             display: inline-block;
             cursor: pointer;
-            border-radius: 5px;
-            padding: 10px 20px;
-            background-color: #3498db; /* Set button background color */
-            color: white; /* Set button text color */
-            transition: background-color 0.3s; /* Smooth transition for background color change */
+            border-radius: 50px;
+            padding: 12px 30px;
+            background-color: var(--secondary-color);
+            color: white;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            font-weight: 600;
         }
+
         .file-upload input[type="file"] {
             position: absolute;
             font-size: 100px;
@@ -151,26 +182,72 @@
             opacity: 0;
             cursor: pointer;
         }
+
         .file-upload:hover {
-            background-color: #2980b9; /* Change button background color on hover */
+            background-color: #45b7aa;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
         }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100px) perspective(1000px) rotateX(45deg);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) perspective(1000px) rotateX(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes colorChange {
+            0% { color: var(--primary-color); }
+            50% { color: var(--secondary-color); }
+            100% { color: var(--primary-color); }
+        }
+
+        @keyframes pulsOut {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        @media (max-width: 600px) {
+            .chef-container {
+                width: 95%;
+                padding: 30px;
+            }
+            h1 {
+                font-size: 2.5rem;
+            }
+            input[type="text"], input[type="file"], input[type="submit"], .file-upload {
+                font-size: 1rem;
+            }
+        }
+        
     </style>
 </head>
 <body>
     <div class="chef-container" id="chefContainer">
-        <h1>Chef</h1>
-        <p>Enter the ingredients manually or upload a photo of them.</p>
+        <h1>Chef's Culinary Magic</h1>
+        <p>Enter ingredients or upload a photo to conjure a delicious recipe!</p>
         <form id="chefForm" enctype="multipart/form-data">
-            <label for="user_ingredients">Enter the ingredients:</label>
-            <input type="text" id="user_ingredients" name="user_ingredients" placeholder="e.g., tomatoes, onions, garlic">
-            <label for="image">Upload an image:</label>
-            <input type="file" id="image" name="image" accept="image/*">
-            <input type="submit" value="Generate Recipe">
+            <label for="user_ingredients">Magical Ingredients:</label>
+            <input type="text" id="user_ingredients" name="user_ingredients" placeholder="e.g., tomatoes, onions, garlic" autocomplete="off">
+            <div class="file-upload">
+                <span>Upload Food Image</span>
+                <input type="file" id="image" name="image" accept="image/*">
+            </div>
+            <input type="submit" value="Conjure Recipe">
         </form>
         <div class="loader" id="loader"></div> 
         <div id="output"></div>
     </div>
-    <script>
+<script>
         async function fetchRandomFoodImage() {
             try {
                 const response = await fetch('/fetch_image?genre=recipe');
