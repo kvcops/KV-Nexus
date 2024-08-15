@@ -1,166 +1,309 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Story Generator</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <title>Enchanted Story Forge</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+        :root {
+            --primary-color: #ff6f61;
+            --secondary-color: #00bfa5;
+            --accent-color: #ffb74d;
+            --text-color: #333;
+            --background-color: #121212;
+            --card-background: #1e1e1e;
+            --hover-color: #ff8a65;
+        }
+
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Roboto', sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
-            background-color: #f0f0f0;
-            transition: background 1s;
+            background-color: var(--background-color);
+            color: #fff;
+            transition: background 1s ease;
+            overflow-x: hidden;
         }
-        .story-container {
-            display: none;
-            background-color: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-            padding: 30px;
-            width: 90%;
-            max-width: 800px;
-            margin: 0 auto;
-            animation: slideIn 0.8s ease-out;
-            backdrop-filter: blur(10px);
-        }
+
         h1 {
             text-align: center;
-            margin-bottom: 20px;
-            font-size: 2.5em;
-            color: #333;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            font-size: 3.5em;
+            color: var(--primary-color);
+            position: relative;
+            letter-spacing: 2px;
         }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 4px;
+            background-color: var(--primary-color);
+            left: 50%;
+            bottom: -10px;
+            transform: translateX(-50%);
+            transition: width 0.4s ease;
+        }
+
+        h1:hover::after {
+            width: 120px;
+        }
+
+        .story-container {
+            display: none;
+            background-color: var(--card-background);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 900px;
+            margin: 20px auto;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .story-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         form {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px;
+            gap: 20px;
         }
+
         label {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #444;
+            font-weight: 500;
+            color: var(--accent-color);
+            font-size: 1.2em;
         }
-        input[type="text"], select {
+
+        input[type="text"],
+        select {
             width: 100%;
-            padding: 12px;
+            padding: 15px;
             margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
+            border: none;
+            border-radius: 10px;
             box-sizing: border-box;
-            font-size: 1em;
-            transition: border-color 0.3s;
+            font-size: 1.1em;
+            background: #333;
+            color: #fff;
+            transition: background 0.3s ease;
         }
-        input[type="text"]:focus, select:focus {
-            border-color: #4CAF50;
+
+        input[type="text"]:focus,
+        select:focus {
+            background-color: var(--primary-color);
+            color: #fff;
             outline: none;
         }
-        input[type="button"] {
-            padding: 12px 25px;
-            margin-top: 15px;
-            background-color: #4CAF50;
+
+        .genre-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .genre-btn {
+            padding: 15px 30px;
+            background-color: var(--secondary-color);
             color: #fff;
             border: none;
-            border-radius: 8px;
+            border-radius: 30px;
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
             font-size: 1em;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 191, 165, 0.4);
         }
-        input[type="button"]:hover {
-            background-color: #45a049;
-            transform: scale(1.05);
+
+        .genre-btn:hover {
+            background-color: var(--hover-color);
+            transform: translateY(-3px);
         }
+
+        .genre-btn.active {
+            background-color: var(--accent-color);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(255, 183, 77, 0.4);
+        }
+
+        .generate-btn {
+            padding: 15px 40px;
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            box-shadow: 0 5px 15px rgba(255, 111, 97, 0.4);
+        }
+
+        .generate-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .generate-btn:hover {
+            background-color: var(--hover-color);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(255, 111, 97, 0.4);
+        }
+
+        .generate-btn:hover::before {
+            width: 400px;
+            height: 400px;
+        }
+
+        .generate-btn:active {
+            transform: translateY(1px);
+        }
+
         #output {
             display: none;
-            margin-top: 20px;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+            padding: 25px;
+            background-color: #292929;
+            border-radius: 15px;
             max-width: 100%;
+            height: 100%;
+            max-height: calc(100vh - 300px); /* Dynamically adjust to viewport */
+            overflow-y: auto;
+            transition: all 0.5s ease;
+            color: #fff;
             overflow-wrap: break-word;
             word-wrap: break-word;
-            animation: fadeIn 0.5s ease-out;
-            text-align: left;
-            font-size: 16px;
-            line-height: 1.6;
-            max-height: 400px;
-            overflow-y: auto;
         }
+
         .loader {
             display: none;
-            position: relative;
             width: 50px;
             height: 50px;
-            margin: 20px auto;
             border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--secondary-color);
             border-radius: 50%;
-            border-top: 5px solid #3498db;
+            margin: 20px auto;
             animation: spin 1s linear infinite;
         }
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        @keyframes slideIn {
-            from {
-                transform: translateY(-100%);
-                opacity: 0;
+            0% {
+                transform: rotate(0deg);
             }
-            to {
-                transform: translateY(0);
-                opacity: 1;
+
+            100% {
+                transform: rotate(360deg);
             }
         }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
+
         @media (max-width: 600px) {
             .story-container {
                 width: 95%;
+                padding: 20px;
             }
-            input[type="text"], input[type="button"], select {
+
+            input[type="text"],
+            .generate-btn,
+            select {
                 font-size: 16px;
             }
+
+            h1 {
+                font-size: 2.5em;
+            }
+
+            #output {
+                max-height: calc(100vh - 200px); /* Adjusted for smaller screens */
+            }
         }
+
+        /* Particle Background Effect */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, #ff6f61, transparent),
+                radial-gradient(circle at 50% 50%, #00bfa5, transparent);
+            background-size: 50% 50%;
+            animation: rotateBackground 30s infinite linear;
+        }
+
+        @keyframes rotateBackground {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
     </style>
 </head>
+
 <body>
-    <div class="story-container animate__animated animate__fadeInDown" id="storyContainer">
-        <h1 class="animate__animated animate__pulse">Story Generator</h1>
+    <div class="story-container" id="storyContainer">
+        <h1 class="animate__animated animate__zoomIn">Enchanted Story Forge</h1>
         <form id="storyForm">
-            <label for="keywords">Enter keywords:</label>
-            <input type="text" id="keywords" name="keywords" placeholder="e.g., adventure, mystery, magic...">
-            <label for="genre">Select genre:</label>
-            <select id="genre" name="genre">
-                <option value="fantasy">Fantasy</option>
-                <option value="sci-fi">Sci-Fi</option>
-                <option value="mystery">Mystery</option>
-                <!-- Add more genres as needed -->
-            </select>
-            <input type="button" value="Generate Story" id="generateBtn" class="animate__animated animate__pulse">
+            <label for="keywords">Enter your story random Keywords :</label>
+            <input type="text" id="keywords" name="keywords" placeholder="e.g., ancient relic, time travel, unexpected ally...">
+
+            <label for="genre">Choose your story's genre:</label>
+            <div class="genre-container">
+                <button type="button" class="genre-btn" data-genre="fantasy"><i class="fas fa-hat-wizard"></i> Fantasy</button>
+                <button type="button" class="genre-btn" data-genre="sci-fi"><i class="fas fa-robot"></i> Sci-Fi</button>
+                <button type="button" class="genre-btn" data-genre="mystery"><i class="fas fa-mask"></i> Mystery</button>
+                <button type="button" class="genre-btn" data-genre="romance"><i class="fas fa-heart"></i> Romance</button>
+                <button type="button" class="genre-btn" data-genre="horror"><i class="fas fa-skull-crossbones"></i> Horror</button>
+                <button type="button" class="genre-btn" data-genre="adventure"><i class="fas fa-mountain"></i> Adventure</button>
+                <button type="button" class="genre-btn" data-genre="historical"><i class="fas fa-landmark"></i> Historical</button>
+                <button type="button" class="genre-btn" data-genre="comedy"><i class="fas fa-laugh"></i> Comedy</button>
+                <button type="button" class="genre-btn" data-genre="thriller"><i class="fas fa-dragon"></i> Thriller</button>
+                <button type="button" class="genre-btn" data-genre="drama"><i class="fas fa-theater-masks"></i> Drama</button>
+            </div>
+            <input type="hidden" id="genre" name="genre" value="">
+
+            <button type="button" class="generate-btn animate__animated animate__pulse" id="generateBtn">Forge Your Tale</button>
         </form>
         <div class="loader" id="loader"></div>
         <div id="output" class="animate__animated animate__fadeInUp"></div>
     </div>
     <script>
+        let selectedGenre = '';
+
         async function fetchRandomStoryImage() {
             try {
                 const response = await fetch('/fetch_image?genre=anime');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
                 const data = await response.json();
                 if (data.image_url) {
                     return data.image_url;
@@ -174,55 +317,75 @@
             }
         }
 
+        function showStoryContainer() {
+            document.getElementById('storyContainer').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('storyContainer').classList.add('visible');
+            }, 100);
+        }
+
         // Load the background image
         fetchRandomStoryImage().then(imageUrl => {
             if (imageUrl) {
                 const backgroundImage = new Image();
                 backgroundImage.src = imageUrl;
-                backgroundImage.onload = function() {
-                    // Set background image of body after loading
+                backgroundImage.onload = function () {
                     document.body.style.backgroundImage = `url(${imageUrl})`;
-                    // Show the container and its contents after the image is loaded
-                    document.getElementById('storyContainer').style.display = 'block';
+                    showStoryContainer();
                 };
+            } else {
+                showStoryContainer();
             }
         });
 
         async function fetchResponse() {
             const keywords = document.getElementById('keywords').value;
-            const genre = document.getElementById('genre').value;
             if (keywords.trim() === '') {
-                alert('Please enter some keywords');
+                alert('Please enter some story seeds');
                 return;
             }
-            document.getElementById('loader').style.display = 'block'; // Show loader
-            document.getElementById('output').style.display = 'none'; // Hide output
+            if (selectedGenre === '') {
+                alert('Please select a genre');
+                return;
+            }
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('output').style.display = 'none';
             try {
                 const response = await fetch('/story_generator', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
                     },
-                    body: `keywords=${keywords}&genre=${genre}`
+                    body: `keywords=${encodeURIComponent(keywords)}&genre=${encodeURIComponent(selectedGenre)}`
                 });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
                 const data = await response.json();
-                const response_text = data.response;
-                const formatted_response = response_text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                                                        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                                                        .replace(/(\d+\.\s+)/g, '<br>$1')
-                                                        .replace(/\n/g, '<br>');
-                document.getElementById('output').innerHTML = formatted_response;
+                document.getElementById('output').innerHTML = data.response;
                 document.getElementById('output').style.display = 'block';
+                document.getElementById('output').classList.add('animate__fadeInUp');
             } catch (error) {
                 console.error('Error fetching story:', error);
                 document.getElementById('output').innerHTML = 'Error generating story. Please try again later.';
                 document.getElementById('output').style.display = 'block';
             } finally {
-                document.getElementById('loader').style.display = 'none'; // Hide loader
+                document.getElementById('loader').style.display = 'none';
             }
         }
 
         document.getElementById('generateBtn').addEventListener('click', fetchResponse);
+
+        const genreButtons = document.querySelectorAll('.genre-btn');
+        genreButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                genreButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                selectedGenre = this.dataset.genre;
+                document.getElementById('genre').value = selectedGenre;
+            });
+        });
     </script>
 </body>
+
 </html>
