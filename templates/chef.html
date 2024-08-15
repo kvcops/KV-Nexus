@@ -189,6 +189,24 @@
             box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
         }
 
+        .image-preview {
+            display: none; /* Hide by default */
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            background: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px; /* Add margin if needed */
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateY(-100px) perspective(1000px) rotateX(45deg);
@@ -228,7 +246,6 @@
                 font-size: 1rem;
             }
         }
-        
     </style>
 </head>
 <body>
@@ -242,12 +259,16 @@
                 <span>Upload Food Image</span>
                 <input type="file" id="image" name="image" accept="image/*">
             </div>
+            <!-- Image preview container -->
+            <div class="image-preview" id="imagePreview">
+                <img id="previewImage" src="" alt="Image Preview">
+            </div>
             <input type="submit" value="Conjure Recipe">
         </form>
         <div class="loader" id="loader"></div> 
         <div id="output"></div>
     </div>
-<script>
+    <script>
         async function fetchRandomFoodImage() {
             try {
                 const response = await fetch('/fetch_image?genre=recipe');
@@ -284,7 +305,6 @@
 
         setBackgroundImage();
 
-        // Form submission handling
         document.getElementById('chefForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             const user_ingredients = document.getElementById('user_ingredients').value;
@@ -317,6 +337,22 @@
                 document.getElementById('output').style.display = 'block';
             } finally {
                 document.getElementById('loader').style.display = 'none'; 
+            }
+        });
+
+        document.getElementById('image').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            const previewImage = document.getElementById('previewImage');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    preview.style.display = 'block'; /* Show the preview */
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none'; /* Hide the preview if no file is selected */
             }
         });
     </script>
