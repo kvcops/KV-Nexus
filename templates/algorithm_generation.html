@@ -1,199 +1,237 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Algorithm</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Wizard</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+
+        :root {
+            --primary-color: #6c5ce7;
+            --secondary-color: #a29bfe;
+            --text-color: #2d3436;
+            --background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        * {
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh; /* Ensure background image covers full screen height */
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
+            background-attachment: fixed;
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
         }
+
         .algo-container {
-            display: none; 
-            background-color: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            padding: 20px;
-            width: 90%; /* Adjusted for smaller screens */
-            max-width: 800px; 
-            margin: 0 auto; 
-            animation: slideIn 0.5s ease-out;
+            background-color: var(--background-color);
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 800px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
+
+        .algo-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         h1 {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            font-size: 3rem;
+            color: var(--primary-color);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         }
+
         form {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+
         label {
             font-weight: bold;
-            margin-bottom: 5px; /* Adjusted for better spacing */
+            margin-bottom: 10px;
+            font-size: 1.2rem;
         }
+
         input[type="text"] {
             width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box; /* Include padding/border in width */
-        }
-        input[type="submit"] {
-            padding: 8px 20px;
+            padding: 15px;
             margin-top: 10px;
-            background-color: #444;
-            color: #fff;
             border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
+            border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
-        input[type="submit"]:hover {
-            background-color: #666;
+
+        input[type="text"]:focus {
+            outline: none;
+            box-shadow: 0 5px 20px rgba(108, 92, 231, 0.4);
         }
-        #output {
+
+        input[type="submit"] {
+            padding: 15px 40px;
             margin-top: 20px;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            max-width: 100%;
-            overflow-wrap: break-word;
-            animation: fadeIn 0.5s ease-out;
-            overflow-y: auto; 
-            max-height: 400px;
-            white-space: pre-wrap; 
-            font-family: monospace; 
-            display: none; /* Initially hide the output */
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
+
+        input[type="submit"]:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        #output {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            white-space: pre-wrap; /* Preserve formatting and line breaks */
+        }
+
+        #output.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         .loader {
             display: none;
-            position: relative;
             width: 50px;
             height: 50px;
-            margin: 20px auto;
-            border: 5px solid #f3f3f3;
+            border: 5px solid var(--secondary-color);
+            border-top: 5px solid var(--primary-color);
             border-radius: 50%;
-            border-top: 5px solid #3498db;
+            margin: 20px auto;
             animation: spin 1s linear infinite;
         }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        @keyframes slideIn {
-            from {
-                transform: translateY(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
 
-        /* Media query for smaller screens */
         @media (max-width: 600px) {
             .algo-container {
-                width: 95%; 
+                width: 95%;
+                padding: 30px;
             }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+
             input[type="text"], input[type="submit"] {
-                font-size: 16px; 
+                font-size: 1rem;
             }
         }
     </style>
 </head>
 <body>
     <div class="algo-container" id="algoContainer">
-        <h1>Algorithm Generator</h1>
+        <h1>Algorithm Wizard</h1>
         <form id="algoForm">
-            <label for="algorithm">Which algorithm do you want:</label>
-            <input type="text" id="algorithm" name="algorithm">
-            <input type="submit" value="Generate Algorithm">
+            <label for="algorithm">What algorithm do you seek?</label>
+            <input type="text" id="algorithm" name="algorithm" placeholder="Enter algorithm name...">
+            <input type="submit" value="Conjure Algorithm">
         </form>
         <div class="loader" id="loader"></div>
         <div id="output"></div>
     </div>
+
     <script>
         async function fetchRandomAlgorithmImage() {
             try {
                 const response = await fetch('/fetch_image?genre=coding');
                 const data = await response.json();
-                if (data.image_url) {
-                    return data.image_url;
-                } else {
-                    console.error('Error fetching image:', data.error);
-                    return null;
-                }
+                return data.image_url || null;
             } catch (error) {
                 console.error('Failed to fetch image:', error);
                 return null;
             }
         }
 
-        // Load the background image first
-        fetchRandomAlgorithmImage().then(imageUrl => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            const imageUrl = await fetchRandomAlgorithmImage();
             if (imageUrl) {
                 const backgroundImage = new Image();
                 backgroundImage.src = imageUrl;
                 backgroundImage.onload = function() {
-                    // Set background image of body after loading
                     document.body.style.backgroundImage = `url(${imageUrl})`;
-                    // Show the container and its contents after the image is loaded
-                    document.getElementById('algoContainer').style.display = 'block';
+                    document.getElementById('algoContainer').classList.add('visible');
                 };
             }
         });
 
-        // Form submission handling
         document.getElementById('algoForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             const algorithm = document.getElementById('algorithm').value;
+            const loader = document.getElementById('loader');
+            const output = document.getElementById('output');
 
-            document.getElementById('loader').style.display = 'block';
-            document.getElementById('output').style.display = 'none';
+            loader.style.display = 'block';
+            output.style.display = 'none';
+            output.classList.remove('visible');
 
             try {
                 const response = await fetch('/algorithm_generation', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: `algorithm=${algorithm}` 
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `algorithm=${encodeURIComponent(algorithm)}`
                 });
                 const data = await response.json();
-                const response_text = data.response;
-                // Format response
-                const formatted_response = response_text.replace(/(\*\*[^*]+\*\*|\*[^\*]+\*)/g, '<br><strong>$1</strong>');
-                document.getElementById('output').innerHTML = formatted_response;
-                document.getElementById('output').style.display = 'block';
+
+                const formattedResponse = data.response
+                    .replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>')  // Bold text
+                    .replace(/\*([^\*]+)\*/g, '<em>$1</em>')  // Italic text
+                    .replace(/\n/g, '<br>');  // Line breaks
+
+                output.innerHTML = formattedResponse;
+                output.style.display = 'block';
+                setTimeout(() => output.classList.add('visible'), 100);
             } catch (error) {
                 console.error('Error fetching algorithm:', error);
-                document.getElementById('output').innerHTML = 'Error generating algorithm. Please try again later.';
-                document.getElementById('output').style.display = 'block';
+                output.innerHTML = 'Error conjuring algorithm. Please try again later.';
+                output.style.display = 'block';
+                setTimeout(() => output.classList.add('visible'), 100);
             } finally {
-                document.getElementById('loader').style.display = 'none';
+                loader.style.display = 'none';
             }
         });
-
     </script>
 </body>
 </html>
