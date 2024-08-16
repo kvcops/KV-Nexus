@@ -1,191 +1,231 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Psychology Prediction</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Psychology Prediction</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: #333;
+            background-color: #f0f0f0;
+            overflow-x: hidden;
+        }
+
+        .container {
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh; /* Ensure background covers full screen */
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
-            overflow-x: hidden;
-        }
-        .psychology-container {
-            display: none; 
-            background-color: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
+            min-height: 100vh;
             padding: 20px;
-            width: 90%; /* Adjust for smaller screens */
-            max-width: 800px; 
-            margin: 0 auto; 
-            animation: slideIn 0.5s ease-out;
-            overflow-y: auto; 
-            max-height: 80vh; 
         }
+
+        .psychology-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 800px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .psychology-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         h1 {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
+
         form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            display: grid;
+            gap: 20px;
         }
+
+        .form-group {
+            position: relative;
+        }
+
         label {
-            font-weight: bold;
-            margin-bottom: 5px; /* Adjusted for better spacing */
+            position: absolute;
+            top: 0;
+            left: 10px;
+            background-color: white;
+            padding: 0 5px;
+            font-size: 12px;
+            color: #7f8c8d;
+            transition: all 0.3s ease;
         }
+
         input[type="text"], select {
             width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box; /* Include padding/border in width */
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
         }
+
+        input[type="text"]:focus, select:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        input[type="text"]:focus + label, select:focus + label,
+        input[type="text"]:not(:placeholder-shown) + label, select:not(:placeholder-shown) + label {
+            top: -10px;
+            font-size: 12px;
+            color: #3498db;
+        }
+
         input[type="submit"] {
-            padding: 8px 20px;
-            margin-top: 10px;
-            background-color: #444;
-            color: #fff;
+            padding: 12px 24px;
+            background-color: #3498db;
+            color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        input[type="submit"]:hover {
-            background-color: #666;
-        }
-        #output {
+            font-size: 18px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             margin-top: 20px;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            max-width: 100%;
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-            animation: fadeIn 0.5s ease-out;
-            text-align: left; 
-            font-size: 16px; 
-            line-height: 1.6; 
-            overflow-y: auto;
-            max-height: 60vh; 
-            display: none; /* Hide the output initially */
         }
+
+        input[type="submit"]:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
         .loader {
             display: none;
-            position: relative;
             width: 50px;
             height: 50px;
-            margin: 20px auto;
             border: 5px solid #f3f3f3;
-            border-radius: 50%;
             border-top: 5px solid #3498db;
+            border-radius: 50%;
+            margin: 20px auto;
             animation: spin 1s linear infinite;
         }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        @keyframes slideIn {
-            from {
-                transform: translateY(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+
+        #output {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            font-size: 16px;
+            line-height: 1.6;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
         }
 
-        /* Media query for smaller screens */
+        #output.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         @media (max-width: 600px) {
             .psychology-container {
-                width: 95%; 
+                padding: 20px;
             }
+
+            h1 {
+                font-size: 2em;
+            }
+
             input[type="text"], select, input[type="submit"] {
-                font-size: 16px; 
+                font-size: 14px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="psychology-container" id="psychologyContainer">
-        <h1>Psychology Prediction</h1>
-        <form id="psychologyForm">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name">
-
-            <label for="age">Age:</label>
-            <input type="text" id="age" name="age">
-
-            <label for="gender">Gender:</label>
-            <select id="gender" name="gender">
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-            </select>
-
-            <label for="occupation">Occupation:</label>
-            <input type="text" id="occupation" name="occupation">
-
-            <label for="keywords">Keywords (Describe yourself in a few words):</label>
-            <input type="text" id="keywords" name="keywords">
-
-            <input type="submit" value="Predict Psychology">
-        </form>
-        <div class="loader" id="loader"></div>
-        <div id="output"></div>
+    <div id="vanta-background"></div>
+    <div class="container">
+        <div class="psychology-container" id="psychologyContainer">
+            <h1>Psychology Prediction</h1>
+            <form id="psychologyForm">
+                <div class="form-group">
+                    <input type="text" id="name" name="name" placeholder=" " required>
+                    <label for="name">Name</label>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="age" name="age" placeholder=" " required>
+                    <label for="age">Age</label>
+                </div>
+                <div class="form-group">
+                    <select id="gender" name="gender" required>
+                        <option value="" disabled selected>Select gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <label for="gender">Gender</label>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="occupation" name="occupation" placeholder=" " required>
+                    <label for="occupation">Occupation</label>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="keywords" name="keywords" placeholder=" " required>
+                    <label for="keywords">Keywords (Describe yourself)</label>
+                </div>
+                <input type="submit" value="Predict Psychology">
+            </form>
+            <div class="loader" id="loader"></div>
+            <div id="output"></div>
+        </div>
     </div>
-    <script>
-        async function fetchRandomPsychologyImage() {
-            try {
-                const response = await fetch('/fetch_image?genre=psychology');
-                const data = await response.json();
-                if (data.image_url) {
-                    return data.image_url;
-                } else {
-                    console.error('Error fetching image:', data.error);
-                    return null;
-                }
-            } catch (error) {
-                console.error('Failed to fetch image:', error);
-                return null;
-            }
-        }
 
-        // Load the background image first
-        fetchRandomPsychologyImage().then(imageUrl => {
-            if (imageUrl) {
-                const backgroundImage = new Image();
-                backgroundImage.src = imageUrl;
-                backgroundImage.onload = function() {
-                    // Set background image of body after loading
-                    document.body.style.backgroundImage = `url(${imageUrl})`;
-                    // Show the container and its contents after the image is loaded
-                    document.getElementById('psychologyContainer').style.display = 'block';
-                };
-            }
+    <script>
+        VANTA.NET({
+            el: "#vanta-background",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x3498db,
+            backgroundColor: 0xf0f0f0,
+            points: 10.00,
+            maxDistance: 20.00,
+            spacing: 17.00
         });
 
-        // Form submission handling
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                document.getElementById('psychologyContainer').classList.add('visible');
+            }, 100);
+        });
+
         document.getElementById('psychologyForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             const name = document.getElementById('name').value;
@@ -194,11 +234,9 @@
             const occupation = document.getElementById('occupation').value;
             const keywords = document.getElementById('keywords').value;
 
-            // Constructing the prompt based on user inputs
-            const prompt = `Predict psychological behavior for ${name}, a ${age}-year-old ${gender} working as a ${occupation}. Keywords: ${keywords}`;
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('output').classList.remove('visible');
 
-            document.getElementById('loader').style.display = 'block'; 
-            document.getElementById('output').style.display = 'none'; 
             try {
                 const response = await fetch('/psychology_prediction', {
                     method: 'POST',
@@ -209,19 +247,21 @@
                 });
                 const data = await response.json();
                 const response_text = data.response;
-                // Format response
                 const formatted_response = response_text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                .replace(/(\d+\.\s+)/g, '<br>$1')
-                .replace(/\n/g, '<br>');
+                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                    .replace(/(\d+\.\s+)/g, '<br>$1')
+                    .replace(/\n/g, '<br>');
+                
                 document.getElementById('output').innerHTML = formatted_response;
-                document.getElementById('output').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('output').classList.add('visible');
+                }, 100);
             } catch (error) {
                 console.error('Error fetching psychology prediction:', error);
                 document.getElementById('output').innerHTML = 'Error generating prediction. Please try again later.';
-                document.getElementById('output').style.display = 'block';
+                document.getElementById('output').classList.add('visible');
             } finally {
-                document.getElementById('loader').style.display = 'none'; 
+                document.getElementById('loader').style.display = 'none';
             }
         });
     </script>
