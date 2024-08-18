@@ -10,7 +10,17 @@ body {
     align-items: center;
     min-height: 100vh;
 }
+/* ... (your existing styles) ... */
 
+#response ul {
+    list-style-type: disc;
+    text-align: left;
+    padding-left: 40px; 
+  }
+  
+  #response li {
+    margin-bottom: 10px; /* Add space between list items */
+  }
 .container {
     background: #ffffff;
     border-radius: 10px;
