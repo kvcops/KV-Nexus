@@ -290,12 +290,11 @@ def analyze():
             analysis_text = response.candidates[0].content.parts[0].text if response.candidates and response.candidates[0].content.parts else "No valid response found."
 
            # --- Format the response (final version) ---
-            formatted_analysis = analysis_text.replace("**", "<b>") # Replace start of heading
-            formatted_analysis = formatted_analysis.replace("**", "</b>") # Replace end of heading
-            formatted_analysis = formatted_analysis.replace("* ", "\n* ") 
+            formatted_analysis = analysis_text.replace("**", "<b>")  # Replace start of heading
+            formatted_analysis = formatted_analysis.replace("**", "</b><br>")  # Replace end of heading and add a line break 
+            formatted_analysis = formatted_analysis.replace("* ", "\n* ")
             formatted_analysis = formatted_analysis.replace("\n\n", "\n")
-            formatted_analysis = formatted_analysis.replace("* \n", "* ") 
-            
+            formatted_analysis = formatted_analysis.replace("* \n", "* ")
             return jsonify({'analysis': formatted_analysis}) 
         except Exception as e:
             logging.error(f"Error in /analyze route: {e}")
