@@ -205,11 +205,18 @@ def psychology_prediction():
         gender = request.form['gender']
         occupation = request.form['occupation']
         keywords = request.form['keywords']
-        prompt = f"Predict psychological behavior for {name}, a {age}-year-old {gender} working as a {occupation}. Keywords: {keywords}"
+        prompt = f"""Analyze the likely psychological traits of {name}, 
+            a {age}-year-old {gender} {occupation}, who describes 
+            themself as {keywords}. Based on this limited information, 
+            consider their potential personality characteristics, 
+            motivations, and social tendencies. Keep in mind that this 
+            analysis is speculative and may not be a complete or 
+            accurate representation of {name}'s psychology."""
         response = psychology_model.generate_content([prompt])  # Use psychology_model here
         response_text = format_response(response.text)
         return jsonify({'response': response_text})
     return render_template('psychology_prediction.html')
+
 
 
 @app.route('/code_generation', methods=['GET', 'POST'])
