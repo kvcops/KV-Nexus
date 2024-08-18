@@ -3,63 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Healthcare Chatbot</title>
+  <title>Health Insight Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
   <link rel="stylesheet" href="/static/health_styles.css">
 </head>
 <body>
   <div class="container">
-    <div class="image-preview">
-      <img id="image-preview" src="" hidden>
-    </div>
-    <div class="chatbot-form">
-      <h1>Healthcare Chatbot</h1>
-      <form id="chatbot-form">
-        <label for="gender">Gender:</label>
-        <select id="gender" name="gender">
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-          <option value="other">Other</option>
-        </select>
-
-        <label for="symptoms">Symptoms:</label>
-        <input type="text" id="symptoms" name="symptoms" placeholder="Enter symptoms separated by commas">
-
-        <label for="body-part">Body Part:</label>
-        <input type="text" id="body-part" name="body-part" placeholder="Affected body part">
-
-        <label for="layer">Layer Affected:</label>
-        <select id="layer" name="layer">
-          <option value="internal">Internal</option>
-          <option value="external">External</option>
-        </select>
-
-        <label for="image">Upload Image:</label>
-        <input type="file" id="image" name="image" onchange="previewImage()">
-
-        <button type="submit">Submit</button>
-      </form>
+    <header>
+      <h1><i class="fas fa-heartbeat"></i> Health Insight Analyzer</h1>
+    </header>
+    <main>
+      <section class="input-section">
+        <form id="health-form">
+          <div class="form-group">
+            <label for="gender"><i class="fas fa-venus-mars"></i> Gender</label>
+            <select id="gender" name="gender" required>
+              <option value="">Select gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="symptoms"><i class="fas fa-thermometer"></i> Symptoms</label>
+            <input type="text" id="symptoms" name="symptoms" placeholder="E.g., headache, fever, fatigue" required>
+          </div>
+          <div class="form-group">
+            <label for="body-part"><i class="fas fa-child"></i> Affected Body Part</label>
+            <input type="text" id="body-part" name="body-part" placeholder="E.g., head, chest, arm" required>
+          </div>
+          <div class="form-group">
+            <label for="layer"><i class="fas fa-layer-group"></i> Layer Affected</label>
+            <select id="layer" name="layer" required>
+              <option value="">Select layer</option>
+              <option value="internal">Internal</option>
+              <option value="external">External</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="image"><i class="fas fa-image"></i> Upload Image (optional)</label>
+            <input type="file" id="image" name="image" accept="image/*" onchange="handleImageUpload()">
+          </div>
+          <button type="submit"><i class="fas fa-search"></i> Analyze</button>
+        </form>
+      </section>
+      <section class="preview-section" id="preview-section" style="display: none;">
+        <div id="image-preview-container">
+          <img id="image-preview" src="" alt="Image preview">
+        </div>
+      </section>
+    </main>
+    <section class="result-section" id="result-section">
+      <h2><i class="fas fa-clipboard-list"></i> Analysis Results</h2>
       <div id="response"></div>
-    </div>
+    </section>
   </div>
   <script src="/static/script.js"></script>
-  <script>
-    function previewImage() {
-      const image = document.getElementById('image').files[0];
-      if (image) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const imageUrl = e.target.result;
-          const imagePreview = document.getElementById('image-preview');
-          imagePreview.src = imageUrl;
-          imagePreview.hidden = false; // Show the image when loaded
-        };
-        reader.readAsDataURL(image);
-      } else {
-        const imagePreview = document.getElementById('image-preview');
-        imagePreview.src = "";
-        imagePreview.hidden = true; // Hide the image when no file is selected
-      }
-    }
-  </script>
 </body>
 </html>
