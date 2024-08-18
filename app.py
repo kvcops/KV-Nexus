@@ -256,31 +256,17 @@ def analyze():
             body_part = request.form.get('body-part')
             layer = request.form.get('layer')
             image = request.files.get('image')
-            stage = request.form.get('stage', 'initial')
-            additional_symptoms = request.form.get('additionalSymptoms')
-            final_symptoms = request.form.get('finalSymptoms')
-            additional_symptoms2 = request.form.get('additionalSymptoms2')
-
-            # Combine symptoms based on the stage
-            if stage == 'intermediate' and additional_symptoms:
-                symptoms += f", {additional_symptoms}"
-            if stage == 'final' and (final_symptoms or additional_symptoms2):
-                final_symptoms = final_symptoms or ""
-                additional_symptoms2 = additional_symptoms2 or ""
-                symptoms += f", {final_symptoms}, {additional_symptoms2}"
-
-            user_data = {
-                'gender': gender,
-                'symptoms': symptoms,
-                'body_part': body_part,
-                'layer': layer
-            }
 
             if image:
                 try:
                     img = Image.open(BytesIO(image.read()))
                     prompt = [
-                        f"**For educational and experimental purposes only.** This is a hypothetical analysis of the following symptoms: {symptoms}. Analyze the image provided and describe potential causes and expected symptoms. Please note that this information is part of an experiment and is not intended for medical use.", 
+                        f"""Acting as a doctor, but without providing any 
+                        diagnosis or medical advice, what are some possible 
+                        explanations for a {gender} patient experiencing 
+                        {symptoms} on their {body_part}? Consider the provided 
+                        image, but remember this is a speculative exercise 
+                        and should not be taken as actual medical guidance.""",
                         img
                     ]
                     response = model_vision.generate_content(prompt)
@@ -290,7 +276,12 @@ def analyze():
                     return jsonify({'error': "Image processing failed"}), 500
             else:
                 try:
-                    prompt = f"**For educational and experimental purposes only.** This is a hypothetical analysis of symptoms for a {gender} with the following symptoms: {symptoms}. Describe potential causes and expected symptoms. Please note that this information is part of an experiment and is not intended for medical use."
+                    prompt = f"""If a {gender} patient presented with {symptoms} 
+                                on their {body_part}, what are some potential 
+                                conditions that a doctor might consider? Please 
+                                note that this is a hypothetical exercise and 
+                                should not be interpreted as a real diagnosis 
+                                or medical advice."""
                     response = model_text.generate_content([prompt])
                 except Exception as e:
                     logging.error(f"Error generating text response: {e}")
@@ -298,14 +289,18 @@ def analyze():
 
             analysis_text = response.candidates[0].content.parts[0].text if response.candidates and response.candidates[0].content.parts else "No valid response found."
 
-            # Convert text to HTML
-            analysis_html = markdown(analysis_text)
-
-            return jsonify({'analysis': analysis_html, 'stage': stage})
+           # --- Format the response (final version) ---
+            formatted_analysis = analysis_text.replace("**", "<b>") # Replace start of heading
+            formatted_analysis = formatted_analysis.replace("**", "</b>") # Replace end of heading
+            formatted_analysis = formatted_analysis.replace("* ", "\n* ") 
+            formatted_analysis = formatted_analysis.replace("\n\n", "\n")
+            formatted_analysis = formatted_analysis.replace("* \n", "* ") 
+            
+            return jsonify({'analysis': formatted_analysis}) 
         except Exception as e:
             logging.error(f"Error in /analyze route: {e}")
             return jsonify({'error': "Internal Server Error"}), 500
-    return render_template('analyze.html')
+    return render_template('analyze.html')  # Make sure you have analyze.html
 
 if __name__ == '__main__':
     app.run(debug=True)
