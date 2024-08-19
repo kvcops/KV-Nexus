@@ -137,7 +137,12 @@ def chat():
         )
         prompt = f"{context}\n" 
 
-        response = chat_model.generate_content(prompt)
+        response = chat_model.generate_content(prompt,safety_settings={
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT:HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT:HarmBlockThreshold.BLOCK_NONE,
+        })
         reply = response.text.strip()
 
         user_data[user_id]['chat_history'].append({"role": "bot", "message": reply})
@@ -157,7 +162,12 @@ def chef():
                 try:
                     img = Image.open(BytesIO(image.read()))
                     prompt = ["Generate a recipe based on the vegetables in the image and explain the steps to cook it in a stepwise manner and formatted manner. Also explain who can eat and who shouldn't eat.", img]
-                    response = model_vision.generate_content(prompt, stream=True)
+                    response = model_vision.generate_content(prompt, stream=True,safety_settings={
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT:HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT:HarmBlockThreshold.BLOCK_NONE,
+                    })
                     response.resolve()
                     response_text = format_response(response.text)
                     return jsonify({'response': response_text})
@@ -170,7 +180,12 @@ def chef():
 
         user_ingredients = request.form['user_ingredients']
         prompt = f"Generate a recipe based on the following ingredients {user_ingredients} and explain the steps to cook it in a stepwise manner and formatted manner. Also explain who can eat and who shouldn't eat."
-        response = chef_model.generate_content([prompt])  # Use chef_model here
+        response = chef_model.generate_content([prompt],safety_settings={
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT:HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT:HarmBlockThreshold.BLOCK_NONE,
+        })  # Use chef_model here
         response_text = format_response(response.text)
         return jsonify({'response': response_text})
 
@@ -185,7 +200,12 @@ def story_generator():
         prompt = f"Generate a story based on the following words {user_input_words} with genre {genre}..."
 
         try:
-            response = story_model.generate_content([prompt])  # Use story_model here
+            response = story_model.generate_content([prompt],safety_settings={
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT:HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT:HarmBlockThreshold.BLOCK_NONE,
+            })  # Use story_model here
             if response.candidates and response.candidates[0].content.parts:
                 response_text = format_response(response.candidates[0].content.parts[0].text)
             else:
@@ -212,7 +232,12 @@ def psychology_prediction():
             motivations, and social tendencies. Keep in mind that this 
             analysis is speculative and may not be a complete or 
             accurate representation of {name}'s psychology."""
-        response = psychology_model.generate_content([prompt])  # Use psychology_model here
+        response = psychology_model.generate_content([prompt],safety_settings={
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT:HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT:HarmBlockThreshold.BLOCK_NONE,
+        })  # Use psychology_model here
         response_text = format_response(response.text)
         return jsonify({'response': response_text})
     return render_template('psychology_prediction.html')
@@ -225,7 +250,12 @@ def code_generation():
         code_type = request.form['codeType']
         language = request.form['language']
         prompt = f"Write a {language} code to implement {code_type}."
-        response = code_model.generate_content([prompt])  # Use code_model here
+        response = code_model.generate_content([prompt],safety_settings={
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT:HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT:HarmBlockThreshold.BLOCK_NONE,
+        })  # Use code_model here
         if response.candidates and response.candidates[0].content.parts:
             response_text = response.candidates[0].content.parts[0].text
         else:
@@ -269,7 +299,12 @@ def analyze():
                         and should not be taken as actual medical guidance.""",
                         img
                     ]
-                    response = model_vision.generate_content(prompt)
+                    response = model_vision.generate_content(prompt,safety_settings={
+                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT:HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT:HarmBlockThreshold.BLOCK_NONE,
+                    })
 
                 except Exception as e:
                     logging.error(f"Error processing image: {e}")
