@@ -10,8 +10,9 @@ import logging
 from langdetect import detect
 import requests
 from requests import get
-from google.generativeai.types import GenerationConfig 
+from google.generativeai.types import GenerationConfig, HarmCategory, HarmBlockThreshold
 from markdown import markdown
+
 app = Flask(__name__)
 # Load environment variables
 load_dotenv()
@@ -35,6 +36,15 @@ generation_config = GenerationConfig(
     candidate_count=1  # Explicitly set to 1 as per documentation
 )
 
+# Safety Settings
+safety_settings = {
+    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    # ... add other harm categories as needed with BLOCK_NONE
+}
+
 # Create model instances (using the same config for now)
 chat_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
 chef_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
@@ -44,6 +54,7 @@ code_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generat
 algorithm_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
 model_vision = genai.GenerativeModel('gemini-1.5-flash')
 model_text = genai.GenerativeModel('gemini-pro')
+
 
 def format_response(response_text):
     """Formats the response text for display."""
@@ -98,12 +109,14 @@ def fetch_image():
         return jsonify({'image_url': image_url})
     else:
         return jsonify({'error': 'Failed to fetch image'}), 500
+
+
 @app.route('/chat', methods=['GET', 'POST'])
 def chat():
     if request.method == 'POST':
         user_message = request.json['message']
         user_id = request.remote_addr  # Using IP address as a simple user identifier
-        
+
         if user_id not in user_data:
             user_data[user_id] = {'chat_history': []}
 
@@ -129,23 +142,22 @@ def chat():
             "You are a highly talented individual with a strong command of various programming languages and a natural "
             "aptitude for problem-solving. You are proficient in Python, Java, C++, and have dabbled in web development "
             "as well. You are confident in your abilities but also humble and always eager to learn from others and "
-            "expand your knowledge." 
-            
+            "expand your knowledge."
+
         )
         context = persona + "\n\n" + "\n".join(
             [f"{msg['role']}: {msg['message']}" for msg in user_data[user_id]['chat_history']]
         )
-        prompt = f"{context}\n" 
+        prompt = f"{context}\n"
 
-        response = chat_model.generate_content(prompt)
+        response = chat_model.generate_content(prompt, safety_settings=safety_settings)
         reply = response.text.strip()
 
         user_data[user_id]['chat_history'].append({"role": "bot", "message": reply})
-        
+
         return jsonify({"reply": reply, "chat_history": user_data[user_id]['chat_history']})
 
     return render_template('chat.html')
-
 
 
 @app.route('/chef', methods=['GET', 'POST'])
@@ -157,7 +169,7 @@ def chef():
                 try:
                     img = Image.open(BytesIO(image.read()))
                     prompt = ["Generate a recipe based on the vegetables in the image and explain the steps to cook it in a stepwise manner and formatted manner. Also explain who can eat and who shouldn't eat.", img]
-                    response = model_vision.generate_content(prompt, stream=True)
+                    response = model_vision.generate_content(prompt, safety_settings=safety_settings, stream=True)
                     response.resolve()
                     response_text = format_response(response.text)
                     return jsonify({'response': response_text})
@@ -170,7 +182,7 @@ def chef():
 
         user_ingredients = request.form['user_ingredients']
         prompt = f"Generate a recipe based on the following ingredients {user_ingredients} and explain the steps to cook it in a stepwise manner and formatted manner. Also explain who can eat and who shouldn't eat."
-        response = chef_model.generate_content([prompt])  # Use chef_model here
+        response = chef_model.generate_content([prompt], safety_settings=safety_settings)  # Use chef_model here
         response_text = format_response(response.text)
         return jsonify({'response': response_text})
 
@@ -185,7 +197,7 @@ def story_generator():
         prompt = f"Generate a story based on the following words {user_input_words} with genre {genre}..."
 
         try:
-            response = story_model.generate_content([prompt])  # Use story_model here
+            response = story_model.generate_content([prompt], safety_settings=safety_settings)  # Use story_model here
             if response.candidates and response.candidates[0].content.parts:
                 response_text = format_response(response.candidates[0].content.parts[0].text)
             else:
@@ -212,11 +224,10 @@ def psychology_prediction():
             motivations, and social tendencies. Keep in mind that this 
             analysis is speculative and may not be a complete or 
             accurate representation of {name}'s psychology."""
-        response = psychology_model.generate_content([prompt])  # Use psychology_model here
+        response = psychology_model.generate_content([prompt], safety_settings=safety_settings)  # Use psychology_model here
         response_text = format_response(response.text)
         return jsonify({'response': response_text})
     return render_template('psychology_prediction.html')
-
 
 
 @app.route('/code_generation', methods=['GET', 'POST'])
@@ -225,7 +236,7 @@ def code_generation():
         code_type = request.form['codeType']
         language = request.form['language']
         prompt = f"Write a {language} code to implement {code_type}."
-        response = code_model.generate_content([prompt])  # Use code_model here
+        response = code_model.generate_content([prompt], safety_settings=safety_settings)  # Use code_model here
         if response.candidates and response.candidates[0].content.parts:
             response_text = response.candidates[0].content.parts[0].text
         else:
@@ -239,13 +250,14 @@ def algorithm_generation():
     if request.method == 'POST':
         algo = request.form['algorithm']
         prompt = f"Write a Python function to implement the {algo} algorithm. Ensure the function is well-structured and follows best practices for readability and efficiency."
-        response = algorithm_model.generate_content([prompt])  # Use algorithm_model here
+        response = algorithm_model.generate_content([prompt], safety_settings=safety_settings)  # Use algorithm_model here
         if response.candidates and response.candidates[0].content.parts:
             response_text = response.candidates[0].content.parts[0].text
         else:
             response_text = "No valid response found."
         return jsonify({'response': response_text})
     return render_template('algorithm_generation.html')
+
 
 @app.route('/analyze', methods=['GET', 'POST'])
 def analyze():
@@ -269,7 +281,7 @@ def analyze():
                         and should not be taken as actual medical guidance.""",
                         img
                     ]
-                    response = model_vision.generate_content(prompt)
+                    response = model_vision.generate_content(prompt, safety_settings=safety_settings)
 
                 except Exception as e:
                     logging.error(f"Error processing image: {e}")
@@ -282,25 +294,25 @@ def analyze():
                                 note that this is a hypothetical exercise and 
                                 should not be interpreted as a real diagnosis 
                                 or medical advice."""
-                    response = model_text.generate_content([prompt])
+                    response = model_text.generate_content([prompt], safety_settings=safety_settings)
                 except Exception as e:
                     logging.error(f"Error generating text response: {e}")
                     return jsonify({'error': "Text generation failed"}), 500
 
             analysis_text = response.candidates[0].content.parts[0].text if response.candidates and response.candidates[0].content.parts else "No valid response found."
 
-           # --- Format the response (final version) ---
+            # --- Format the response (final version) ---
             formatted_analysis = analysis_text.replace("**", "<b>")  # Replace start of heading
-            formatted_analysis = formatted_analysis.replace("**", "</b><br>")  # Replace end of heading and add a line break 
+            formatted_analysis = formatted_analysis.replace("**", "</b><br>")  # Replace end of heading and add a line break
             formatted_analysis = formatted_analysis.replace("* ", "\n* ")
             formatted_analysis = formatted_analysis.replace("\n\n", "\n")
             formatted_analysis = formatted_analysis.replace("* \n", "* ")
-            return jsonify({'analysis': formatted_analysis}) 
+            return jsonify({'analysis': formatted_analysis})
         except Exception as e:
             logging.error(f"Error in /analyze route: {e}")
             return jsonify({'error': "Internal Server Error"}), 500
     return render_template('analyze.html')  # Make sure you have analyze.html
 
+
 if __name__ == '__main__':
     app.run(debug=True)
-
