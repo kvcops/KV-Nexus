@@ -38,6 +38,13 @@ generation_config = GenerationConfig(
     max_output_tokens=2048,
     candidate_count=1  # Explicitly set to 1 as per documentation
 )
+generation_config_health = GenerationConfig(
+    temperature=0.7,
+    top_p=1,
+    top_k=1,
+    max_output_tokens=512,
+    candidate_count=1  # Explicitly set to 1 as per documentation
+)
 
 # Safety Settings
 safety_settings = {
@@ -55,8 +62,8 @@ story_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=genera
 psychology_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
 code_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
 algorithm_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
-model_vision = genai.GenerativeModel('gemini-1.5-flash')
-model_text = genai.GenerativeModel('gemini-pro')
+model_vision = genai.GenerativeModel('gemini-1.5-flash',generation_config=generation_config_health)
+model_text = genai.GenerativeModel('gemini-pro',generation_config=generation_config_health)
 model = genai.GenerativeModel('gemini-1.5-flash')  # Model for flowchart generation
 
 def format_response(response_text):
@@ -281,7 +288,8 @@ def analyze():
                         explanations for a {gender} patient experiencing 
                         {symptoms} on their {body_part}? Consider the provided 
                         image, but remember this is a speculative exercise 
-                        and should not be taken as actual medical guidance.""",
+                        and should not be taken as actual medical guidance. 
+                        Use Simple and easy english""",
                         img
                     ]
                     response = model_vision.generate_content(prompt, safety_settings=safety_settings)
@@ -296,7 +304,7 @@ def analyze():
                                 conditions that a doctor might consider? Please 
                                 note that this is a hypothetical exercise and 
                                 should not be interpreted as a real diagnosis 
-                                or medical advice."""
+                                or medical advice. Use Simple and easy english"""
                     response = model_text.generate_content([prompt], safety_settings=safety_settings)
                 except Exception as e:
                     logging.error(f"Error generating text response: {e}")
