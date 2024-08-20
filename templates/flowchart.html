@@ -135,6 +135,20 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
+        /* Fullscreen Button Styles */
+        #fullscreen-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #e94560;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 2.5rem;
@@ -157,6 +171,7 @@
             <div id="loading-animation">
                 <div class="loader"></div>
             </div>
+            <button id="fullscreen-btn">Fullscreen</button>
         </div>
         <div id="error-message"></div>
     </div>
@@ -312,6 +327,19 @@
             zoomOut.style.cursor = 'pointer';
             zoomOut.onclick = function() { network.moveTo({scale: network.getScale() * 0.8}); };
             container.appendChild(zoomOut);
+
+
+            // Fullscreen functionality
+            const flowchartContainer = document.getElementById('flowchart-container');
+            const fullscreenButton = document.getElementById('fullscreen-btn');
+
+            fullscreenButton.addEventListener('click', () => {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                } else {
+                    flowchartContainer.requestFullscreen();
+                }
+            });
         }
     </script>
 </body>
