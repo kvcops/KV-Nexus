@@ -10,8 +10,11 @@ import logging
 from langdetect import detect
 import requests
 from requests import get
-from google.generativeai.types import GenerationConfig, HarmCategory, HarmBlockThreshold
+from google.generativeai.types import GenerationConfig 
 from markdown import markdown
+from google.generativeai.types import GenerationConfig, HarmCategory, HarmBlockThreshold
+import re
+import json
 
 app = Flask(__name__)
 # Load environment variables
