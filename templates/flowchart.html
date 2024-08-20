@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flowchart Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.2/dist/vis-network.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Raleway', sans-serif;
+            background-color: rgba(26, 26, 46, 0.9);
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        #vanta-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            color: #e94560; 
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        #topic-input {
+            width: 80%;
+            max-width: 500px;
+            padding: 15px;
+            border: none;
+            border-radius: 50px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        #topic-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.5);
+            transform: scale(1.05);
+        }
+
+        #generate-btn {
+            background: linear-gradient(45deg, #e94560, #0f3460);
+            color: #ffffff;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #generate-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #flowchart-container {
+            width: 90%;
+            height: 60vh;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            margin-top: 30px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            display: none;
+            backdrop-filter: blur(5px);
+            position: relative; 
+        }
+
+        #flowchart {
+            width: 100%;
+            height: 100%;
+        }
+
+        #loading-animation {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+
+        /* Cool Loader Styles */
+        .loader {
+            border: 8px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 8px solid #e94560;
+            width: 80px;
+            height: 80px;
+            animation: spin 1.5s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #error-message {
+            color: #e94560;
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            #topic-input {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="vanta-background"></div>
+    <div class="container">
+        <h1>Flowchart Generator</h1>
+        <input type="text" id="topic-input" placeholder="Enter topic or algorithm name" required>
+        <button id="generate-btn">Generate</button>
+        <div id="flowchart-container">
+            <div id="flowchart"></div>
+            <div id="loading-animation">
+                <div class="loader"></div>
+            </div>
+        </div>
+        <div id="error-message"></div>
+    </div>
+
+    <script>
+        VANTA.WAVES({
+            el: "#vanta-background",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x0f3460,
+            shininess: 60.00,
+            waveHeight: 20.00,
+            waveSpeed: 1.50,
+            zoom: 0.65
+        })
+
+        // Animate elements on load
+        window.addEventListener('load', () => {
+            gsap.from('h1', {duration: 1, y: -50, opacity: 0, ease: 'power3.out'});
+            gsap.from('#topic-input', {duration: 1, y: 50, opacity: 0, ease: 'power3.out', delay: 0.3});
+            gsap.from('#generate-btn', {duration: 1, y: 50, opacity: 0, ease: 'power3.out', delay: 0.5});
+        });
+
+        document.getElementById('generate-btn').addEventListener('click', function () {
+            var topic = document.getElementById('topic-input').value;
+            gsap.to('#flowchart-container', {duration: 0.5, opacity: 1, display: 'block', ease: 'power2.inOut'});
+            gsap.to('#loading-animation', {duration: 0.3, opacity: 1, display: 'block', ease: 'power2.inOut'});
+
+            fetch('/get_flowchart_data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ topic: topic })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    gsap.to('#loading-animation', {duration: 0.3, opacity: 0, display: 'none', ease: 'power2.inOut'});
+                    if (data.error) {
+                        gsap.to('#error-message', {duration: 0.5, opacity: 1, display: 'block', text: "Error: " + data.error, ease: 'power2.inOut'});
+                    } else {
+                        gsap.to('#error-message', {duration: 0.3, opacity: 0, display: 'none', ease: 'power2.inOut'});
+                        drawFlowchart(data);
+                    }
+                });
+        });
+
+        function drawFlowchart(data) {
+            var container = document.getElementById('flowchart');
+            var nodes = new vis.DataSet(data.nodes);
+            var edges = new vis.DataSet(data.edges);
+
+            var options = {
+                layout: {
+                    hierarchical: {
+                        direction: 'UD',
+                        sortMethod: 'directed',
+                        nodeSpacing: 200,
+                        levelSeparation: 200,
+                    }
+                },
+                nodes: {
+                    shape: 'box',
+                    font: {
+                        size: 16,
+                        face: 'Raleway',
+                        color: '#ffffff',
+                    },
+                    color: {
+                        background: '#e94560',
+                        border: '#0f3460',
+                        highlight: {
+                            background: '#0f3460',
+                            border: '#e94560',
+                        },
+                    },
+                    borderWidth: 2,
+                    shadow: true,
+                },
+                edges: {
+                    smooth: {
+                        type: 'cubicBezier',
+                        forceDirection: 'vertical',
+                        roundness: 0.4,
+                    },
+                    arrows: {
+                        to: { enabled: true, scaleFactor: 1.2 },
+                    },
+                    color: '#e94560',
+                    width: 2,
+                    shadow: true,
+                },
+                interaction: {
+                    dragNodes: true,
+                    dragView: true,
+                    zoomView: true,
+                    hover: true,
+                    tooltipDelay: 100,
+                    hideEdgesOnDrag: false,
+                },
+                physics: false,
+            };
+
+            var network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
+
+            // Add interactivity to nodes
+            network.on("selectNode", function (params) {
+                if (params.nodes.length === 1) {
+                    var node = nodes.get(params.nodes[0]);
+                    gsap.to(node, {duration: 0.3, scale: 1.2, ease: 'power2.out'});
+                    nodes.update(node);
+                }
+            });
+
+            network.on("deselectNode", function (params) {
+                params.previousSelection.nodes.forEach(nodeId => {
+                    var node = nodes.get(nodeId);
+                    gsap.to(node, {duration: 0.3, scale: 1, ease: 'power2.out'});
+                    nodes.update(node);
+                });
+            });
+
+            // Add zoom controls
+            var zoomIn = document.createElement('button');
+            zoomIn.innerHTML = '+';
+            zoomIn.style.position = 'absolute';
+            zoomIn.style.top = '10px';
+            zoomIn.style.left = '10px';
+            zoomIn.style.backgroundColor = '#e94560';
+            zoomIn.style.color = '#ffffff';
+            zoomIn.style.border = 'none';
+            zoomIn.style.borderRadius = '5px';
+            zoomIn.style.padding = '10px';
+            zoomIn.style.cursor = 'pointer';
+            zoomIn.onclick = function() { network.moveTo({scale: network.getScale() * 1.2}); };
+            container.appendChild(zoomIn);
+
+            var zoomOut = document.createElement('button');
+            zoomOut.innerHTML = '-';
+            zoomOut.style.position = 'absolute';
+            zoomOut.style.top = '10px';
+            zoomOut.style.left = '50px';
+            zoomOut.style.backgroundColor = '#e94560';
+            zoomOut.style.color = '#ffffff';
+            zoomOut.style.border = 'none';
+            zoomOut.style.borderRadius = '5px';
+            zoomOut.style.padding = '10px';
+            zoomOut.style.cursor = 'pointer';
+            zoomOut.onclick = function() { network.moveTo({scale: network.getScale() * 0.8}); };
+            container.appendChild(zoomOut);
+        }
+    </script>
+</body>
+</html>
