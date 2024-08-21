@@ -1,8 +1,8 @@
-Flask==2.1.1
-google-generativeai==0.4.0
+Flask==3.0.3
+google-generativeai==0.7.2
 python-dotenv==1.0.1
 gunicorn==20.1.0
-werkzeug==2.0.1
-Pillow==9.0.0
+werkzeug==3.0.3
+Pillow==10.4.0
 langdetect==1.0.9
 Markdown==3.3.7
