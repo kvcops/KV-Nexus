@@ -15,10 +15,13 @@ from markdown import markdown
 from google.generativeai.types import GenerationConfig, HarmCategory, HarmBlockThreshold
 import re
 import json
-
+from mailjet_rest import Client
 app = Flask(__name__)
 # Load environment variables
 load_dotenv()
+mail_API_KEY = os.environ.get("mail_API_KEY")  # Replace with your Mailjet API key
+mail_API_SECRET = os.environ.get("mail_API_SECRET")  # Replace with your Mailjet API secret
+mailjet = Client(auth=(mail_API_KEY, mail_API_SECRET), version='v3.1')
 api_key = os.environ.get("API_KEY")
 unsplash_api_key = os.getenv('UNSPLASH_API_KEY')
 API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
@@ -417,6 +420,39 @@ def get_flowchart_data():
 
     return jsonify({"nodes": nodes, "edges": edges, "error": flowchart_data.get("error"), "raw_response": flowchart_data.get("raw_response")})
 
+@app.route('/send-email', methods=['POST'])
+def send_email():
+    data = request.json
+    name = data.get('name')
+    email = data.get('email')
+    message = data.get('message')
+
+    mail_data = {
+        'Messages': [
+            {
+                "From": {
+                    "Email": "21131A05C6@gvpce.ac.in",  # Replace with your email
+                    "Name": "Kv Nexus"
+                },
+                "To": [
+                    {
+                        "Email": "21131A05C6@gvpce.ac.in",  # Replace with your email
+                        "Name": "Kv Nexus"
+                    }
+                ],
+                "Subject": f"New Contact Form Submission from {name}",
+                "TextPart": f"Name: {name}\nEmail: {email}\nMessage: {message}",
+                "HTMLPart": f"<h3>New Contact Form Submission</h3><p><strong>Name:</strong> {name}</p><p><strong>Email:</strong> {email}</p><p><strong>Message:</strong> {message}</p>"
+            }
+        ]
+    }
+
+    result = mailjet.send.create(data=mail_data)
+    
+    if result.status_code == 200:
+        return jsonify({"message": "Email sent successfully!"}), 200
+    else:
+        return jsonify({"message": "Failed to send email."}), 500
 
 
 if __name__ == '__main__':
