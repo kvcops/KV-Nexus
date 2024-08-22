@@ -370,6 +370,154 @@
                 padding: 0 1rem;
             }
         }
+             /* Updated CSS for the Contact Form */
+             .contact-form {
+                background-color: rgba(255, 255, 255, 0.05);
+                padding: 4rem 2rem;
+                border-radius: 15px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+                max-width: 800px;
+                margin: 3rem auto;
+                transition: max-width 0.5s ease; /* Added transition for smooth resizing */
+            }
+            .contact-form.submitted {
+                max-width: 500px; /* Adjust as needed */
+            }
+        .contact-form h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .contact-form form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .contact-form input[type="text"],
+        .contact-form input[type="email"],
+        .contact-form textarea {
+            background-color: #0a0a0a;
+            border: 2px solid var(--primary-color);
+            color: var(--text-color);
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .contact-form input[type="text"]:focus,
+        .contact-form input[type="email"]:focus,
+        .contact-form textarea:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+            outline: none;
+        }
+
+        .contact-form textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .contact-form button[type="submit"] {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: var(--bg-color);
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .contact-form button[type="submit"]:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .contact-form {
+                padding: 3rem 1.5rem;
+            }
+
+            .contact-form h2 {
+                font-size: 2rem;
+            }
+
+            .contact-form button[type="submit"] {
+                font-size: 1rem;
+                padding: 0.75rem 1.5rem;
+            }
+        }
+        /* Confirmation Message Styles */
+        #confirmationMessage {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 1.5rem;
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeInScale 1s ease forwards;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Animation for the Confirmation Message */
+        @keyframes fadeInScale {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .hidden {
+            display: none;
+        }
+
+        #confirmationMessage {
+            opacity: 0;
+            font-size: 1.2rem;
+            text-align: center;
+            color: #fff;
+            margin-top: 20px;
+            transition: opacity 0.5s ease;
+        }
+
+        .fadeIn {
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        .bounce {
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-30px);
+            }
+            60% {
+                transform: translateY(-15px);
+            }
+        }
+
         
     </style>
 </head>
@@ -481,13 +629,21 @@
             </div>
         </section>
 
-        <section id="contact">
-            <div class="container">
-                <h2>Contact Us</h2>
+        <section id="contact-us">
+            <div class="contact-form">
                 <center>
-                <p>Have questions or Suggest changes? Reach out to our team, and we'll be happy to assist you.</p>
-                <p>Email: 21131A05C6@gvpce.ac.in</p>
-                </center>
+                <h2>Contact Us</h2>
+                <form id="contactForm">
+                    <p>Have questions or Suggest changes? Reach out to our team, and we'll be happy to assist you.</p>
+                    <input type="text" id="name" name="name" placeholder="Your Name" required>
+                    <input type="email" id="email" name="email" placeholder="Your Email" required>
+                    <textarea id="message" name="message" placeholder="Your Message" required></textarea>
+                    <button type="submit">Send</button>
+                </form>
+                <div id="confirmationMessage" class="hidden">
+                    <h3>Message has been sent!</h3>
+                </div>
+            </center>
             </div>
         </section>
 
@@ -606,6 +762,43 @@
                     behavior: 'smooth'
                 });
             });
+        });
+        //for contact us 
+            document.getElementById('contactForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+    
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const message = document.getElementById('message').value;
+    
+            const response = await fetch('/send-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, email, message }),
+            });
+    
+            if (response.ok) {
+                // Hide the form and show the confirmation message with animation
+                const form = document.getElementById("contactForm");
+                const confirmationMessage = document.getElementById("confirmationMessage");
+    
+                form.style.transition = "opacity 0.5s ease";
+                form.style.opacity = 0;
+    
+                setTimeout(function() {
+                    form.classList.add("hidden");
+                    confirmationMessage.classList.remove("hidden");
+                    confirmationMessage.classList.add("fadeIn");
+    
+                    setTimeout(function() {
+                        confirmationMessage.classList.add("bounce");
+                    }, 500); // Start bounce animation after fadeIn
+                }, 500); // Wait for fade-out to complete
+            } else {
+                alert('Failed to send your message.');
+            }
         });
     </script>
 </body>
