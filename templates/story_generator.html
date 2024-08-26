@@ -19,7 +19,7 @@
             --card-background: #1e1e1e;
             --hover-color: #ff8a65;
         }
-
+        
         body {
             font-family: 'Roboto', sans-serif;
             margin: 0;
@@ -29,16 +29,16 @@
             transition: background 1s ease;
             overflow-x: hidden;
         }
-
+        
         h1 {
             text-align: center;
             margin-bottom: 30px;
-            font-size: 3.5em;
+            font-size: 3em;
             color: var(--primary-color);
             position: relative;
             letter-spacing: 2px;
         }
-
+        
         h1::after {
             content: '';
             position: absolute;
@@ -50,104 +50,104 @@
             transform: translateX(-50%);
             transition: width 0.4s ease;
         }
-
+        
         h1:hover::after {
             width: 120px;
         }
-
+        
         .story-container {
             display: none;
             background-color: var(--card-background);
             border-radius: 20px;
-            padding: 40px;
-            width: 100%;
-            max-width: 900px;
+            padding: 30px;
+            width: 90%;
+            max-width: 800px;
             margin: 20px auto;
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
             opacity: 0;
             transform: translateY(50px);
             transition: opacity 0.8s ease, transform 0.8s ease;
         }
-
+        
         .story-container.visible {
             opacity: 1;
             transform: translateY(0);
         }
-
+        
         form {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 20px;
         }
-
+        
         label {
             font-weight: 500;
             color: var(--accent-color);
-            font-size: 1.2em;
+            font-size: 1.1em;
         }
-
+        
         input[type="text"],
         select {
             width: 100%;
-            padding: 15px;
+            padding: 12px;
             margin-top: 5px;
             border: none;
             border-radius: 10px;
             box-sizing: border-box;
-            font-size: 1.1em;
+            font-size: 1em;
             background: #333;
             color: #fff;
             transition: background 0.3s ease;
         }
-
+        
         input[type="text"]:focus,
         select:focus {
             background-color: var(--primary-color);
             color: #fff;
             outline: none;
         }
-
+        
         .genre-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
+            gap: 10px;
+            margin-top: 15px;
         }
-
+        
         .genre-btn {
-            padding: 15px 30px;
+            padding: 10px 20px;
             background-color: var(--secondary-color);
             color: #fff;
             border: none;
             border-radius: 30px;
             cursor: pointer;
-            font-size: 1em;
+            font-size: 0.9em;
             font-weight: 500;
             transition: all 0.3s ease;
             box-shadow: 0 5px 15px rgba(0, 191, 165, 0.4);
         }
-
+        
         .genre-btn:hover {
             background-color: var(--hover-color);
             transform: translateY(-3px);
         }
-
+        
         .genre-btn.active {
             background-color: var(--accent-color);
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(255, 183, 77, 0.4);
         }
-
+        
         .generate-btn {
-            padding: 15px 40px;
+            padding: 12px 30px;
             background-color: var(--primary-color);
             color: #fff;
             border: none;
             border-radius: 30px;
             cursor: pointer;
-            font-size: 1.2em;
+            font-size: 1.1em;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -156,7 +156,7 @@
             transition: all 0.4s ease;
             box-shadow: 0 5px 15px rgba(255, 111, 97, 0.4);
         }
-
+        
         .generate-btn::before {
             content: '';
             position: absolute;
@@ -169,102 +169,164 @@
             transform: translate(-50%, -50%);
             transition: width 0.6s ease, height 0.6s ease;
         }
-
+        
         .generate-btn:hover {
             background-color: var(--hover-color);
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(255, 111, 97, 0.4);
         }
-
+        
         .generate-btn:hover::before {
-            width: 400px;
-            height: 400px;
+            width: 300px;
+            height: 300px;
         }
-
+        
         .generate-btn:active {
             transform: translateY(1px);
         }
-
+        
         #output {
             display: none;
-            margin-top: 30px;
-            padding: 25px;
-            background-color: #292929;
+            margin-top: 20px;
+            padding: 30px;
+            background-color: rgba(41, 41, 41, 0.9);
             border-radius: 15px;
             max-width: 100%;
             height: 100%;
-            max-height: calc(100vh - 300px); /* Dynamically adjust to viewport */
+            max-height: calc(100vh - 250px);
             overflow-y: auto;
             transition: all 0.5s ease;
             color: #fff;
             overflow-wrap: break-word;
             word-wrap: break-word;
+            font-size: 1.1em;
+            line-height: 1.6;
+            font-family: 'Georgia', serif;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-
+        
+        #output::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #output::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        #output::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 10px;
+        }
+        
+        #output::-webkit-scrollbar-thumb:hover {
+            background: var(--hover-color);
+        }
+        
+        #output h2 {
+            font-size: 2em;
+            color: var(--accent-color);
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        
+        .story-content {
+            padding: 20px;
+        }
+        
+        .story-content p {
+            text-indent: 2em;
+            margin-bottom: 1em;
+        }
+        
+        .drop-cap {
+            float: left;
+            font-size: 3em;
+            line-height: 0.8;
+            padding-top: 4px;
+            padding-right: 8px;
+            padding-left: 3px;
+            font-family: 'Times New Roman', serif;
+            color: var(--primary-color);
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            font-weight: bold;
+        }
+        
         .loader {
             display: none;
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid var(--secondary-color);
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--secondary-color);
             border-radius: 50%;
             margin: 20px auto;
             animation: spin 1s linear infinite;
         }
-
+        
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-
+        
+        /* Particle Background Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, #ff6f61, transparent),
+                        radial-gradient(circle at 50% 50%, #00bfa5, transparent);
+            background-size: 50% 50%;
+            animation: rotateBackground 30s infinite linear;
+            z-index: -1;
+        }
+        
+        @keyframes rotateBackground {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 600px) {
             .story-container {
                 width: 95%;
                 padding: 20px;
             }
-
+        
             input[type="text"],
             .generate-btn,
             select {
                 font-size: 16px;
             }
-
+        
             h1 {
+                font-size: 2.2em;
+            }
+        
+            #output {
+                max-height: calc(100vh - 200px);
+                font-size: 0.85em;
+                padding: 20px;
+            }
+        
+            #output h2 {
+                font-size: 1.5em;
+            }
+        
+            .drop-cap {
                 font-size: 2.5em;
             }
-
-            #output {
-                max-height: calc(100vh - 200px); /* Adjusted for smaller screens */
+        
+            .genre-btn {
+                padding: 8px 15px;
+                font-size: 0.8em;
             }
         }
-
-        /* Particle Background Effect */
-        body::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 50% 50%, #ff6f61, transparent),
-                radial-gradient(circle at 50% 50%, #00bfa5, transparent);
-            background-size: 50% 50%;
-            animation: rotateBackground 30s infinite linear;
-        }
-
-        @keyframes rotateBackground {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
     </style>
 </head>
 
@@ -272,16 +334,16 @@
     <div class="story-container" id="storyContainer">
         <h1 class="animate__animated animate__zoomIn">Enchanted Story Forge</h1>
         <form id="storyForm">
-            <label for="keywords">Enter your story random Keywords :</label>
+            <label for="keywords">Enter your story random Keywords:</label>
             <input type="text" id="keywords" name="keywords" placeholder="e.g., ancient relic, time travel, unexpected ally...">
 
             <label for="genre">Choose your story's genre:</label>
             <div class="genre-container">
                 <button type="button" class="genre-btn" data-genre="fantasy"><i class="fas fa-hat-wizard"></i> Fantasy</button>
                 <button type="button" class="genre-btn" data-genre="sci-fi"><i class="fas fa-robot"></i> Sci-Fi</button>
-                <button type="button" class="genre-btn" data-genre="Romance"><i class="fas fa-heart"></i> Romance</button>
                 <button type="button" class="genre-btn" data-genre="mystery"><i class="fas fa-mask"></i> Mystery</button>
-                <button type="button"  class="genre-btn" data-genre="horror"><i class="fas fa-skull-crossbones"></i> Horror</button>
+                <button type="button" class="genre-btn" data-genre="romance"><i class="fas fa-heart"></i> Romance</button>
+                <button type="button" class="genre-btn" data-genre="horror"><i class="fas fa-skull-crossbones"></i> Horror</button>
                 <button type="button" class="genre-btn" data-genre="adventure"><i class="fas fa-mountain"></i> Adventure</button>
                 <button type="button" class="genre-btn" data-genre="historical"><i class="fas fa-landmark"></i> Historical</button>
                 <button type="button" class="genre-btn" data-genre="comedy"><i class="fas fa-laugh"></i> Comedy</button>
@@ -297,7 +359,7 @@
     </div>
     <script>
         let selectedGenre = '';
-
+    
         async function fetchRandomStoryImage() {
             try {
                 const response = await fetch('/fetch_image?genre=anime');
@@ -316,14 +378,14 @@
                 return null;
             }
         }
-
+    
         function showStoryContainer() {
             document.getElementById('storyContainer').style.display = 'block';
             setTimeout(() => {
                 document.getElementById('storyContainer').classList.add('visible');
             }, 100);
         }
-
+    
         // Load the background image
         fetchRandomStoryImage().then(imageUrl => {
             if (imageUrl) {
@@ -337,7 +399,7 @@
                 showStoryContainer();
             }
         });
-
+    
         async function fetchResponse() {
             const keywords = document.getElementById('keywords').value;
             if (keywords.trim() === '') {
@@ -358,34 +420,78 @@
                     },
                     body: `keywords=${encodeURIComponent(keywords)}&genre=${encodeURIComponent(selectedGenre)}`
                 });
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                const rawData = await response.json();
+                
+                // Extract the JSON string from the code block
+                const jsonMatch = rawData.response.match(/```json\s*([\s\S]*?)\s*```/);
+                let data;
+                if (jsonMatch && jsonMatch[1]) {
+                    data = JSON.parse(jsonMatch[1]);
+                } else {
+                    throw new Error('Invalid response format');
                 }
-                const data = await response.json();
-                document.getElementById('output').innerHTML = data.response;
-                document.getElementById('output').style.display = 'block';
-                document.getElementById('output').classList.add('animate__fadeInUp');
-            } catch (error) {
-                console.error('Error fetching story:', error);
-                document.getElementById('output').innerHTML = 'Error generating story. Please try again later.';
-                document.getElementById('output').style.display = 'block';
-            } finally {
+    
                 document.getElementById('loader').style.display = 'none';
+                document.getElementById('output').style.display = 'block';
+    
+                // Format the story text
+                const formattedStory = formatStory(data.story);
+    
+                document.getElementById('output').innerHTML = `
+                    <h2>${data.title}</h2>
+                    <div class="story-content">${formattedStory}</div>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('output').style.display = 'block';
+                document.getElementById('output').innerHTML = '<p class="error-message">An error occurred while generating the story. Please try again.</p>';
             }
         }
-
-        document.getElementById('generateBtn').addEventListener('click', fetchResponse);
-
-        const genreButtons = document.querySelectorAll('.genre-btn');
-        genreButtons.forEach(button => {
-            button.addEventListener('click', function () {
-                genreButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                selectedGenre = this.dataset.genre;
-                document.getElementById('genre').value = selectedGenre;
+    
+        function formatStory(story) {
+            // Split the story into paragraphs
+            const paragraphs = story.split('\n').filter(p => p.trim() !== '');
+    
+            // Format each paragraph
+            const formattedParagraphs = paragraphs.map((paragraph, index) => {
+                if (index === 0) {
+                    // Add a drop cap to the first paragraph
+                    const firstLetter = paragraph.charAt(0);
+                    const restOfParagraph = paragraph.slice(1);
+                    return `<p><span class="drop-cap">${firstLetter}</span>${restOfParagraph}</p>`;
+                } else {
+                    return `<p>${paragraph}</p>`;
+                }
+            });
+    
+            return formattedParagraphs.join('');
+        }
+    
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const genreButtons = document.querySelectorAll('.genre-btn');
+            const generateBtn = document.getElementById('generateBtn');
+    
+            genreButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    genreButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    selectedGenre = button.dataset.genre;
+                    document.getElementById('genre').value = selectedGenre;
+                });
+            });
+    
+            generateBtn.addEventListener('click', fetchResponse);
+    
+            // Add keypress event listener to the keywords input
+            document.getElementById('keywords').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent form submission
+                    fetchResponse();
+                }
             });
         });
     </script>
 </body>
-
 </html>
