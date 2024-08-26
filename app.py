@@ -207,18 +207,18 @@ def story_generator():
     if request.method == 'POST':
         user_input_words = request.form['keywords']
         genre = request.form['genre']
-        prompt = f"Generate a story based on the following words {user_input_words} with genre {genre}..."
+        prompt = f"Generate a short story based on the following words: {user_input_words}. The genre should be {genre}. Include a title for the story. Format the response as JSON with 'title' and 'story' fields."
 
         try:
-            response = story_model.generate_content([prompt], safety_settings=safety_settings)  # Use story_model here
+            response = story_model.generate_content([prompt], safety_settings=safety_settings)
             if response.candidates and response.candidates[0].content.parts:
-                response_text = format_response(response.candidates[0].content.parts[0].text)
+                response_text = response.candidates[0].content.parts[0].text
+                return jsonify({'response': response_text})
             else:
-                response_text = "Sorry, I couldn't generate a story with the provided input."
-            return jsonify({'response': response_text})
+                return jsonify({'response': '```json {"title": "Error", "story": "Sorry, I couldn\'t generate a story with the provided input."} ```'})
         except Exception as e:
             logging.error(f"Error generating story: {e}")
-            return jsonify({'error': "Internal Server Error"}), 500
+            return jsonify({'response': '```json {"title": "Error", "story": "An error occurred while generating the story. Please try again."} ```'}), 500
     return render_template('story_generator.html')
 
 
