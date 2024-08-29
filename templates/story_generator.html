@@ -292,6 +292,7 @@
             100% { transform: rotate(360deg); }
         }
         
+        /* Responsive design */
         @media (max-width: 600px) {
             .story-container {
                 width: 95%;
@@ -326,6 +327,29 @@
                 padding: 8px 15px;
                 font-size: 0.8em;
             }
+        }
+        
+        /* Additional styles for moral and vocabulary sections */
+        .moral {
+            font-style: italic;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .vocabulary {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .vocabulary-item {
+            margin-bottom: 10px;
+        }
+        
+        .vocabulary-item strong {
+            color: var(--secondary-color);
         }
     </style>
 </head>
@@ -437,9 +461,16 @@
                 // Format the story text
                 const formattedStory = formatStory(data.story);
     
+                // Format the vocabulary
+                const formattedVocabulary = formatVocabulary(data.vocabulary);
+    
                 document.getElementById('output').innerHTML = `
                     <h2>${data.title}</h2>
                     <div class="story-content">${formattedStory}</div>
+                    <h3>Moral of the Story</h3>
+                    <p class="moral">${data.moral}</p>
+                    <h3>Vocabulary</h3>
+                    <div class="vocabulary">${formattedVocabulary}</div>
                 `;
             } catch (error) {
                 console.error('Error:', error);
@@ -466,6 +497,14 @@
             });
     
             return formattedParagraphs.join('');
+        }
+    
+        function formatVocabulary(vocabulary) {
+            return vocabulary.map(item => `
+                <div class="vocabulary-item">
+                    <strong>${item.word}</strong>: ${item.definition}
+                </div>
+            `).join('');
         }
     
         // Event listeners
