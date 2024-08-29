@@ -207,7 +207,22 @@ def story_generator():
     if request.method == 'POST':
         user_input_words = request.form['keywords']
         genre = request.form['genre']
-        prompt = f"Generate a short story based on the following words: {user_input_words}. The genre should be {genre}. Include a title for the story. Format the response as JSON with 'title' and 'story' fields."
+        prompt = f"""Generate an engaging short story based on the following words: {user_input_words}. The genre should be {genre}.
+        
+        Requirements:
+        1. Create a compelling narrative with well-developed characters and an interesting plot. Also use simple english.
+        2. Use vivid descriptions and sensory details to bring the story to life.
+        3. Include at least 3 advanced vocabulary words that fit naturally within the story.
+        4. End the story with a clear moral or lesson.
+        5. After the story, provide definitions for the advanced vocabulary words used.
+
+        Format the response as JSON with the following fields:
+        - 'title': The title of the story
+        - 'story': The main body of the story
+        - 'moral': The moral or lesson of the story
+        - 'vocabulary': A list of dictionaries, each containing 'word' and 'definition' fields for the advanced vocabulary used
+
+        Ensure that the JSON is properly formatted and can be parsed."""
 
         try:
             response = story_model.generate_content([prompt], safety_settings=safety_settings)
@@ -215,12 +230,11 @@ def story_generator():
                 response_text = response.candidates[0].content.parts[0].text
                 return jsonify({'response': response_text})
             else:
-                return jsonify({'response': '```json {"title": "Error", "story": "Sorry, I couldn\'t generate a story with the provided input."} ```'})
+                return jsonify({'response': '```json {"title": "Error", "story": "Sorry, I couldn\'t generate a story with the provided input.", "moral": "", "vocabulary": []} ```'})
         except Exception as e:
             logging.error(f"Error generating story: {e}")
-            return jsonify({'response': '```json {"title": "Error", "story": "An error occurred while generating the story. Please try again."} ```'}), 500
+            return jsonify({'response': '```json {"title": "Error", "story": "An error occurred while generating the story. Please try again.", "moral": "", "vocabulary": []} ```'}), 500
     return render_template('story_generator.html')
-
 
 @app.route('/psychology_prediction', methods=['GET', 'POST'])
 def psychology_prediction():
