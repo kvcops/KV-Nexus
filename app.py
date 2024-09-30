@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 import google.generativeai as genai
 from dotenv import load_dotenv
 import os
 from werkzeug.utils import secure_filename
 from PIL import Image
 import PIL
+import io
 from io import BytesIO
 import logging
 from langdetect import detect
@@ -16,6 +17,20 @@ from google.generativeai.types import GenerationConfig, HarmCategory, HarmBlockT
 import re
 import json
 from mailjet_rest import Client
+from pdf2image import convert_from_bytes
+from docx import Document
+from docx.shared import Inches
+import tempfile
+import PyPDF2
+import base64
+from docx import Document
+from docx.shared import Inches, Pt
+from docx.enum.style import WD_STYLE_TYPE
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import RGBColor
+import fitz  # PyMuPDF
 app = Flask(__name__)
 # Load environment variables
 load_dotenv()
@@ -467,6 +482,170 @@ def send_email():
         return jsonify({"message": "Email sent successfully!"}), 200
     else:
         return jsonify({"message": "Failed to send email."}), 500
+
+
+#docuement summarize 
+
+@app.route('/document_summarizer', methods=['GET', 'POST'])
+def document_summarizer():
+    return render_template('document_summarizer.html')
+
+
+def process_pdf(file):
+    pdf_document = fitz.open(stream=file.read(), filetype="pdf")
+    images = []
+    texts = []
+
+    for page_num in range(len(pdf_document)):
+        page = pdf_document[page_num]
+        
+        # Extract text
+        text = page.get_text()
+        texts.append(text)
+        
+        # Extract images
+        image_list = page.get_images(full=True)
+        for img_index, img in enumerate(image_list):
+            xref = img[0]
+            base_image = pdf_document.extract_image(xref)
+            image_bytes = base_image["image"]
+            
+            # Convert to base64
+            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+            images.append(image_base64)
+
+    return texts, images
+
+def generate_summary(texts, images):
+    prompt = [
+        "Summarize the following text and describe any images present itself in that page. "
+        "Format the summary with clear section titles and subtitles. "
+        "Use 'TITLE:' for main sections and 'SUBTITLE:' for subsections. "
+        "Do not use any special characters or symbols for formatting. "
+        "Separate paragraphs with a blank line. "
+        "If there are any tables in the text, format them using Markdown syntax.",
+        "Simplify using simple and easy english.",
+        "Dont Make it more lengthy.",
+        "\n".join(texts)
+    ]
+    
+    # Add images to prompt if available
+    for image in images:
+        img = Image.open(io.BytesIO(base64.b64decode(image)))
+        prompt.append(img)
+    
+    response = model.generate_content(prompt)
+    return response.text
+
+def create_word_document(summary):
+    doc = Document()
+    
+    # Define styles
+    styles = doc.styles
+    title_style = styles.add_style('CustomTitle', WD_STYLE_TYPE.PARAGRAPH)
+    title_style.font.size = Pt(18)
+    title_style.font.bold = True
+    title_style.font.color.rgb = RGBColor(0, 0, 128)  # Navy blue
+    
+    subtitle_style = styles.add_style('CustomSubtitle', WD_STYLE_TYPE.PARAGRAPH)
+    subtitle_style.font.size = Pt(14)
+    subtitle_style.font.bold = True
+    subtitle_style.font.color.rgb = RGBColor(0, 128, 0)  # Green
+    
+    normal_style = styles.add_style('CustomNormal', WD_STYLE_TYPE.PARAGRAPH)
+    normal_style.font.size = Pt(11)
+    
+    # Process the summary text
+    paragraphs = summary.split('\n')
+    for para in paragraphs:
+        para = para.strip()
+        if para.startswith('TITLE:'):
+            p = doc.add_paragraph(para[6:].strip(), style='CustomTitle')
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        elif para.startswith('SUBTITLE:'):
+            p = doc.add_paragraph(para[9:].strip(), style='CustomSubtitle')
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        elif para.startswith('|'):  # Table detection
+            table = doc.add_table(rows=1, cols=len(para.split('|')) - 2)
+            table.style = 'Table Grid'
+            for row in paragraphs[paragraphs.index(para):]:
+                if row.strip().startswith('|'):
+                    cells = row.split('|')[1:-1]
+                    if len(cells) == len(table.columns):
+                        row_cells = table.add_row().cells
+                        for i, cell in enumerate(cells):
+                            row_cells[i].text = cell.strip()
+                else:
+                    break
+        elif para:
+            # Remove asterisks and leading/trailing whitespace
+            cleaned_para = para.strip('* ').strip()
+            if cleaned_para:
+                p = doc.add_paragraph(cleaned_para, style='CustomNormal')
+                # If the original paragraph started with an asterisk, make it a bullet point
+                if para.startswith('*'):
+                    p.style = 'List Bullet'
+    
+    # Add double borders to every page
+    set_page_border(doc)
+    
+    # Save the document to a BytesIO object
+    docx_buffer = io.BytesIO()
+    doc.save(docx_buffer)
+    docx_buffer.seek(0)
+    
+    return docx_buffer
+
+def set_page_border(doc):
+    """
+    Adds a double border to every page of the document.
+    """
+    for section in doc.sections:
+        sectPr = section._sectPr
+        pgBorders = OxmlElement('w:pgBorders')
+        pgBorders.set(qn('w:offsetFrom'), 'page')
+        for border_position in ('top', 'left', 'bottom', 'right'):
+            border_el = OxmlElement(f'w:{border_position}')
+            border_el.set(qn('w:val'), 'double')
+            border_el.set(qn('w:sz'), '18') #increase the border width
+            border_el.set(qn('w:space'), '24')
+            border_el.set(qn('w:color'), 'auto')
+            pgBorders.append(border_el)
+        sectPr.append(pgBorders)
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    if file and file.filename.endswith('.pdf'):
+        try:
+            texts, images = process_pdf(file)
+            summary = generate_summary(texts, images)
+            docx_buffer = create_word_document(summary)
+            
+            return send_file(
+                docx_buffer,
+                as_attachment=True,
+                download_name='summary.docx',
+                mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            )
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
+
+@app.route('/quote', methods=['GET'])
+def get_quote():
+    try:
+        prompt = "Generate a random inspirational quote."
+        response = model.generate_content(prompt)
+        quote = response.text.strip().strip('"')  # Remove quotes and extra whitespace
+        return jsonify({'quote': quote}), 200
+    except Exception as e:
+        return jsonify({'error': 'Failed to generate quote.'}), 500
 
 
 if __name__ == '__main__':
