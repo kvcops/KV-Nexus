@@ -560,7 +560,6 @@ def rate_limited(func):
 
     return wrapper
 
-
 @app.route('/document_summarizer', methods=['GET', 'POST'])
 def document_summarizer():
     return render_template('document_summarizer.html')
@@ -735,6 +734,7 @@ def upload_file():
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
+
     
 @app.route('/quote', methods=['GET'])
 def get_quote():
