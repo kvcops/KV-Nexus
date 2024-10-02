@@ -501,43 +501,22 @@ def process_pdf_in_batches(file):
     pdf_document = fitz.open(stream=file.read(), filetype="pdf")
     total_pages = len(pdf_document)
     all_summaries = []
-    batch_size = 15
-    batches = []
+    batch_size = 5  # Reduced batch size
     
-    # Prepare batches of pages
     for i in range(0, total_pages, batch_size):
-        batch = list(range(i, min(i + batch_size, total_pages)))
-        batches.append(batch)
-    
-    for batch_index, batch in enumerate(batches):
         batch_texts = []
         batch_images = []
-        
-        for page_num in batch:
+        for page_num in range(i, min(i + batch_size, total_pages)):
             page = pdf_document[page_num]
-            
-            # Extract text
-            text = page.get_text()
-            batch_texts.append(f"Page {page_num + 1}: {text}")
-            
-            # Extract images
-            image_list = page.get_images(full=True)
-            for img_index, img in enumerate(image_list):
-                xref = img[0]
-                base_image = pdf_document.extract_image(xref)
-                image_bytes = base_image["image"]
-                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-                batch_images.append((page_num + 1, image_base64))
-        
-        # Generate summary for this batch without batch numbering
-        batch_summary = generate_summary(batch_texts, [img[1] for img in batch_images])
+            text = page.get_text("text")  # Faster text extraction, no images
+            batch_texts.append(text)
+            # Consider skipping image extraction entirely if not crucial:
+            # image_list = page.get_images(full=True) #... (image extraction logic)
+
+        batch_summary = generate_summary(batch_texts, batch_images)
         all_summaries.append(batch_summary)
+        time.sleep(5) # Reduced delay. Experiment to see what works best.
         
-        # If not the last batch, wait to avoid rate limiting
-        if batch_index < len(batches) - 1:
-            time.sleep(60)
-    
-    # Combine all summaries without batch numbering
     final_summary = "\n\n".join(all_summaries)
     return final_summary, total_pages
 
