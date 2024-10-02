@@ -187,20 +187,30 @@
                 </form>
     
                 <!-- Loading Indicator -->
-                <div id="loading" class="hidden mt-8 flex flex-col items-center" data-aos="fade-up">
-                    <div
-                        class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16 mb-4"
-                    ></div>
-                    <p class="text-lg font-medium text-gray-700">
-                        Processing your PDF, please wait...
-                    </p>
-                </div>
+<!-- Update the loading div to show progress -->
+<div id="loading" class="hidden mt-8 flex flex-col items-center" data-aos="fade-up">
+    <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16 mb-4"></div>
+    <p class="text-lg font-medium text-gray-700 mb-2">
+        Processing your PDF, please wait...
+    </p>
+    <p class="text-sm text-gray-600">
+        Processing large PDFs may take several minutes
+    </p>
+</div>
     
                 <!-- Result Section -->
                 <div id="result" class="hidden mt-8 animate-fade-in" data-aos="fade-up">
                     <h2 class="text-3xl font-semibold mb-4 text-gray-800">
                         Your Summary is Ready!
                     </h2>
+                    <div class="mb-4">
+                        <p class="text-lg text-gray-700">
+                            Total pages processed: <span id="total-pages" class="font-semibold">0</span>
+                        </p>
+                        <p class="text-lg text-gray-700">
+                            Processing time: <span id="processing-time" class="font-semibold">0</span> seconds
+                        </p>
+                    </div>
                     <button
                         id="download-button"
                         class="inline-flex items-center bg-green-500 text-white py-3 px-6 rounded-xl font-semibold shadow-lg hover:bg-green-600 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-200 hover-effect"
@@ -307,34 +317,34 @@
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const formData = new FormData(form);
-    
-                // Hide Form and Show Loading
-                gsap.to(form, {
-                    opacity: 0,
-                    y: -20,
-                    duration: 0.3,
-                    onComplete: () => {
-                        form.classList.add('hidden');
-                        loading.classList.remove('hidden');
-                        gsap.from(loading, {
-                            opacity: 0,
-                            scale: 0.8,
-                            duration: 0.5,
-                        });
-                    },
-                });
-    
+            
+                // Show loading
+                form.classList.add('hidden');
+                loading.classList.remove('hidden');
+            
                 try {
                     const response = await fetch('/upload', {
                         method: 'POST',
                         body: formData,
                     });
-    
+            
                     if (response.ok) {
-                        const blob = await response.blob();
+                        const data = await response.json();
+                        
+                        // Create blob from base64 data
+                        const binaryData = atob(data.docx);
+                        const array = new Uint8Array(binaryData.length);
+                        for (let i = 0; i < binaryData.length; i++) {
+                            array[i] = binaryData.charCodeAt(i);
+                        }
+                        const blob = new Blob([array], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
                         const url = window.URL.createObjectURL(blob);
                         
-                        // Update download button to trigger download
+                        // Update UI with processing details
+                        document.getElementById('total-pages').textContent = data.total_pages;
+                        document.getElementById('processing-time').textContent = data.processing_time;
+                        
+                        // Set up download button
                         downloadButton.addEventListener('click', () => {
                             const link = document.createElement('a');
                             link.href = url;
@@ -343,48 +353,21 @@
                             link.click();
                             document.body.removeChild(link);
                         });
-    
-                        // Hide Loading and Show Result
-                        gsap.to(loading, {
-                            opacity: 0,
-                            scale: 0.8,
-                            duration: 0.3,
-                            onComplete: () => {
-                                loading.classList.add('hidden');
-                                result.classList.remove('hidden');
-                                gsap.from(result, {
-                                    opacity: 0,
-                                    y: 20,
-                                    duration: 0.5,
-                                });
-                                triggerConfetti();
-                            },
-                        });
+            
+                        // Show result
+                        loading.classList.add('hidden');
+                        result.classList.remove('hidden');
+                        triggerConfetti();
                     } else {
                         throw new Error('Upload failed');
                     }
                 } catch (error) {
                     console.error('Error:', error);
                     alert('An error occurred. Please try again.');
-                    
-                    // Hide Loading and Show Form
-                    gsap.to(loading, {
-                        opacity: 0,
-                        scale: 0.8,
-                        duration: 0.3,
-                        onComplete: () => {
-                            loading.classList.add('hidden');
-                            form.classList.remove('hidden');
-                            gsap.from(form, {
-                                opacity: 0,
-                                y: 20,
-                                duration: 0.5,
-                            });
-                        },
-                    });
+                    loading.classList.add('hidden');
+                    form.classList.remove('hidden');
                 }
             });
-    
             // Particle effect
             particlesJS("particles-js", {
                 particles: {
