@@ -491,34 +491,44 @@ import tempfile
 import time
 from threading import Lock
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
-REQUEST_LIMIT = 15  # 15 requests per minute
-TIME_WINDOW = 60  # 60 seconds (1 minute)
+REQUEST_LIMIT = 15  # Adjust as needed for Vercel
+TIME_WINDOW = 60
 request_count = 0
 last_request_time = 0
 rate_limit_lock = Lock()
 
 def process_pdf_in_batches(file):
+    """Processes PDF in batches to avoid exceeding Vercel's time limit"""
     pdf_document = fitz.open(stream=file.read(), filetype="pdf")
     total_pages = len(pdf_document)
     all_summaries = []
-    batch_size = 5  # Reduced batch size
+    batch_size = 1 # Process one page at a time, best for Vercel
     
     for i in range(0, total_pages, batch_size):
         batch_texts = []
         batch_images = []
         for page_num in range(i, min(i + batch_size, total_pages)):
             page = pdf_document[page_num]
-            text = page.get_text("text")  # Faster text extraction, no images
+            text = page.get_text("text")
             batch_texts.append(text)
-            # Consider skipping image extraction entirely if not crucial:
-            # image_list = page.get_images(full=True) #... (image extraction logic)
+
+            # Image processing: handle image uploads to Gemini.
+            image_list = page.get_images(full=True)
+            for img_index, img in enumerate(image_list):
+                xref = img[0]
+                base_image = pdf_document.extract_image(xref)
+                image_bytes = base_image["image"]
+                img = Image.open(io.BytesIO(image_bytes))
+                batch_images.append(img)  #Directly append PIL Image
+            
 
         batch_summary = generate_summary(batch_texts, batch_images)
         all_summaries.append(batch_summary)
-        time.sleep(5) # Reduced delay. Experiment to see what works best.
-        
+        time.sleep(1) # adjust sleep based on response time. 
+
     final_summary = "\n\n".join(all_summaries)
     return final_summary, total_pages
+
 
 def rate_limited(func):
     def wrapper(*args, **kwargs):
@@ -538,6 +548,7 @@ def rate_limited(func):
         return func(*args, **kwargs)
 
     return wrapper
+
 
 @app.route('/document_summarizer', methods=['GET', 'POST'])
 def document_summarizer():
@@ -569,26 +580,19 @@ def process_pdf(file):
 
     return texts, images
 
+
 def generate_summary(texts, images):
-    prompt = [
-        "Summarize the following text and describe any images present itself in that page. "
-        "Format the summary with clear section titles and subtitles. "
-        "Use 'TITLE:' for main sections and 'SUBTITLE:' for subsections. "
-        "Do not use any special characters or symbols for formatting. "
-        "Separate paragraphs with a blank line. "
-        "If there are any tables in the text, format them using Markdown syntax.",
-        "Simplify using simple and easy english.",
-        "Dont Make it more lengthy.",
-        "\n".join(texts)
-    ]
-    
-    # Add images to prompt if available
-    for image in images:
-        img = Image.open(io.BytesIO(base64.b64decode(image)))
+    prompt = ["Summarize the following text, incorporating details from any included images. Use 'TITLE:' for main sections and 'SUBTITLE:' for subsections. Use simple and easy english. Dont make it more lengthy", "\n".join(texts)]  
+
+    for img in images: #Now adding the images directly
         prompt.append(img)
-    
-    response = model.generate_content(prompt)
-    return response.text
+        
+    try:
+        response = model_vision.generate_content(prompt, safety_settings=safety_settings) #Using vision model
+        return response.text
+    except Exception as e:
+        print(f"Error in Gemini API call: {e}")  #Handle errors appropriately
+        return f"Error summarizing: {e}"
 
 def create_word_document(summary):
     doc = Document()
@@ -699,11 +703,12 @@ def upload_file():
     if file and file.filename.endswith('.pdf'):
         try:
             start_time = time.time()
+            #Process PDF in small batches to meet Vercel's timing constraints.
             summary, total_pages = process_pdf_in_batches(file)
             processing_time = time.time() - start_time
-            
+
             docx_buffer = create_word_document(summary)
-            
+
             return jsonify({
                 'docx': base64.b64encode(docx_buffer.getvalue()).decode('utf-8'),
                 'total_pages': total_pages,
@@ -713,8 +718,6 @@ def upload_file():
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
-
-    
 @app.route('/quote', methods=['GET'])
 def get_quote():
     try:
@@ -726,6 +729,6 @@ def get_quote():
         return jsonify({'error': 'Failed to generate quote.'}), 500
 
 
-
 if __name__ == '__main__':
     app.run(debug=True)
+
