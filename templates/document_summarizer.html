@@ -1,42 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Meta Tags -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PDF Summarizer</title>
-    <!-- Fonts -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&family=Dancing+Script:wght@600&family=Kaushan+Script&display=swap"
-        rel="stylesheet"
-    />
-    <!-- Tailwind CSS CDN -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
-        rel="stylesheet"
-    />
-    <!-- Icons -->
-    <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
-        rel="stylesheet"
-    />
-    <!-- AOS for Animations -->
-    <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css"
-        rel="stylesheet"
-    />
-    <!-- GSAP for Animations -->
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"
-        defer
-    ></script>
-    <!-- Particles.js -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&family=Dancing+Script:wght@600&family=Kaushan+Script&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <!-- Typewriter Effect -->
     <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
-    <!-- Confetti Effect -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <!-- Custom Styles -->
     <style>
         body {
             font-family: 'Montserrat', sans-serif;
@@ -138,10 +113,7 @@
             <form id="upload-form" class="space-y-6" enctype="multipart/form-data">
                 <!-- File Upload -->
                 <div class="flex items-center justify-center w-full" data-aos="fade-up">
-                    <label
-                        for="file"
-                        class="file-upload-label relative flex flex-col items-center justify-center w-full h-48 sm:h-64 border-4 border-dashed rounded-2xl cursor-pointer bg-white hover:bg-gray-50 transition duration-500 ease-in-out transform hover:scale-105 glass-effect"
-                    >
+                    <label for="file" class="file-upload-label relative flex flex-col items-center justify-center w-full h-48 sm:h-64 border-4 border-dashed rounded-2xl cursor-pointer bg-white hover:bg-gray-50 transition duration-500 ease-in-out transform hover:scale-105 glass-effect">
                         <div class="flex flex-col items-center justify-center">
                             <i class="fas fa-cloud-upload-alt text-5xl sm:text-7xl text-blue-500 mb-4 animate-bounce"></i>
                             <p class="mb-2 text-base sm:text-lg text-gray-700 text-center">
@@ -152,74 +124,58 @@
                                 PDF files only (Max 10MB)
                             </p>
                         </div>
-                        <input
-                            id="file"
-                            name="file"
-                            type="file"
-                            class="absolute inset-0 opacity-0 cursor-pointer"
-                            accept=".pdf"/>
-                        </label>
-                    </div>
-    
-                    <!-- File Preview -->
-                    <div
-                        id="file-preview"
-                        class="hidden bg-gray-50 p-4 rounded-lg border border-gray-200 glass-effect"
-                        data-aos="fade-up"
-                    >
-                        <h3 class="font-semibold text-gray-700 mb-2">
-                            Selected File:
-                        </h3>
-                        <div class="flex items-center">
-                            <i class="far fa-file-pdf text-red-500 text-2xl mr-2"></i>
-                            <span id="file-name" class="text-gray-800"></span>
-                        </div>
-                    </div>
-    
-                    <!-- Submit Button -->
-                    <button
-                        type="submit"
-                        class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 px-6 rounded-xl font-bold shadow-lg hover:from-purple-600 hover:to-pink-600 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-200 hover-effect"
-                        data-aos="zoom-in-up"
-                    >
-                        Summarize PDF
-                    </button>
-                </form>
-    
-                <!-- Loading Indicator -->
-<!-- Update the loading div to show progress -->
-<div id="loading" class="hidden mt-8 flex flex-col items-center" data-aos="fade-up">
-    <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16 mb-4"></div>
-    <p class="text-lg font-medium text-gray-700 mb-2">
-        Processing your PDF, please wait...
-    </p>
-    <p class="text-sm text-gray-600">
-        Processing large PDFs may take several minutes
-    </p>
-</div>
-    
-                <!-- Result Section -->
-                <div id="result" class="hidden mt-8 animate-fade-in" data-aos="fade-up">
-                    <h2 class="text-3xl font-semibold mb-4 text-gray-800">
-                        Your Summary is Ready!
-                    </h2>
-                    <div class="mb-4">
-                        <p class="text-lg text-gray-700">
-                            Total pages processed: <span id="total-pages" class="font-semibold">0</span>
-                        </p>
-                        <p class="text-lg text-gray-700">
-                            Processing time: <span id="processing-time" class="font-semibold">0</span> seconds
-                        </p>
-                    </div>
-                    <button
-                        id="download-button"
-                        class="inline-flex items-center bg-green-500 text-white py-3 px-6 rounded-xl font-semibold shadow-lg hover:bg-green-600 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-200 hover-effect"
-                    >
-                        <i class="fas fa-download mr-2"></i> Download Summary
-                    </button>
+                        <input id="file" name="file" type="file" class="absolute inset-0 opacity-0 cursor-pointer" accept=".pdf"/>
+                    </label>
                 </div>
+
+                <!-- File Preview -->
+                <div id="file-preview" class="hidden bg-gray-50 p-4 rounded-lg border border-gray-200 glass-effect" data-aos="fade-up">
+                    <h3 class="font-semibold text-gray-700 mb-2">
+                        Selected File:
+                    </h3>
+                    <div class="flex items-center">
+                        <i class="far fa-file-pdf text-red-500 text-2xl mr-2"></i>
+                        <span id="file-name" class="text-gray-800"></span>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 px-6 rounded-xl font-bold shadow-lg hover:from-purple-600 hover:to-pink-600 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-200 hover-effect" data-aos="zoom-in-up">
+                    Summarize PDF
+                </button>
+            </form>
+
+            <!-- Loading Indicator -->
+            <div id="loading" class="hidden mt-8 flex flex-col items-center" data-aos="fade-up">
+                <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16 mb-4"></div>
+                <p class="text-lg font-medium text-gray-700 mb-2">
+                    Processing your PDF, please wait...
+                </p>
+                <p class="text-sm text-gray-600">
+                    Processing large PDFs may take several minutes
+                </p>
+                <p id="progress-text" class="text-sm text-gray-600 mt-2"></p>
+            </div>
+
+            <!-- Result Section -->
+            <div id="result" class="hidden mt-8 animate-fade-in" data-aos="fade-up">
+                <h2 class="text-3xl font-semibold mb-4 text-gray-800">
+                    Your Summary is Ready!
+                </h2>
+                <div class="mb-4">
+                    <p class="text-lg text-gray-700">
+                        Total pages processed: <span id="total-pages" class="font-semibold">0</span>
+                    </p>
+                    <p class="text-lg text-gray-700">
+                        Processing time: <span id="processing-time" class="font-semibold">0</span> seconds
+                    </p>
+                </div>
+                <button id="download-button" class="inline-flex items-center bg-green-500 text-white py-3 px-6 rounded-xl font-semibold shadow-lg hover:bg-green-600 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-200 hover-effect">
+                    <i class="fas fa-download mr-2"></i> Download Summary
+                </button>
             </div>
         </div>
+    </div>
         <!-- AOS JS -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
         <!-- Initialize AOS -->
@@ -238,6 +194,7 @@
             const result = document.getElementById('result');
             const downloadButton = document.getElementById('download-button');
             const quoteElement = document.getElementById('quote');
+            const progressText = document.getElementById('progress-text');
     
             // Random Fonts and Colors
             const fonts = [
@@ -321,6 +278,7 @@
                 // Show loading
                 form.classList.add('hidden');
                 loading.classList.remove('hidden');
+                progressText.textContent = 'Uploading file...';
             
                 try {
                     const response = await fetch('/upload', {
@@ -363,7 +321,7 @@
                     }
                 } catch (error) {
                     console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
+                    alert('An error occurred. Please try again or upload a smaller PDF file.');
                     loading.classList.add('hidden');
                     form.classList.remove('hidden');
                 }
