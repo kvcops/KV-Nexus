@@ -486,6 +486,81 @@ def send_email():
 
 #docuement summarize 
 
+# Rate limiting setup
+import tempfile
+import time
+from threading import Lock
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+REQUEST_LIMIT = 15  # 15 requests per minute
+TIME_WINDOW = 60  # 60 seconds (1 minute)
+request_count = 0
+last_request_time = 0
+rate_limit_lock = Lock()
+
+def process_pdf_in_batches(file):
+    pdf_document = fitz.open(stream=file.read(), filetype="pdf")
+    total_pages = len(pdf_document)
+    all_summaries = []
+    batch_size = 15
+    batches = []
+    
+    # Prepare batches of pages
+    for i in range(0, total_pages, batch_size):
+        batch = list(range(i, min(i + batch_size, total_pages)))
+        batches.append(batch)
+    
+    for batch_index, batch in enumerate(batches):
+        batch_texts = []
+        batch_images = []
+        
+        for page_num in batch:
+            page = pdf_document[page_num]
+            
+            # Extract text
+            text = page.get_text()
+            batch_texts.append(f"Page {page_num + 1}: {text}")
+            
+            # Extract images
+            image_list = page.get_images(full=True)
+            for img_index, img in enumerate(image_list):
+                xref = img[0]
+                base_image = pdf_document.extract_image(xref)
+                image_bytes = base_image["image"]
+                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                batch_images.append((page_num + 1, image_base64))
+        
+        # Generate summary for this batch without batch numbering
+        batch_summary = generate_summary(batch_texts, [img[1] for img in batch_images])
+        all_summaries.append(batch_summary)
+        
+        # If not the last batch, wait to avoid rate limiting
+        if batch_index < len(batches) - 1:
+            time.sleep(60)
+    
+    # Combine all summaries without batch numbering
+    final_summary = "\n\n".join(all_summaries)
+    return final_summary, total_pages
+
+def rate_limited(func):
+    def wrapper(*args, **kwargs):
+        global request_count, last_request_time
+        with rate_limit_lock:
+            current_time = time.time()
+            if current_time - last_request_time > TIME_WINDOW:
+                request_count = 0
+                last_request_time = current_time
+            
+            request_count += 1
+            if request_count > REQUEST_LIMIT:
+                remaining_time = TIME_WINDOW - (current_time - last_request_time)
+                return jsonify({'error': f'Rate limit exceeded. Please try again in {int(remaining_time)} seconds.'}), 429
+
+            last_request_time = current_time  # Reset for each request if less than per minute request
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
 @app.route('/document_summarizer', methods=['GET', 'POST'])
 def document_summarizer():
     return render_template('document_summarizer.html')
@@ -545,55 +620,73 @@ def create_word_document(summary):
     title_style = styles.add_style('CustomTitle', WD_STYLE_TYPE.PARAGRAPH)
     title_style.font.size = Pt(18)
     title_style.font.bold = True
-    title_style.font.color.rgb = RGBColor(0, 0, 128)  # Navy blue
+    title_style.font.color.rgb = RGBColor(0, 0, 128)
+    title_style.paragraph_format.space_after = Pt(12)  # Add some space after titles
     
     subtitle_style = styles.add_style('CustomSubtitle', WD_STYLE_TYPE.PARAGRAPH)
     subtitle_style.font.size = Pt(14)
     subtitle_style.font.bold = True
-    subtitle_style.font.color.rgb = RGBColor(0, 128, 0)  # Green
+    subtitle_style.font.color.rgb = RGBColor(0, 128, 0)
+    subtitle_style.paragraph_format.space_before = Pt(12)  # Add space before subtitles
+    subtitle_style.paragraph_format.space_after = Pt(6)   # Add space after subtitles
     
     normal_style = styles.add_style('CustomNormal', WD_STYLE_TYPE.PARAGRAPH)
     normal_style.font.size = Pt(11)
+    normal_style.paragraph_format.space_after = Pt(6)  # Add some space between paragraphs
     
-    # Process the summary text
-    paragraphs = summary.split('\n')
-    for para in paragraphs:
-        para = para.strip()
-        if para.startswith('TITLE:'):
-            p = doc.add_paragraph(para[6:].strip(), style='CustomTitle')
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        elif para.startswith('SUBTITLE:'):
-            p = doc.add_paragraph(para[9:].strip(), style='CustomSubtitle')
-            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        elif para.startswith('|'):  # Table detection
-            table = doc.add_table(rows=1, cols=len(para.split('|')) - 2)
-            table.style = 'Table Grid'
-            for row in paragraphs[paragraphs.index(para):]:
-                if row.strip().startswith('|'):
-                    cells = row.split('|')[1:-1]
-                    if len(cells) == len(table.columns):
-                        row_cells = table.add_row().cells
-                        for i, cell in enumerate(cells):
-                            row_cells[i].text = cell.strip()
-                else:
-                    break
-        elif para:
-            # Remove asterisks and leading/trailing whitespace
-            cleaned_para = para.strip('* ').strip()
-            if cleaned_para:
-                p = doc.add_paragraph(cleaned_para, style='CustomNormal')
-                # If the original paragraph started with an asterisk, make it a bullet point
-                if para.startswith('*'):
-                    p.style = 'List Bullet'
+    # Clean up the summary text to remove double asterisks
+    summary = re.sub(r'\*\*([^*]+)\*\*', r'\1', summary)
+    
+    # Split the summary into sections based on TITLE markers
+    sections = re.split(r'\n\s*TITLE:', summary)
+    
+    for i, section in enumerate(sections):
+        if section.strip():
+            if i > 0:  # Add "TITLE:" back for all sections except the first one
+                section = "TITLE:" + section
+            
+            # Add extra space before new sections (except the first one)
+            if i > 0:
+                doc.add_paragraph().style = doc.styles['Normal']
+            
+            paragraphs = section.split('\n')
+            for para in paragraphs:
+                para = para.strip()
+                if para.startswith('TITLE:'):
+                    p = doc.add_paragraph(para[6:].strip(), style='CustomTitle')
+                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                elif para.startswith('SUBTITLE:'):
+                    p = doc.add_paragraph(para[9:].strip(), style='CustomSubtitle')
+                elif para.startswith('|'):  # Table detection
+                    table = doc.add_table(rows=1, cols=len(para.split('|')) - 2)
+                    table.style = 'Table Grid'
+                    cells = para.split('|')[1:-1]
+                    for i, cell in enumerate(cells):
+                        table.rows[0].cells[i].text = cell.strip()
+                    # Add some space after the table
+                    doc.add_paragraph().style = doc.styles['Normal']
+                elif para:
+                    cleaned_para = para.strip('* ').strip()
+                    if cleaned_para:
+                        p = doc.add_paragraph(cleaned_para, style='CustomNormal')
+                        if para.lstrip().startswith('*'):
+                            p.style = 'List Bullet'
     
     # Add double borders to every page
     set_page_border(doc)
     
-    # Save the document to a BytesIO object
+    # Set up the document for optimal layout
+    section = doc.sections[0]
+    section.page_height = Inches(11)  # Standard letter page height
+    section.page_width = Inches(8.5)  # Standard letter page width
+    section.left_margin = Inches(1)
+    section.right_margin = Inches(1)
+    section.top_margin = Inches(1)
+    section.bottom_margin = Inches(1)
+    
     docx_buffer = io.BytesIO()
     doc.save(docx_buffer)
     docx_buffer.seek(0)
-    
     return docx_buffer
 
 def set_page_border(doc):
@@ -614,29 +707,35 @@ def set_page_border(doc):
         sectPr.append(pgBorders)
 
 @app.route('/upload', methods=['POST'])
+@rate_limited
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
+    
+    # Increase max content length if needed
+    # app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+    
     if file and file.filename.endswith('.pdf'):
         try:
-            texts, images = process_pdf(file)
-            summary = generate_summary(texts, images)
+            start_time = time.time()
+            summary, total_pages = process_pdf_in_batches(file)
+            processing_time = time.time() - start_time
+            
             docx_buffer = create_word_document(summary)
             
-            return send_file(
-                docx_buffer,
-                as_attachment=True,
-                download_name='summary.docx',
-                mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-            )
+            return jsonify({
+                'docx': base64.b64encode(docx_buffer.getvalue()).decode('utf-8'),
+                'total_pages': total_pages,
+                'processing_time': round(processing_time, 2)
+            })
         except Exception as e:
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
-
+    
 @app.route('/quote', methods=['GET'])
 def get_quote():
     try:
@@ -646,6 +745,7 @@ def get_quote():
         return jsonify({'quote': quote}), 200
     except Exception as e:
         return jsonify({'error': 'Failed to generate quote.'}), 500
+
 
 
 if __name__ == '__main__':
