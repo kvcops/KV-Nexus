@@ -272,60 +272,61 @@
     
             // Form Submission
             form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(form);
-            
-                // Show loading
-                form.classList.add('hidden');
-                loading.classList.remove('hidden');
-                progressText.textContent = 'Uploading file...';
-            
-                try {
-                    const response = await fetch('/upload', {
-                        method: 'POST',
-                        body: formData,
-                    });
-            
-                    if (response.ok) {
-                        const data = await response.json();
-                        
-                        // Create blob from base64 data
-                        const binaryData = atob(data.docx);
-                        const array = new Uint8Array(binaryData.length);
-                        for (let i = 0; i < binaryData.length; i++) {
-                            array[i] = binaryData.charCodeAt(i);
-                        }
-                        const blob = new Blob([array], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
-                        const url = window.URL.createObjectURL(blob);
-                        
-                        // Update UI with processing details
-                        document.getElementById('total-pages').textContent = data.total_pages;
-                        document.getElementById('processing-time').textContent = data.processing_time;
-                        
-                        // Set up download button
-                        downloadButton.addEventListener('click', () => {
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = 'summary.docx';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                        });
-            
-                        // Show result
-                        loading.classList.add('hidden');
-                        result.classList.remove('hidden');
-                        triggerConfetti();
-                    } else {
-                        throw new Error('Upload failed');
+            e.preventDefault();
+            const formData = new FormData(form);
+        
+            // Show loading
+            form.classList.add('hidden');
+            loading.classList.remove('hidden');
+            progressText.textContent = 'Uploading file...';
+        
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+        
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Create blob from base64 data
+                    const binaryData = atob(data.docx);
+                    const array = new Uint8Array(binaryData.length);
+                    for (let i = 0; i < binaryData.length; i++) {
+                        array[i] = binaryData.charCodeAt(i);
                     }
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again or upload a smaller PDF file.');
+                    const blob = new Blob([array], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+                    const url = window.URL.createObjectURL(blob);
+                    
+                    // Update UI with processing details
+                    document.getElementById('total-pages').textContent = data.total_pages;
+                    document.getElementById('processing-time').textContent = data.processing_time;
+                    
+                    // Set up download button
+                    downloadButton.addEventListener('click', () => {
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'summary.docx';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    });
+        
+                    // Show result
                     loading.classList.add('hidden');
-                    form.classList.remove('hidden');
+                    result.classList.remove('hidden');
+                    triggerConfetti();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Upload failed');
                 }
-            });
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`An error occurred: ${error.message}. Please try again or upload a smaller PDF file.`);
+                loading.classList.add('hidden');
+                form.classList.remove('hidden');
+            }
+        });
             // Particle effect
             particlesJS("particles-js", {
                 particles: {
