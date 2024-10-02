@@ -491,6 +491,7 @@ import tempfile
 import time
 from threading import Lock
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+from docx.enum.table import WD_ALIGN_VERTICAL
 REQUEST_LIMIT = 15  # Adjust as needed for Vercel
 TIME_WINDOW = 60
 request_count = 0
@@ -582,17 +583,31 @@ def process_pdf(file):
 
 
 def generate_summary(texts, images):
-    prompt = ["Summarize the following text, incorporating details from any included images. Use 'TITLE:' for main sections and 'SUBTITLE:' for subsections. Use simple and easy english. Dont make it more lengthy", "\n".join(texts)]  
+    prompt = [
+        """Summarize the following text, incorporating details from any included images. 
+        Use 'TITLE:' for main sections and 'SUBTITLE:' for subsections. 
+        Format the content as follows:
+        - Use 'TITLE:' for main sections (no '#' symbols)
+        - Use 'SUBTITLE:' for subsections (no '##' or '###' symbols)
+        - Use plain text for regular paragraphs (no '*' or '-' symbols)
+        - For lists, use 'LIST_ITEM:' at the start of each item
+        - For tables, use '|' to separate columns and start each row with '|'
+        - Do not use any markdown formatting like **bold** or *italic*
+        Use simple and easy English. Keep the summary concise but informative.""",
+        "\n".join(texts)
+    ]
 
-    for img in images: #Now adding the images directly
+    for img in images:
         prompt.append(img)
         
     try:
-        response = model_vision.generate_content(prompt, safety_settings=safety_settings) #Using vision model
+        response = model_vision.generate_content(prompt, safety_settings=safety_settings)
         return response.text
     except Exception as e:
-        print(f"Error in Gemini API call: {e}")  #Handle errors appropriately
+        print(f"Error in Gemini API call: {e}")
         return f"Error summarizing: {e}"
+    
+    
 
 def create_word_document(summary):
     doc = Document()
@@ -600,67 +615,96 @@ def create_word_document(summary):
     # Define styles
     styles = doc.styles
     title_style = styles.add_style('CustomTitle', WD_STYLE_TYPE.PARAGRAPH)
-    title_style.font.size = Pt(18)
+    title_style.font.size = Pt(22)
     title_style.font.bold = True
-    title_style.font.color.rgb = RGBColor(0, 0, 128)
-    title_style.paragraph_format.space_after = Pt(12)  # Add some space after titles
+    title_style.font.color.rgb = RGBColor(0, 32, 96)
+    title_style.paragraph_format.space_before = Pt(24)
+    title_style.paragraph_format.space_after = Pt(12)
+    title_style.paragraph_format.keep_with_next = True
     
     subtitle_style = styles.add_style('CustomSubtitle', WD_STYLE_TYPE.PARAGRAPH)
-    subtitle_style.font.size = Pt(14)
-    subtitle_style.font.bold = True
-    subtitle_style.font.color.rgb = RGBColor(0, 128, 0)
-    subtitle_style.paragraph_format.space_before = Pt(12)  # Add space before subtitles
-    subtitle_style.paragraph_format.space_after = Pt(6)   # Add space after subtitles
+    subtitle_style.font.size = Pt(18)
+    subtitle_style.font.italic = True
+    subtitle_style.font.color.rgb = RGBColor(0, 112, 192)
+    subtitle_style.paragraph_format.space_before = Pt(18)
+    subtitle_style.paragraph_format.space_after = Pt(6)
+    subtitle_style.paragraph_format.keep_with_next = True
     
     normal_style = styles.add_style('CustomNormal', WD_STYLE_TYPE.PARAGRAPH)
     normal_style.font.size = Pt(11)
-    normal_style.paragraph_format.space_after = Pt(6)  # Add some space between paragraphs
+    normal_style.paragraph_format.space_after = Pt(8)
+    normal_style.paragraph_format.line_spacing = 1.15
     
-    # Clean up the summary text to remove double asterisks
-    summary = re.sub(r'\*\*([^*]+)\*\*', r'\1', summary)
+    list_style = styles.add_style('CustomList', WD_STYLE_TYPE.PARAGRAPH)
+    list_style.font.size = Pt(11)
+    list_style.paragraph_format.left_indent = Inches(0.25)
+    list_style.paragraph_format.first_line_indent = Inches(-0.25)
+    list_style.paragraph_format.space_after = Pt(4)
+    list_style.paragraph_format.line_spacing = 1.15
     
-    # Split the summary into sections based on TITLE markers
+    # Process the summary
     sections = re.split(r'\n\s*TITLE:', summary)
     
     for i, section in enumerate(sections):
         if section.strip():
-            if i > 0:  # Add "TITLE:" back for all sections except the first one
+            if i > 0:
                 section = "TITLE:" + section
             
-            # Add extra space before new sections (except the first one)
             if i > 0:
                 doc.add_paragraph().style = doc.styles['Normal']
             
             paragraphs = section.split('\n')
+            table_rows = []
+            in_table = False
+            
             for para in paragraphs:
                 para = para.strip()
+                # Remove double asterisks
+                para = para.replace('**', '')
+                
                 if para.startswith('TITLE:'):
+                    if in_table:
+                        add_table_to_document(doc, table_rows)
+                        table_rows = []
+                        in_table = False
                     p = doc.add_paragraph(para[6:].strip(), style='CustomTitle')
                     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 elif para.startswith('SUBTITLE:'):
+                    if in_table:
+                        add_table_to_document(doc, table_rows)
+                        table_rows = []
+                        in_table = False
                     p = doc.add_paragraph(para[9:].strip(), style='CustomSubtitle')
+                elif para.startswith('LIST_ITEM:'):
+                    if in_table:
+                        add_table_to_document(doc, table_rows)
+                        table_rows = []
+                        in_table = False
+                    p = doc.add_paragraph(para[10:].strip(), style='CustomList')
+                    p.style.paragraph_format.first_line_indent = Inches(-0.25)
+                    run = p.add_run()
+                    run.add_text('• ')
+                    run.font.size = Pt(10)
                 elif para.startswith('|'):  # Table detection
-                    table = doc.add_table(rows=1, cols=len(para.split('|')) - 2)
-                    table.style = 'Table Grid'
-                    cells = para.split('|')[1:-1]
-                    for i, cell in enumerate(cells):
-                        table.rows[0].cells[i].text = cell.strip()
-                    # Add some space after the table
-                    doc.add_paragraph().style = doc.styles['Normal']
+                    in_table = True
+                    table_rows.append([cell.strip() for cell in para.split('|')[1:-1]])
                 elif para:
-                    cleaned_para = para.strip('* ').strip()
-                    if cleaned_para:
-                        p = doc.add_paragraph(cleaned_para, style='CustomNormal')
-                        if para.lstrip().startswith('*'):
-                            p.style = 'List Bullet'
+                    if in_table:
+                        add_table_to_document(doc, table_rows)
+                        table_rows = []
+                        in_table = False
+                    p = doc.add_paragraph(para.strip(), style='CustomNormal')
+            
+            if in_table:
+                add_table_to_document(doc, table_rows)
     
-    # Add double borders to every page
+    # Add wider double borders to every page
     set_page_border(doc)
     
     # Set up the document for optimal layout
     section = doc.sections[0]
-    section.page_height = Inches(11)  # Standard letter page height
-    section.page_width = Inches(8.5)  # Standard letter page width
+    section.page_height = Inches(11)
+    section.page_width = Inches(8.5)
     section.left_margin = Inches(1)
     section.right_margin = Inches(1)
     section.top_margin = Inches(1)
@@ -671,9 +715,37 @@ def create_word_document(summary):
     docx_buffer.seek(0)
     return docx_buffer
 
+def add_table_to_document(doc, rows):
+    if not rows:
+        return
+    table = doc.add_table(rows=len(rows), cols=len(rows[0]))
+    table.style = 'Table Grid'
+    for i, row in enumerate(rows):
+        for j, cell in enumerate(row):
+            table.cell(i, j).text = cell
+            table.cell(i, j).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    # Apply additional formatting to the table
+    for row in table.rows:
+        for cell in row.cells:
+            cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            paragraphs = cell.paragraphs
+            for paragraph in paragraphs:
+                paragraph.paragraph_format.space_before = Pt(3)
+                paragraph.paragraph_format.space_after = Pt(3)
+    
+    # Make the header row bold
+    for cell in table.rows[0].cells:
+        for paragraph in cell.paragraphs:
+            for run in paragraph.runs:
+                run.font.bold = True
+    
+    table.allow_autofit = True
+    doc.add_paragraph()  # Add space after table
+
 def set_page_border(doc):
     """
-    Adds a double border to every page of the document.
+    Adds a wider double border to every page of the document.
     """
     for section in doc.sections:
         sectPr = section._sectPr
@@ -682,12 +754,12 @@ def set_page_border(doc):
         for border_position in ('top', 'left', 'bottom', 'right'):
             border_el = OxmlElement(f'w:{border_position}')
             border_el.set(qn('w:val'), 'double')
-            border_el.set(qn('w:sz'), '18') #increase the border width
+            border_el.set(qn('w:sz'), '32')  # Further increased border width
             border_el.set(qn('w:space'), '24')
             border_el.set(qn('w:color'), 'auto')
             pgBorders.append(border_el)
         sectPr.append(pgBorders)
-
+        
 @app.route('/upload', methods=['POST'])
 @rate_limited
 def upload_file():
