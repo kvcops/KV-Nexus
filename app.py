@@ -31,6 +31,34 @@ from docx.oxml.ns import qn
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import RGBColor
 import fitz  # PyMuPDF
+import markdown
+from bs4 import BeautifulSoup, NavigableString
+
+# Firebase imports
+import firebase_admin
+from firebase_admin import credentials, firestore, storage
+
+from docx import Document
+from docx.shared import RGBColor, Inches, Pt
+from docx.enum.style import WD_STYLE_TYPE
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+import google.generativeai as genai
+from google.generativeai.types import GenerationConfig
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
+import google.api_core.exceptions
+
+from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
+import fitz  # PyMuPDF
+import time
+import uuid
+import base64
+from threading import Lock
+
+
 app = Flask(__name__)
 # Load environment variables
 load_dotenv()
@@ -48,6 +76,41 @@ genai.configure(api_key=api_key)
 
 user_data = {}  # Dictionary to store user data
 
+
+FIREBASE_TYPE = os.environ.get("FIREBASE_TYPE")
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
+FIREBASE_PRIVATE_KEY_ID = os.environ.get("FIREBASE_PRIVATE_KEY_ID")
+FIREBASE_PRIVATE_KEY = os.environ.get("FIREBASE_PRIVATE_KEY")  # Important to handle newlines correctly here
+FIREBASE_CLIENT_EMAIL = os.environ.get("FIREBASE_CLIENT_EMAIL")
+FIREBASE_CLIENT_ID = os.environ.get("FIREBASE_CLIENT_ID")
+FIREBASE_AUTH_URI = os.environ.get("FIREBASE_AUTH_URI")
+FIREBASE_TOKEN_URI = os.environ.get("FIREBASE_TOKEN_URI")
+FIREBASE_AUTH_PROVIDER_X509_CERT_URL = os.environ.get("FIREBASE_AUTH_PROVIDER_X509_CERT_URL")
+FIREBASE_CLIENT_X509_CERT_URL = os.environ.get("FIREBASE_CLIENT_X509_CERT_URL")
+FIREBASE_UNIVERSE_DOMAIN = os.environ.get("FIREBASE_UNIVERSE_DOMAIN")
+
+
+STORAGE_BUCKET_URL = os.environ.get("STORAGE_BUCKET_URL")  # Bucket URL
+
+cred = credentials.Certificate({
+    "type": FIREBASE_TYPE,
+    "project_id": FIREBASE_PROJECT_ID,
+    "private_key_id": FIREBASE_PRIVATE_KEY_ID,
+    "private_key": FIREBASE_PRIVATE_KEY.replace("\\n", "\n"), # decode the newlines 
+    "client_email": FIREBASE_CLIENT_EMAIL,
+    "client_id": FIREBASE_CLIENT_ID,
+    "auth_uri": FIREBASE_AUTH_URI,
+    "token_uri": FIREBASE_TOKEN_URI,
+    "auth_provider_x509_cert_url": FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+    "client_x509_cert_url": FIREBASE_CLIENT_X509_CERT_URL,
+    "universe_domain": FIREBASE_UNIVERSE_DOMAIN
+})
+
+
+firebase_admin.initialize_app(cred, {'storageBucket': STORAGE_BUCKET_URL})
+db = firestore.client()
+bucket = storage.bucket()
+
 # Generation configurations
 generation_config = GenerationConfig(
     temperature=0.9,
@@ -60,7 +123,7 @@ generation_config_health = GenerationConfig(
     temperature=0.7,
     top_p=1,
     top_k=1,
-    max_output_tokens=512,
+    max_output_tokens=2048,
     candidate_count=1  # Explicitly set to 1 as per documentation
 )
 
@@ -72,7 +135,7 @@ safety_settings = {
     HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
     # ... add other harm categories as needed with BLOCK_NONE
 }
-
+logging.basicConfig(level=logging.INFO)
 # Create model instances (using the same config for now)
 chat_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
 chef_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
@@ -301,6 +364,10 @@ def algorithm_generation():
     return render_template('algorithm_generation.html')
 
 
+import base64
+from PIL import Image
+from io import BytesIO
+
 @app.route('/analyze', methods=['GET', 'POST'])
 def analyze():
     if request.method == 'POST':
@@ -311,51 +378,70 @@ def analyze():
             layer = request.form.get('layer')
             image = request.files.get('image')
 
+            prompt = f"""As an AI medical assistant, analyze the following information about a patient:
+
+            Gender: {gender}
+            Symptoms: {symptoms}
+            Affected Body Part: {body_part}
+            Layer Affected: {layer}
+
+            Based on this information, provide a detailed analysis considering the following:
+
+            1. Possible conditions: List and briefly describe potential conditions that match the symptoms and affected area.
+            2. Risk factors: Discuss any risk factors associated with the gender or affected body part.
+            3. Recommended next steps: Suggest appropriate medical tests or examinations that could help diagnose the condition.
+            4. General advice: Offer some general health advice related to the symptoms or affected area.
+
+            Important: This is not a diagnosis. Advise the patient to consult with a healthcare professional for an accurate diagnosis and treatment plan.
+
+            Format the response using the following structure:
+            <section>
+            <h2>Section Title</h2>
+            <p>Paragraph text</p>
+            <ul>
+            <li>List item 1</li>
+            <li>List item 2</li>
+            </ul>
+            </section>
+
+            Use <strong> for emphasis on important points.
+            """
+
             if image:
-                try:
-                    img = Image.open(BytesIO(image.read()))
-                    prompt = [
-                        f"""Acting as a doctor, but without providing any 
-                        diagnosis or medical advice, what are some possible 
-                        explanations for a {gender} patient experiencing 
-                        {symptoms} on their {body_part}? Consider the provided 
-                        image, but remember this is a speculative exercise 
-                        and should not be taken as actual medical guidance. 
-                        Use Simple and easy english""",
-                        img
-                    ]
-                    response = model_vision.generate_content(prompt, safety_settings=safety_settings)
+                img = Image.open(BytesIO(image.read()))
+                img_byte_arr = BytesIO()
+                img.save(img_byte_arr, format='PNG')
+                img_byte_arr = img_byte_arr.getvalue()
+                image_base64 = base64.b64encode(img_byte_arr).decode('utf-8')
 
-                except Exception as e:
-                    logging.error(f"Error processing image: {e}")
-                    return jsonify({'error': "Image processing failed"}), 500
+                prompt += f"""
+                <section>
+                <h2>Image Analysis</h2>
+                <p>Analyze the provided image in relation to the patient's symptoms and affected body part. Consider:</p>
+                <ul>
+                <li>Any visible symptoms or abnormalities</li>
+                <li>Correlation between the image and the reported symptoms</li>
+                <li>Additional insights the image might provide about the patient's condition</li>
+                </ul>
+                </section>
+
+                Image data: data:image/png;base64,{image_base64}
+                """
+
+                response = model_vision.generate_content([prompt, Image.open(BytesIO(base64.b64decode(image_base64)))], safety_settings=safety_settings)
             else:
-                try:
-                    prompt = f"""If a {gender} patient presented with {symptoms} 
-                                on their {body_part}, what are some potential 
-                                conditions that a doctor might consider? Please 
-                                note that this is a hypothetical exercise and 
-                                should not be interpreted as a real diagnosis 
-                                or medical advice. Use Simple and easy english"""
-                    response = model_text.generate_content([prompt], safety_settings=safety_settings)
-                except Exception as e:
-                    logging.error(f"Error generating text response: {e}")
-                    return jsonify({'error': "Text generation failed"}), 500
+                response = model_text.generate_content([prompt], safety_settings=safety_settings)
 
-            analysis_text = response.candidates[0].content.parts[0].text if response.candidates and response.candidates[0].content.parts else "No valid response found."
+            analysis_text = response.text if hasattr(response, 'text') else response.parts[0].text
 
-            # --- Format the response (final version) ---
-            formatted_analysis = analysis_text.replace("**", "<b>")  # Replace start of heading
-            formatted_analysis = formatted_analysis.replace("**", "</b><br>")  # Replace end of heading and add a line break
-            formatted_analysis = formatted_analysis.replace("* ", "\n* ")
-            formatted_analysis = formatted_analysis.replace("\n\n", "\n")
-            formatted_analysis = formatted_analysis.replace("* \n", "* ")
+            # Wrap the entire response in a div for styling
+            formatted_analysis = f'<div class="analysis-content">{analysis_text}</div>'
+
             return jsonify({'analysis': formatted_analysis})
         except Exception as e:
             logging.error(f"Error in /analyze route: {e}")
             return jsonify({'error': "Internal Server Error"}), 500
-    return render_template('analyze.html')  # Make sure you have analyze.html
-
+    return render_template('analyze.html')
 
 
 # Flowchart Generation Routes
@@ -486,68 +572,30 @@ def send_email():
 
 #docuement summarize 
 
-# Rate limiting setup
-import tempfile
-import time
-from threading import Lock
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
-from docx.enum.table import WD_ALIGN_VERTICAL
-REQUEST_LIMIT = 15  # Adjust as needed for Vercel
-TIME_WINDOW = 60
-request_count = 0
-last_request_time = 0
+# Rate limiting parameters
+REQUEST_LIMIT = 15  # Max requests per time window
+TIME_WINDOW = 60    # Time window in seconds
 rate_limit_lock = Lock()
-
-def process_pdf_in_batches(file):
-    """Processes PDF in batches to avoid exceeding Vercel's time limit"""
-    pdf_document = fitz.open(stream=file.read(), filetype="pdf")
-    total_pages = len(pdf_document)
-    all_summaries = []
-    batch_size = 1 # Process one page at a time, best for Vercel
-    
-    for i in range(0, total_pages, batch_size):
-        batch_texts = []
-        batch_images = []
-        for page_num in range(i, min(i + batch_size, total_pages)):
-            page = pdf_document[page_num]
-            text = page.get_text("text")
-            batch_texts.append(text)
-
-            # Image processing: handle image uploads to Gemini.
-            image_list = page.get_images(full=True)
-            for img_index, img in enumerate(image_list):
-                xref = img[0]
-                base_image = pdf_document.extract_image(xref)
-                image_bytes = base_image["image"]
-                img = Image.open(io.BytesIO(image_bytes))
-                batch_images.append(img)  #Directly append PIL Image
-            
-
-        batch_summary = generate_summary(batch_texts, batch_images)
-        all_summaries.append(batch_summary)
-        time.sleep(1) # adjust sleep based on response time. 
-
-    final_summary = "\n\n".join(all_summaries)
-    return final_summary, total_pages
-
+last_reset_time = time.time()
+request_count = 0
 
 def rate_limited(func):
+    from functools import wraps
+    @wraps(func)
     def wrapper(*args, **kwargs):
-        global request_count, last_request_time
+        global request_count, last_reset_time
         with rate_limit_lock:
             current_time = time.time()
-            if current_time - last_request_time > TIME_WINDOW:
+            if current_time - last_reset_time >= TIME_WINDOW:
                 request_count = 0
-                last_request_time = current_time
-            
+                last_reset_time = current_time
+            if request_count >= REQUEST_LIMIT:
+                remaining_time = TIME_WINDOW - (current_time - last_reset_time)
+                return jsonify({
+                    'error': f'Rate limit exceeded. Please try again in {int(remaining_time)} seconds.'
+                }), 429
             request_count += 1
-            if request_count > REQUEST_LIMIT:
-                remaining_time = TIME_WINDOW - (current_time - last_request_time)
-                return jsonify({'error': f'Rate limit exceeded. Please try again in {int(remaining_time)} seconds.'}), 429
-
-            last_request_time = current_time  # Reset for each request if less than per minute request
         return func(*args, **kwargs)
-
     return wrapper
 
 
@@ -555,153 +603,142 @@ def rate_limited(func):
 def document_summarizer():
     return render_template('document_summarizer.html')
 
+@app.route('/quote', methods=['GET'])
+def get_quote():
+    import random
+    quotes = [
+        "The best way to predict the future is to invent it. – Alan Kay",
+        "Life is like riding a bicycle. To keep your balance you must keep moving. – Albert Einstein",
+        "Problems are not stop signs, they are guidelines. – Robert H. Schuller",
+        "In order to succeed, we must first believe that we can. – Nikos Kazantzakis",
+        "The only limit to our realization of tomorrow is our doubts of today. – Franklin D. Roosevelt"
+    ]
+    quote = random.choice(quotes)
+    return jsonify({'quote': quote})
 
-def process_pdf(file):
-    pdf_document = fitz.open(stream=file.read(), filetype="pdf")
-    images = []
-    texts = []
-
-    for page_num in range(len(pdf_document)):
-        page = pdf_document[page_num]
-        
-        # Extract text
-        text = page.get_text()
-        texts.append(text)
-        
-        # Extract images
-        image_list = page.get_images(full=True)
-        for img_index, img in enumerate(image_list):
-            xref = img[0]
-            base_image = pdf_document.extract_image(xref)
-            image_bytes = base_image["image"]
-            
-            # Convert to base64
-            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-            images.append(image_base64)
-
-    return texts, images
-
-
-def generate_summary(texts, images):
+def generate_summary(texts, images, max_retries=3):
     prompt = [
-        """Summarize the following text, incorporating details from any included images. 
-        Use 'TITLE:' for main sections and 'SUBTITLE:' for subsections. 
-        Format the content as follows:
-        - Use 'TITLE:' for main sections (no '#' symbols)
-        - Use 'SUBTITLE:' for subsections (no '##' or '###' symbols)
-        - Use plain text for regular paragraphs (no '*' or '-' symbols)
-        - For lists, use 'LIST_ITEM:' at the start of each item
-        - For tables, use '|' to separate columns and start each row with '|'
-        - Do not use any markdown formatting like **bold** or *italic*
-        Use simple and easy English. Keep the summary concise but informative.""",
+        """Summarize the following text into a concise and simplified summary. Ensure the summary is well-structured with clear headings and subheadings.
+
+Formatting Guidelines:
+
+- Use `#` for main section titles.
+- Use `##` for subsections.
+- Use `-` for bullet points.
+- For **bold text**, wrap the text with double asterisks, e.g., `**important**`.
+- For *italic text*, wrap the text with single asterisks, e.g., `*note*`.
+- **For tables**, use proper Markdown table syntax with pipes `|` and hyphens `-` for headers.
+
+**Example Table**:
+Component	Function
+Node 1	Receive user input
+Node 2	Process user input
+Node 3	Store processed data
+Node 4	Retrieve data for display
+Node 5	Display data to user
+
+
+- Keep sentences short and use simple language.
+- Focus on the main ideas and avoid unnecessary details.
+- Do not include direct error messages or irrelevant information.
+
+Here is the text to summarize:
+""",
         "\n".join(texts)
     ]
-
     for img in images:
         prompt.append(img)
-        
-    try:
-        response = model_vision.generate_content(prompt, safety_settings=safety_settings)
-        return response.text
-    except Exception as e:
-        print(f"Error in Gemini API call: {e}")
-        return f"Error summarizing: {e}"
-    
-    
+    retries = 0
+    backoff_time = 10  # Start with 10 seconds
+    while retries < max_retries:
+        try:
+            response = model_vision.generate_content(prompt, safety_settings=safety_settings)
+            summary_text = response.text
+            # Log the AI model output for debugging
+            print("AI Model Output:\n", summary_text)
+            return summary_text
+        except google.api_core.exceptions.ResourceExhausted as e:
+            print(f"Resource exhausted: {e}. Retrying after {backoff_time} seconds...")
+            time.sleep(backoff_time)
+            retries += 1
+            backoff_time *= 2  # Exponential backoff
+        except Exception as e:
+            print(f"Error in Gemini API call: {e}")
+            return None  # Return None to indicate failure
+    # If we exhaust retries, handle accordingly
+    print("Failed to generate summary after retries.")
+    return None
 
 def create_word_document(summary):
     doc = Document()
-    
+
     # Define styles
-    styles = doc.styles
-    title_style = styles.add_style('CustomTitle', WD_STYLE_TYPE.PARAGRAPH)
-    title_style.font.size = Pt(22)
-    title_style.font.bold = True
-    title_style.font.color.rgb = RGBColor(0, 32, 96)
-    title_style.paragraph_format.space_before = Pt(24)
-    title_style.paragraph_format.space_after = Pt(12)
-    title_style.paragraph_format.keep_with_next = True
-    
-    subtitle_style = styles.add_style('CustomSubtitle', WD_STYLE_TYPE.PARAGRAPH)
-    subtitle_style.font.size = Pt(18)
-    subtitle_style.font.italic = True
-    subtitle_style.font.color.rgb = RGBColor(0, 112, 192)
-    subtitle_style.paragraph_format.space_before = Pt(18)
-    subtitle_style.paragraph_format.space_after = Pt(6)
-    subtitle_style.paragraph_format.keep_with_next = True
-    
-    normal_style = styles.add_style('CustomNormal', WD_STYLE_TYPE.PARAGRAPH)
-    normal_style.font.size = Pt(11)
-    normal_style.paragraph_format.space_after = Pt(8)
-    normal_style.paragraph_format.line_spacing = 1.15
-    
-    list_style = styles.add_style('CustomList', WD_STYLE_TYPE.PARAGRAPH)
-    list_style.font.size = Pt(11)
-    list_style.paragraph_format.left_indent = Inches(0.25)
-    list_style.paragraph_format.first_line_indent = Inches(-0.25)
-    list_style.paragraph_format.space_after = Pt(4)
-    list_style.paragraph_format.line_spacing = 1.15
-    
-    # Process the summary
-    sections = re.split(r'\n\s*TITLE:', summary)
-    
-    for i, section in enumerate(sections):
-        if section.strip():
-            if i > 0:
-                section = "TITLE:" + section
-            
-            if i > 0:
-                doc.add_paragraph().style = doc.styles['Normal']
-            
-            paragraphs = section.split('\n')
-            table_rows = []
-            in_table = False
-            
-            for para in paragraphs:
-                para = para.strip()
-                # Remove double asterisks
-                para = para.replace('**', '')
-                
-                if para.startswith('TITLE:'):
-                    if in_table:
-                        add_table_to_document(doc, table_rows)
-                        table_rows = []
-                        in_table = False
-                    p = doc.add_paragraph(para[6:].strip(), style='CustomTitle')
-                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                elif para.startswith('SUBTITLE:'):
-                    if in_table:
-                        add_table_to_document(doc, table_rows)
-                        table_rows = []
-                        in_table = False
-                    p = doc.add_paragraph(para[9:].strip(), style='CustomSubtitle')
-                elif para.startswith('LIST_ITEM:'):
-                    if in_table:
-                        add_table_to_document(doc, table_rows)
-                        table_rows = []
-                        in_table = False
-                    p = doc.add_paragraph(para[10:].strip(), style='CustomList')
-                    p.style.paragraph_format.first_line_indent = Inches(-0.25)
-                    run = p.add_run()
-                    run.add_text('• ')
-                    run.font.size = Pt(10)
-                elif para.startswith('|'):  # Table detection
-                    in_table = True
-                    table_rows.append([cell.strip() for cell in para.split('|')[1:-1]])
-                elif para:
-                    if in_table:
-                        add_table_to_document(doc, table_rows)
-                        table_rows = []
-                        in_table = False
-                    p = doc.add_paragraph(para.strip(), style='CustomNormal')
-            
-            if in_table:
-                add_table_to_document(doc, table_rows)
-    
-    # Add wider double borders to every page
+    define_custom_styles(doc)
+
+    # Adjust document layout
+    adjust_document_layout(doc)
+
+    # Set page borders
     set_page_border(doc)
-    
-    # Set up the document for optimal layout
+
+    # Convert Markdown to HTML with necessary extensions
+    html = markdown.markdown(summary, extensions=['extra', 'tables', 'fenced_code', 'codehilite', 'nl2br'])
+
+    # Parse HTML
+    soup = BeautifulSoup(html, 'html.parser')
+
+    # Iterate over HTML elements and add them to the Word document
+    for element in soup.contents:
+        process_html_element(doc, element)
+
+    docx_buffer = io.BytesIO()
+    doc.save(docx_buffer)
+    docx_buffer.seek(0)
+    return docx_buffer
+
+def define_custom_styles(doc):
+    styles = doc.styles
+
+    # Title Style (Heading 1)
+    style_h1 = styles['Heading 1']
+    style_h1.font.name = 'Calibri Light'
+    style_h1.font.size = Pt(24)
+    style_h1.font.bold = True
+    style_h1.font.color.rgb = RGBColor(31, 56, 100)
+    style_h1.paragraph_format.space_after = Pt(12)
+    style_h1.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Subtitle Style (Heading 2)
+    style_h2 = styles['Heading 2']
+    style_h2.font.name = 'Calibri'
+    style_h2.font.size = Pt(20)
+    style_h2.font.bold = True
+    style_h2.font.color.rgb = RGBColor(54, 95, 145)
+    style_h2.paragraph_format.space_before = Pt(12)
+    style_h2.paragraph_format.space_after = Pt(6)
+
+    # Normal Text Style
+    style_normal = styles['Normal']
+    style_normal.font.name = 'Calibri'
+    style_normal.font.size = Pt(12)
+    style_normal.paragraph_format.space_after = Pt(8)
+    style_normal.paragraph_format.line_spacing = 1.15
+
+    # List Bullet Style
+    style_list_bullet = styles['List Bullet']
+    style_list_bullet.font.name = 'Calibri'
+    style_list_bullet.font.size = Pt(12)
+    style_list_bullet.paragraph_format.space_after = Pt(4)
+    style_list_bullet.paragraph_format.line_spacing = 1.15
+
+    # List Number Style
+    style_list_number = styles['List Number']
+    style_list_number.font.name = 'Calibri'
+    style_list_number.font.size = Pt(12)
+    style_list_number.paragraph_format.space_after = Pt(4)
+    style_list_number.paragraph_format.line_spacing = 1.15
+
+def adjust_document_layout(doc):
     section = doc.sections[0]
     section.page_height = Inches(11)
     section.page_width = Inches(8.5)
@@ -709,57 +746,120 @@ def create_word_document(summary):
     section.right_margin = Inches(1)
     section.top_margin = Inches(1)
     section.bottom_margin = Inches(1)
-    
-    docx_buffer = io.BytesIO()
-    doc.save(docx_buffer)
-    docx_buffer.seek(0)
-    return docx_buffer
-
-def add_table_to_document(doc, rows):
-    if not rows:
-        return
-    table = doc.add_table(rows=len(rows), cols=len(rows[0]))
-    table.style = 'Table Grid'
-    for i, row in enumerate(rows):
-        for j, cell in enumerate(row):
-            table.cell(i, j).text = cell
-            table.cell(i, j).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
-    # Apply additional formatting to the table
-    for row in table.rows:
-        for cell in row.cells:
-            cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-            paragraphs = cell.paragraphs
-            for paragraph in paragraphs:
-                paragraph.paragraph_format.space_before = Pt(3)
-                paragraph.paragraph_format.space_after = Pt(3)
-    
-    # Make the header row bold
-    for cell in table.rows[0].cells:
-        for paragraph in cell.paragraphs:
-            for run in paragraph.runs:
-                run.font.bold = True
-    
-    table.allow_autofit = True
-    doc.add_paragraph()  # Add space after table
 
 def set_page_border(doc):
-    """
-    Adds a wider double border to every page of the document.
-    """
     for section in doc.sections:
         sectPr = section._sectPr
         pgBorders = OxmlElement('w:pgBorders')
         pgBorders.set(qn('w:offsetFrom'), 'page')
         for border_position in ('top', 'left', 'bottom', 'right'):
             border_el = OxmlElement(f'w:{border_position}')
-            border_el.set(qn('w:val'), 'double')
-            border_el.set(qn('w:sz'), '32')  # Further increased border width
+            border_el.set(qn('w:val'), 'single')
+            border_el.set(qn('w:sz'), '24')
             border_el.set(qn('w:space'), '24')
-            border_el.set(qn('w:color'), 'auto')
+            border_el.set(qn('w:color'), '5B9BD5')
             pgBorders.append(border_el)
         sectPr.append(pgBorders)
-        
+
+def process_html_element(doc, element, parent=None):
+    if isinstance(element, NavigableString):
+        text = str(element)
+        if text.strip():
+            if parent is not None:
+                parent.add_run(text)
+            else:
+                p = doc.add_paragraph()
+                p.add_run(text)
+        return
+    elif element.name is not None:
+        if element.name == 'h1':
+            p = doc.add_heading(level=1)
+            add_runs_from_element(p, element)
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        elif element.name == 'h2':
+            p = doc.add_heading(level=2)
+            add_runs_from_element(p, element)
+        elif element.name == 'p':
+            p = doc.add_paragraph()
+            add_runs_from_element(p, element)
+        elif element.name in ['strong', 'b']:
+            if parent is not None:
+                run = parent.add_run(element.get_text())
+                run.bold = True
+            else:
+                p = doc.add_paragraph()
+                run = p.add_run(element.get_text())
+                run.bold = True
+        elif element.name in ['em', 'i']:
+            if parent is not None:
+                run = parent.add_run(element.get_text())
+                run.italic = True
+            else:
+                p = doc.add_paragraph()
+                run = p.add_run(element.get_text())
+                run.italic = True
+        elif element.name == 'ul':
+            for li in element.find_all('li', recursive=False):
+                p = doc.add_paragraph(style='List Bullet')
+                add_runs_from_element(p, li)
+        elif element.name == 'ol':
+            for li in element.find_all('li', recursive=False):
+                p = doc.add_paragraph(style='List Number')
+                add_runs_from_element(p, li)
+        elif element.name == 'table':
+            add_table_to_document_from_html(doc, element)
+        else:
+            # Process children
+            for child in element.contents:
+                process_html_element(doc, child, parent)
+    else:
+        # Unknown element type
+        pass
+
+def add_runs_from_element(paragraph, element):
+    if isinstance(element, NavigableString):
+        text = str(element)
+        if text.strip():
+            paragraph.add_run(text)
+    elif element.name is not None:
+        if element.name in ['strong', 'b']:
+            run = paragraph.add_run(element.get_text())
+            run.bold = True
+        elif element.name in ['em', 'i']:
+            run = paragraph.add_run(element.get_text())
+            run.italic = True
+        else:
+            for content in element.contents:
+                add_runs_from_element(paragraph, content)
+    else:
+        # Unknown element type
+        pass
+
+def add_table_to_document_from_html(doc, table_element):
+    rows = table_element.find_all('tr')
+    if not rows:
+        return
+
+    num_cols = len(rows[0].find_all(['td', 'th']))
+    table = doc.add_table(rows=0, cols=num_cols)
+    table.style = 'Table Grid'  # Or define a custom table style
+
+    for row_idx, row in enumerate(rows):
+        cells = row.find_all(['td', 'th'])
+        row_cells = table.add_row().cells
+        for idx, cell in enumerate(cells):
+            cell_text = cell.get_text(strip=True)
+            paragraph = row_cells[idx].paragraphs[0]
+            paragraph.clear()  # Clear existing content
+            run = paragraph.add_run(cell_text)
+            row_cells[idx].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            # Apply styling for header cells
+            if cell.name == 'th':
+                run.bold = True
+                shading_elm = OxmlElement('w:shd')
+                shading_elm.set(qn('w:fill'), 'D9E1F2')  # Light blue background
+                row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
+
 @app.route('/upload', methods=['POST'])
 @rate_limited
 def upload_file():
@@ -768,39 +868,151 @@ def upload_file():
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
-    
-    # Increase max content length if needed
-    # app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
-    
+
     if file and file.filename.endswith('.pdf'):
         try:
-            start_time = time.time()
-            #Process PDF in small batches to meet Vercel's timing constraints.
-            summary, total_pages = process_pdf_in_batches(file)
-            processing_time = time.time() - start_time
+            # Generate a unique PDF ID
+            pdf_id = str(uuid.uuid4())
 
-            docx_buffer = create_word_document(summary)
+            # Upload the PDF to Firebase Storage
+            blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
+            blob.upload_from_file(file)
 
-            return jsonify({
-                'docx': base64.b64encode(docx_buffer.getvalue()).decode('utf-8'),
+            # Get the total number of pages
+            pdf_document = fitz.open(stream=blob.download_as_bytes(), filetype="pdf")
+            total_pages = len(pdf_document)
+            pdf_document.close()
+
+            # Initialize processing status in Firestore
+            db.collection('pdf_processes').document(pdf_id).set({
+                'status': 'processing',
+                'current_page': 0,
                 'total_pages': total_pages,
-                'processing_time': round(processing_time, 2)
+                'summary': '',
+                'processing_start_time': time.time(),
+                'timestamp': firestore.SERVER_TIMESTAMP
             })
+
+            return jsonify({'pdf_id': pdf_id}), 200
         except Exception as e:
+            logging.error(f"Error uploading file: {e}")
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
-@app.route('/quote', methods=['GET'])
-def get_quote():
-    try:
-        prompt = "Generate a random inspirational quote."
-        response = model.generate_content(prompt)
-        quote = response.text.strip().strip('"')  # Remove quotes and extra whitespace
-        return jsonify({'quote': quote}), 200
-    except Exception as e:
-        return jsonify({'error': 'Failed to generate quote.'}), 500
 
+@app.route('/process_pdf', methods=['POST'])
+@rate_limited
+def process_pdf_endpoint():
+    data = request.get_json()
+    pdf_id = data.get('pdf_id')
+    if not pdf_id:
+        return jsonify({'error': 'No PDF ID provided.'}), 400
+
+    # Retrieve processing status from Firestore
+    doc_ref = db.collection('pdf_processes').document(pdf_id)
+    doc = doc_ref.get()
+    if not doc.exists:
+        return jsonify({'error': 'Invalid PDF ID.'}), 400
+    result = doc.to_dict()
+
+    try:
+        blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
+        if not blob.exists():
+            return jsonify({'error': 'File not found.'}), 404
+
+        pdf_bytes = blob.download_as_bytes()
+        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+        total_pages = result.get('total_pages', len(pdf_document))
+
+        current_page = result['current_page']
+        summary = result['summary']
+
+        if current_page < total_pages:
+            page = pdf_document[current_page]
+            text = page.get_text()
+            images = []
+
+            # Extract images
+            image_list = page.get_images(full=True)
+            for img_index, img in enumerate(image_list):
+                xref = img[0]
+                base_image = pdf_document.extract_image(xref)
+                image_bytes = base_image["image"]
+                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                images.append(image_base64)
+
+            # Generate summary for the page
+            page_summary = generate_summary([text], images)
+            if page_summary:
+                summary += page_summary + '\n\n'
+            else:
+                print(f"Failed to generate summary for page {current_page + 1}. Skipping this page.")
+                summary += f"(Summary not available for page {current_page + 1})\n\n"
+
+            current_page += 1
+            # Update the processing status in Firestore
+            doc_ref.update({'current_page': current_page, 'summary': summary})
+
+            pdf_document.close()
+
+            if current_page >= total_pages:
+                # Processing complete
+                doc_ref.update({'status': 'completed', 'processing_end_time': time.time()})
+                # Optionally delete the PDF from storage
+                blob.delete()
+                return jsonify({'status': 'completed'}), 200
+            else:
+                # Processing not complete
+                return jsonify({'status': 'processing', 'current_page': current_page, 'total_pages': total_pages}), 200
+        else:
+            # All pages are already processed
+            return jsonify({'status': 'completed'}), 200
+
+    except Exception as e:
+        logging.error(f"Error processing PDF: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/check_status', methods=['GET'])
+def check_status():
+    pdf_id = request.args.get('pdf_id')
+    if not pdf_id:
+        return jsonify({'error': 'No PDF ID provided.'}), 400
+
+    # Retrieve processing status from Firestore
+    doc_ref = db.collection('pdf_processes').document(pdf_id)
+    doc = doc_ref.get()
+    if not doc.exists:
+        return jsonify({'error': 'Invalid PDF ID.'}), 400
+    result = doc.to_dict()
+
+    status = result.get('status', 'processing')
+    if status == 'completed':
+        # Create word document
+        summary = result['summary']
+        docx_buffer = create_word_document(summary)
+        # Encode the docx file to base64
+        docx_base64 = base64.b64encode(docx_buffer.getvalue()).decode('utf-8')
+
+        # Calculate processing time
+        processing_start_time = result.get('processing_start_time')
+        processing_end_time = result.get('processing_end_time')
+        if processing_start_time and processing_end_time:
+            processing_time = int(processing_end_time - processing_start_time)
+        else:
+            processing_time = 'N/A'
+
+        return jsonify({
+            'status': 'completed',
+            'docx': docx_base64,
+            'total_pages': result.get('total_pages', 0),
+            'processing_time': processing_time
+        }), 200
+    else:
+        return jsonify({
+            'status': 'processing',
+            'current_page': result.get('current_page', 0),
+            'total_pages': result.get('total_pages', 0)
+        }), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
-
