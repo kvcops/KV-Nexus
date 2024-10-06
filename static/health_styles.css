@@ -169,3 +169,40 @@
       flex-direction: column;
     }
   }
+
+
+
+/*new styles*/
+
+.analysis-content {
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.analysis-content h2 {
+  color: #2c3e50;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.analysis-content p {
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.analysis-content ul {
+  padding-left: 20px;
+  margin-bottom: 15px;
+}
+
+.analysis-content li {
+  margin-bottom: 8px;
+}
+
+.analysis-content strong {
+  color: #e74c3c;
+}
