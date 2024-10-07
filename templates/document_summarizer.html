@@ -271,40 +271,43 @@
         });
 
         // Form Submission
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-        
-            // Show loading
-            form.classList.add('hidden');
-            loading.classList.remove('hidden');
-            progressText.textContent = 'Uploading file...';
-        
-            try {
-                // Upload the file and get pdf_id
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-        
-                if (response.ok) {
-                    const data = await response.json();
-                    const pdfId = data.pdf_id;
-    
-                    // Start processing the PDF
-                    progressText.textContent = 'Processing your PDF...';
-                    await processPdf(pdfId);
-                } else {
-                    throw new Error('Upload failed');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again or upload a smaller PDF file.');
-                loading.classList.add('hidden');
-                form.classList.remove('hidden');
-            }
+        // In your document_summarizer.html JavaScript section
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+
+    // Show loading
+    form.classList.add('hidden');
+    loading.classList.remove('hidden');
+    progressText.textContent = 'Uploading file...';
+
+    try {
+        // Upload the file and get pdf_id
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData,
         });
-        
+
+        const data = await response.json(); // Parse JSON response
+
+        if (response.ok) {
+            const pdfId = data.pdf_id;
+
+            // Start processing the PDF
+            progressText.textContent = 'Processing your PDF...';
+            await processPdf(pdfId);
+        } else {
+            // Display specific error message from server
+            throw new Error(data.error || 'Upload failed');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred: ' + error.message);
+        loading.classList.add('hidden');
+        form.classList.remove('hidden');
+    }
+});
         async function processingLoop(pdfId) {
             try {
                 const response = await fetch('/process_pdf', {
