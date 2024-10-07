@@ -573,48 +573,30 @@ def send_email():
 #docuement summarize 
 
 # Rate limiting parameters
-REQUEST_LIMIT = 15  # Requests per minute
+REQUEST_LIMIT = 15  # Max requests per time window
 TIME_WINDOW = 60    # Time window in seconds
 rate_limit_lock = Lock()
 last_reset_time = time.time()
 request_count = 0
 
-def is_rate_limited():
-    global request_count, last_reset_time
-    with rate_limit_lock:
-        current_time = time.time()
-        if current_time - last_reset_time >= TIME_WINDOW:
-            request_count = 0
-            last_reset_time = current_time
-        if request_count >= REQUEST_LIMIT:
-            return True
-        request_count += 1
-        return False
-
-
-def process_page(page):
-    if is_rate_limited():
-        time.sleep(TIME_WINDOW - (time.time() - last_reset_time))
-    
-    try:
-        text = page.get_text()
-        images = []
-        
-        # Extract images
-        for img_index, img in enumerate(page.get_images(full=True)):
-            xref = img[0]
-            base_image = page.parent.extract_image(xref)
-            image_bytes = base_image["image"]
-            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-            images.append(image_base64)
-        
-        # Generate summary
-        prompt = [text] + images if images else [text]
-        response = model.generate_content(prompt)
-        return response.text if response else None
-    except Exception as e:
-        logging.error(f"Error processing page: {e}")
-        return None
+def rate_limited(func):
+    from functools import wraps
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        global request_count, last_reset_time
+        with rate_limit_lock:
+            current_time = time.time()
+            if current_time - last_reset_time >= TIME_WINDOW:
+                request_count = 0
+                last_reset_time = current_time
+            if request_count >= REQUEST_LIMIT:
+                remaining_time = TIME_WINDOW - (current_time - last_reset_time)
+                return jsonify({
+                    'error': f'Rate limit exceeded. Please try again in {int(remaining_time)} seconds.'
+                }), 429
+            request_count += 1
+        return func(*args, **kwargs)
+    return wrapper
 
 
 @app.route('/document_summarizer', methods=['GET', 'POST'])
@@ -879,97 +861,116 @@ def add_table_to_document_from_html(doc, table_element):
                 row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
 
 @app.route('/upload', methods=['POST'])
+@rate_limited
 def upload_file():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file part'}), 400
-        
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No selected file'}), 400
-        
-        if not file.filename.endswith('.pdf'):
-            return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
-        
-        # Check file size (50MB limit)
-        file_content = file.read()
-        if len(file_content) > 50 * 1024 * 1024:
-            return jsonify({'error': 'File size exceeds 50MB limit'}), 400
-        
-        # Generate unique ID and upload to Firebase
-        pdf_id = str(uuid.uuid4())
-        blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
-        blob.upload_from_string(file_content, content_type='application/pdf')
-        
-        # Initialize processing status
-        pdf_document = fitz.open(stream=file_content, filetype="pdf")
-        total_pages = len(pdf_document)
-        pdf_document.close()
-        
-        db.collection('pdf_processes').document(pdf_id).set({
-            'status': 'processing',
-            'current_page': 0,
-            'total_pages': total_pages,
-            'summary': '',
-            'processing_start_time': time.time(),
-            'timestamp': firestore.SERVER_TIMESTAMP
-        })
-        
-        return jsonify({'pdf_id': pdf_id}), 200
-    except Exception as e:
-        logging.error(f"Upload error: {e}")
-        return jsonify({'error': str(e)}), 500
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
 
+    if file and file.filename.endswith('.pdf'):
+        try:
+            # Generate a unique PDF ID
+            pdf_id = str(uuid.uuid4())
+
+            # Upload the PDF to Firebase Storage
+            blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
+            blob.upload_from_file(file)
+
+            # Get the total number of pages
+            pdf_document = fitz.open(stream=blob.download_as_bytes(), filetype="pdf")
+            total_pages = len(pdf_document)
+            pdf_document.close()
+
+            # Initialize processing status in Firestore
+            db.collection('pdf_processes').document(pdf_id).set({
+                'status': 'processing',
+                'current_page': 0,
+                'total_pages': total_pages,
+                'summary': '',
+                'processing_start_time': time.time(),
+                'timestamp': firestore.SERVER_TIMESTAMP
+            })
+
+            return jsonify({'pdf_id': pdf_id}), 200
+        except Exception as e:
+            logging.error(f"Error uploading file: {e}")
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
 
 @app.route('/process_pdf', methods=['POST'])
-def process_pdf():
+@rate_limited
+def process_pdf_endpoint():
     data = request.get_json()
     pdf_id = data.get('pdf_id')
-    
+    if not pdf_id:
+        return jsonify({'error': 'No PDF ID provided.'}), 400
+
+    # Retrieve processing status from Firestore
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
     if not doc.exists:
-        return jsonify({'error': 'Invalid PDF ID'}), 400
-    
+        return jsonify({'error': 'Invalid PDF ID.'}), 400
     result = doc.to_dict()
-    current_page = result['current_page']
-    total_pages = result['total_pages']
-    
-    try:
-        if current_page < total_pages:
-            blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
-            pdf_bytes = blob.download_as_bytes()
-            pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
-            
-            page_summary = process_page(pdf_document[current_page])
-            if page_summary:
-                summary = result['summary'] + page_summary + '\n\n'
-            else:
-                summary = result['summary'] + f"(Summary not available for page {current_page + 1})\n\n"
-            
-            current_page += 1
-            doc_ref.update({
-                'current_page': current_page,
-                'summary': summary,
-                'status': 'completed' if current_page >= total_pages else 'processing'
-            })
-            
-            if current_page >= total_pages:
-                doc_ref.update({
-                    'processing_end_time': time.time()
-                })
-                blob.delete()
-            
-            pdf_document.close()
-            return jsonify({
-                'status': 'completed' if current_page >= total_pages else 'processing',
-                'current_page': current_page,
-                'total_pages': total_pages
-            }), 200
-    except Exception as e:
-        logging.error(f"Processing error: {e}")
-        return jsonify({'error': str(e)}), 500
 
+    try:
+        blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
+        if not blob.exists():
+            return jsonify({'error': 'File not found.'}), 404
+
+        pdf_bytes = blob.download_as_bytes()
+        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+        total_pages = result.get('total_pages', len(pdf_document))
+
+        current_page = result['current_page']
+        summary = result['summary']
+
+        if current_page < total_pages:
+            page = pdf_document[current_page]
+            text = page.get_text()
+            images = []
+
+            # Extract images
+            image_list = page.get_images(full=True)
+            for img_index, img in enumerate(image_list):
+                xref = img[0]
+                base_image = pdf_document.extract_image(xref)
+                image_bytes = base_image["image"]
+                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                images.append(image_base64)
+
+            # Generate summary for the page
+            page_summary = generate_summary([text], images)
+            if page_summary:
+                summary += page_summary + '\n\n'
+            else:
+                print(f"Failed to generate summary for page {current_page + 1}. Skipping this page.")
+                summary += f"(Summary not available for page {current_page + 1})\n\n"
+
+            current_page += 1
+            # Update the processing status in Firestore
+            doc_ref.update({'current_page': current_page, 'summary': summary})
+
+            pdf_document.close()
+
+            if current_page >= total_pages:
+                # Processing complete
+                doc_ref.update({'status': 'completed', 'processing_end_time': time.time()})
+                # Optionally delete the PDF from storage
+                blob.delete()
+                return jsonify({'status': 'completed'}), 200
+            else:
+                # Processing not complete
+                return jsonify({'status': 'processing', 'current_page': current_page, 'total_pages': total_pages}), 200
+        else:
+            # All pages are already processed
+            return jsonify({'status': 'completed'}), 200
+
+    except Exception as e:
+        logging.error(f"Error processing PDF: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/check_status', methods=['GET'])
 def check_status():
