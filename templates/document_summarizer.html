@@ -271,87 +271,69 @@
         });
 
         // Form Submission
-       form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const file = fileUpload.files[0];
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+        
+            // Show loading
+            form.classList.add('hidden');
+            loading.classList.remove('hidden');
+            progressText.textContent = 'Uploading file...';
+        
+            try {
+                // Upload the file and get pdf_id
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+        
+                if (response.ok) {
+                    const data = await response.json();
+                    const pdfId = data.pdf_id;
     
-    if (!file) {
-        alert('Please select a file');
-        return;
-    }
-    
-    if (file.size > 50 * 1024 * 1024) { // 50MB in bytes
-        alert('File size exceeds 50MB limit. Please choose a smaller file.');
-        return;
-    }
-    
-    const formData = new FormData(form);
-    form.classList.add('hidden');
-    loading.classList.remove('hidden');
-    progressText.textContent = 'Uploading file...';
-    
-    try {
-        const response = await fetch('/upload', {
-            method: 'POST',
-            body: formData,
+                    // Start processing the PDF
+                    progressText.textContent = 'Processing your PDF...';
+                    await processPdf(pdfId);
+                } else {
+                    throw new Error('Upload failed');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again or upload a smaller PDF file.');
+                loading.classList.add('hidden');
+                form.classList.remove('hidden');
+            }
         });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Upload failed');
-        }
-        
-        const data = await response.json();
-        progressText.textContent = 'Processing your PDF...';
-        await processPdf(data.pdf_id);
-    } catch (error) {
-        console.error('Error:', error);
-        alert(error.message || 'An error occurred. Please try again.');
-        loading.classList.add('hidden');
-        form.classList.remove('hidden');
-    }
-});
         
         async function processingLoop(pdfId) {
-    try {
-        const response = await fetch('/process_pdf', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({pdf_id: pdfId}),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            if (response.status === 429) { // Rate limit exceeded
-                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-                return processingLoop(pdfId); // Retry
+            try {
+                const response = await fetch('/process_pdf', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({pdf_id: pdfId}),
+                });
+        
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'completed') {
+                        await checkStatus(pdfId);
+                    } else if (data.status === 'processing') {
+                        progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
+                        // Call process_pdf again after a short delay
+                        setTimeout(() => processingLoop(pdfId), 1000);
+                    } else {
+                        throw new Error(data.error || 'Processing failed');
+                    }
+                } else {
+                    throw new Error('Processing failed');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred during processing. Please try again later.');
+                loading.classList.add('hidden');
+                form.classList.remove('hidden');
             }
-            throw new Error(errorData.error || 'Processing failed');
         }
-
-        const data = await response.json();
-        if (data.status === 'completed') {
-            await checkStatus(pdfId);
-        } else if (data.status === 'processing') {
-            progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
-            // Add a delay between requests to respect rate limits
-            await new Promise(resolve => setTimeout(resolve, 4000)); // 4 second delay
-            await processingLoop(pdfId);
-        } else {
-            throw new Error(data.error || 'Unknown status');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        if (error.message.includes('rate limit')) {
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            return processingLoop(pdfId);
-        }
-        alert('An error occurred during processing. Please try again later.');
-        loading.classList.add('hidden');
-        form.classList.remove('hidden');
-    }
-}
-
 
         // Process PDF
         async function processPdf(pdfId) {
