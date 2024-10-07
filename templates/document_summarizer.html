@@ -1,25 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Meta Tags -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SummarAI Nexus</title>
 
     <!-- Fonts and CSS -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&family=Dancing+Script:wght@600&family=Kaushan+Script&display=swap" rel="stylesheet" />
+    <!-- Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
+    <!-- AOS CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet" />
-    <!-- GSAP, Particles.js, Typewriter, Confetti -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <!-- Include Firebase SDK -->
- <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <!-- Firebase Storage SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-    <!-- Include other Firebase products if needed -->
+
     <!-- Your custom styles -->
     <style>
         body {
@@ -97,6 +92,23 @@
             }
         }
     </style>
+
+    <!-- Include Firebase SDK Version 8 -->
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <!-- Firebase Storage SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <!-- Include other Firebase products if needed -->
+
+    <!-- Include GSAP and other libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <!-- Particles.js -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <!-- Typewriter Effect -->
+    <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
 </head>
 <body class="min-h-screen flex items-center justify-center p-4"> 
     <div id="particles-js" class="absolute inset-0"></div>
@@ -185,6 +197,7 @@
             </div>
         </div>
     </div>
+
     <!-- AOS JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
     <!-- Initialize AOS -->
@@ -194,18 +207,12 @@
             once: true,
         });
     </script>
+
     <!-- Your JavaScript Code -->
     <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET.appspot.com", // Ensure this matches your Firebase Storage bucket
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
+        // Firebase configuration passed from the server
+        const firebaseConfig = {{ firebase_config | tojson }};
+    
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
 
@@ -517,17 +524,6 @@
                 origin: { y: 0.6 }
             });
         }
-
-        // Add smooth scrolling to all links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
 
         // Add hover effect to buttons
         const buttons = document.querySelectorAll('button, a');
