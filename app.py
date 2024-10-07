@@ -862,23 +862,31 @@ def add_table_to_document_from_html(doc, table_element):
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
+        logging.error('No file part in the request')
         return jsonify({'error': 'No file part'}), 400
     file = request.files['file']
     if file.filename == '':
+        logging.error('No file selected for uploading')
         return jsonify({'error': 'No selected file'}), 400
 
     if file and file.filename.endswith('.pdf'):
         try:
             # Generate a unique PDF ID
             pdf_id = str(uuid.uuid4())
+            logging.info(f'Received file {file.filename}, assigned ID {pdf_id}')
 
             # Upload the PDF to Firebase Storage
             blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
             blob.upload_from_file(file)
+            logging.info(f'File uploaded to Firebase Storage at pdfs/{pdf_id}.pdf')
 
             # Get the total number of pages
-            pdf_document = fitz.open(stream=blob.download_as_bytes(), filetype="pdf")
+            pdf_bytes = blob.download_as_bytes()
+            logging.info(f'Downloaded PDF bytes from storage, size: {len(pdf_bytes)} bytes')
+
+            pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
             total_pages = len(pdf_document)
+            logging.info(f'Opened PDF document, total pages: {total_pages}')
             pdf_document.close()
 
             # Initialize processing status in Firestore
@@ -892,12 +900,14 @@ def upload_file():
                 'requests_made_in_current_window': 0,
                 'window_start_time': time.time()
             })
+            logging.info(f'Initialized processing status in Firestore for PDF ID {pdf_id}')
 
             return jsonify({'pdf_id': pdf_id}), 200
         except Exception as e:
             logging.error(f"Error uploading file: {e}")
             return jsonify({'error': str(e)}), 500
     else:
+        logging.error('Invalid file type. Only PDFs are accepted.')
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
 
 
