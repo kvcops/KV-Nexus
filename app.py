@@ -911,7 +911,7 @@ def process_pdf_endpoint():
     # Retrieve processing status from Firestore
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
-    if not doc.exists():
+    if not doc.exists:
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     result = doc.to_dict()
 
