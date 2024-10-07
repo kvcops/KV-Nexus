@@ -608,7 +608,9 @@ def rate_limited(func):
 
 @app.route('/document_summarizer', methods=['GET', 'POST'])
 def document_summarizer():
-    return render_template('document_summarizer.html')
+    # Pass Firebase configuration to the template
+    firebase_config = FIREBASE_CONFIG
+    return render_template('document_summarizer.html', firebase_config=firebase_config)
 
 @app.route('/quote', methods=['GET'])
 def get_quote():
