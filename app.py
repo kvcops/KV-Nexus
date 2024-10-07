@@ -620,37 +620,33 @@ def generate_summary(texts, images, max_retries=3):
     prompt = [
         """Summarize the following text into a concise and simplified summary. Ensure the summary is well-structured with clear headings and subheadings.
 
-Formatting Guidelines:
+    Formatting Guidelines:
 
-- Use `#` for main section titles.
-- Use `##` for subsections.
-- Use `-` for bullet points.
-- For **bold text**, wrap the text with double asterisks, e.g., `**important**`.
-- For *italic text*, wrap the text with single asterisks, e.g., `*note*`.
-- **For tables**, use proper Markdown table syntax with pipes `|` and hyphens `-` for headers.
+    Use # for main section titles.
+    Use ## for subsections.
+    Use - for bullet points.
+    For bold text, wrap the text with double asterisks, e.g., **important**.
+    For italic text, wrap the text with single asterisks, e.g., *note*.
+    For tables, use proper Markdown table syntax with pipes | and hyphens - for headers.
+    Example Table:
+    | Component | Function          |
+    |-----------|-------------------|
+    | Node 1    | Receive user input|
+    | Node 2    | Process user input|
+    | Node 3    | Store processed data|
+    | Node 4    | Retrieve data for display|
+    | Node 5    | Display data to user|
 
-**Example Table**:
-Component	Function
-Node 1	Receive user input
-Node 2	Process user input
-Node 3	Store processed data
-Node 4	Retrieve data for display
-Node 5	Display data to user
-
-
-- Keep sentences short and use simple language.
-- Focus on the main ideas and avoid unnecessary details.
-- Do not include direct error messages or irrelevant information.
-
-Here is the text to summarize:
-""",
-        "\n".join(texts)
+    Keep sentences short and use simple language.
+    Focus on the main ideas and avoid unnecessary details.
+    Do not include direct error messages or irrelevant information.
+    Here is the text to summarize:
+    """
     ]
-    for img in images:
-        prompt.append(img)
-    retries = 0
-    backoff_time = 10  # Start with 10 seconds
-    while retries < max_retries:
+    prompt.append("\n".join(texts))
+    prompt.extend(images)  # Add images to the prompt
+
+    for attempt in range(max_retries):
         try:
             response = model_vision.generate_content(prompt, safety_settings=safety_settings)
             summary_text = response.text
@@ -658,13 +654,12 @@ Here is the text to summarize:
             print("AI Model Output:\n", summary_text)
             return summary_text
         except google.api_core.exceptions.ResourceExhausted as e:
-            print(f"Resource exhausted: {e}. Retrying after {backoff_time} seconds...")
-            time.sleep(backoff_time)
-            retries += 1
-            backoff_time *= 2  # Exponential backoff
+            print(f"Resource exhausted: {e}. Retrying after 10 seconds...")
+            time.sleep(10)
         except Exception as e:
             print(f"Error in Gemini API call: {e}")
             return None  # Return None to indicate failure
+
     # If we exhaust retries, handle accordingly
     print("Failed to generate summary after retries.")
     return None
@@ -738,6 +733,7 @@ def define_custom_styles(doc):
     style_list_number.paragraph_format.space_after = Pt(4)
     style_list_number.paragraph_format.line_spacing = 1.15
 
+
 def adjust_document_layout(doc):
     section = doc.sections[0]
     section.page_height = Inches(11)
@@ -760,6 +756,7 @@ def set_page_border(doc):
             border_el.set(qn('w:color'), '5B9BD5')
             pgBorders.append(border_el)
         sectPr.append(pgBorders)
+
 
 def process_html_element(doc, element, parent=None):
     if isinstance(element, NavigableString):
@@ -816,6 +813,7 @@ def process_html_element(doc, element, parent=None):
         # Unknown element type
         pass
 
+
 def add_runs_from_element(paragraph, element):
     if isinstance(element, NavigableString):
         text = str(element)
@@ -834,6 +832,7 @@ def add_runs_from_element(paragraph, element):
     else:
         # Unknown element type
         pass
+
 
 def add_table_to_document_from_html(doc, table_element):
     rows = table_element.find_all('tr')
@@ -861,7 +860,6 @@ def add_table_to_document_from_html(doc, table_element):
                 row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
 
 @app.route('/upload', methods=['POST'])
-@rate_limited
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
@@ -890,7 +888,9 @@ def upload_file():
                 'total_pages': total_pages,
                 'summary': '',
                 'processing_start_time': time.time(),
-                'timestamp': firestore.SERVER_TIMESTAMP
+                'timestamp': firestore.SERVER_TIMESTAMP,
+                'requests_made_in_current_window': 0,
+                'window_start_time': time.time()
             })
 
             return jsonify({'pdf_id': pdf_id}), 200
@@ -900,8 +900,8 @@ def upload_file():
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
 
+
 @app.route('/process_pdf', methods=['POST'])
-@rate_limited
 def process_pdf_endpoint():
     data = request.get_json()
     pdf_id = data.get('pdf_id')
@@ -911,7 +911,7 @@ def process_pdf_endpoint():
     # Retrieve processing status from Firestore
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
-    if not doc.exists:
+    if not doc.exists():
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     result = doc.to_dict()
 
@@ -927,7 +927,31 @@ def process_pdf_endpoint():
         current_page = result['current_page']
         summary = result['summary']
 
-        if current_page < total_pages:
+        requests_made_in_current_window = result.get('requests_made_in_current_window', 0)
+        window_start_time = result.get('window_start_time', time.time())
+
+        current_time = time.time()
+        if current_time - window_start_time >= TIME_WINDOW:
+            # Reset the window
+            requests_made_in_current_window = 0
+            window_start_time = current_time
+
+        remaining_requests = REQUEST_LIMIT - requests_made_in_current_window
+
+        if remaining_requests <= 0:
+            # Rate limit exceeded
+            remaining_time = TIME_WINDOW - (current_time - window_start_time)
+            return jsonify({
+                'error': f'Rate limit exceeded. Please try again in {int(remaining_time)} seconds.',
+                'status': 'rate_limited',
+                'retry_after': int(remaining_time)
+            }), 429
+
+        pages_to_process = min(remaining_requests, total_pages - current_page)
+        start_time = time.time()
+        pages_processed = 0
+
+        for _ in range(pages_to_process):
             page = pdf_document[current_page]
             text = page.get_text()
             images = []
@@ -950,23 +974,39 @@ def process_pdf_endpoint():
                 summary += f"(Summary not available for page {current_page + 1})\n\n"
 
             current_page += 1
-            # Update the processing status in Firestore
-            doc_ref.update({'current_page': current_page, 'summary': summary})
+            pages_processed += 1
+            requests_made_in_current_window += 1
 
-            pdf_document.close()
+            # Update the processing status and summary in Firestore
+            doc_ref.update({
+                'current_page': current_page,
+                'summary': summary,
+                'requests_made_in_current_window': requests_made_in_current_window,
+                'window_start_time': window_start_time
+            })
+
+            # Check function execution time
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= 50:  # Leave some buffer before the 60-second timeout
+                break
 
             if current_page >= total_pages:
-                # Processing complete
-                doc_ref.update({'status': 'completed', 'processing_end_time': time.time()})
-                # Optionally delete the PDF from storage
-                blob.delete()
-                return jsonify({'status': 'completed'}), 200
-            else:
-                # Processing not complete
-                return jsonify({'status': 'processing', 'current_page': current_page, 'total_pages': total_pages}), 200
-        else:
-            # All pages are already processed
+                break  # All pages processed
+
+            if requests_made_in_current_window >= REQUEST_LIMIT:
+                break  # Rate limit reached
+
+        pdf_document.close()
+
+        if current_page >= total_pages:
+            # Processing complete
+            doc_ref.update({'status': 'completed', 'processing_end_time': time.time()})
+            # Optionally delete the PDF from storage
+            blob.delete()
             return jsonify({'status': 'completed'}), 200
+        else:
+            # Processing not complete
+            return jsonify({'status': 'processing', 'current_page': current_page, 'total_pages': total_pages}), 200
 
     except Exception as e:
         logging.error(f"Error processing PDF: {e}")
@@ -981,7 +1021,7 @@ def check_status():
     # Retrieve processing status from Firestore
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
-    if not doc.exists:
+    if not doc.exists():
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     result = doc.to_dict()
 
@@ -1013,6 +1053,7 @@ def check_status():
             'current_page': result.get('current_page', 0),
             'total_pages': result.get('total_pages', 0)
         }), 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)
