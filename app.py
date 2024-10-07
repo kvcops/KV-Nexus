@@ -886,11 +886,12 @@ def upload_file():
 
             # Initialize processing status in Firestore
             db.collection('pdf_processes').document(pdf_id).set({
-                'status': 'processing',
+                'status': 'pending',
                 'current_page': 0,
                 'total_pages': total_pages,
                 'summary': '',
-                'processing_start_time': time.time(),
+                'processing_start_time': None,
+                'processing_end_time': None,
                 'timestamp': firestore.SERVER_TIMESTAMP
             })
 
@@ -911,7 +912,7 @@ def process_pdf_endpoint():
     # Retrieve processing status from Firestore
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
-    if not doc.exists():
+    if not doc.exists:
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     result = doc.to_dict()
 
@@ -927,6 +928,10 @@ def process_pdf_endpoint():
         current_page = result['current_page']
         summary = result['summary']
 
+        if result['status'] == 'pending':
+            # Update status to processing and set start time
+            doc_ref.update({'status': 'processing', 'processing_start_time': time.time()})
+
         start_time = time.time()
         max_duration = 50  # Max processing time in seconds to avoid Vercel timeout
 
@@ -935,10 +940,7 @@ def process_pdf_endpoint():
             if elapsed_time >= max_duration:
                 break  # Stop processing to avoid function timeout
 
-            # Check rate limiter
-            if not gemini_rate_limiter.acquire():
-                break  # Rate limit reached, stop processing
-
+            # Read page text
             page = pdf_document[current_page]
             text = page.get_text()
             images = []
@@ -993,7 +995,7 @@ def check_status():
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     result = doc.to_dict()
 
-    status = result.get('status', 'processing')
+    status = result.get('status', 'pending')
     if status == 'completed':
         # Create word document
         summary = result['summary']
@@ -1017,7 +1019,7 @@ def check_status():
         }), 200
     else:
         return jsonify({
-            'status': 'processing',
+            'status': status,
             'current_page': result.get('current_page', 0),
             'total_pages': result.get('total_pages', 0)
         }), 200
