@@ -292,14 +292,14 @@
                     const pdfId = data.pdf_id;
     
                     // Start processing the PDF
+                    progressText.textContent = 'Processing your PDF...';
                     await processPdf(pdfId);
                 } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Upload failed');
+                    throw new Error('Upload failed');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert(`An error occurred: ${error.message}`);
+                alert('An error occurred. Please try again or upload a smaller PDF file.');
                 loading.classList.add('hidden');
                 form.classList.remove('hidden');
             }
@@ -307,42 +307,51 @@
         
         async function processingLoop(pdfId) {
             try {
-                // Call process_pdf endpoint
-                const processResponse = await fetch('/process_pdf', {
+                const response = await fetch('/process_pdf', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({pdf_id: pdfId}),
                 });
-
-                if (processResponse.ok) {
-                    const processData = await processResponse.json();
-                    if (processData.status === 'completed') {
+        
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'completed') {
                         await checkStatus(pdfId);
+                    } else if (data.status === 'processing') {
+                        progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
+                        // Call process_pdf again after a short delay
+                        setTimeout(() => processingLoop(pdfId), 1000);
                     } else {
-                        // Update progress text
-                        progressText.textContent = `Processed ${processData.current_page} of ${processData.total_pages} pages...`;
-
-                        // Add a small delay before the next processing loop
-                        setTimeout(() => {
-                            processingLoop(pdfId);
-                        }, 1000);
+                        throw new Error(data.error || 'Processing failed');
                     }
                 } else {
-                    const errorData = await processResponse.json();
-                    throw new Error(errorData.error || 'Processing failed');
+                    throw new Error('Processing failed');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert(`An error occurred: ${error.message}`);
+                alert('An error occurred during processing. Please try again later.');
                 loading.classList.add('hidden');
                 form.classList.remove('hidden');
             }
         }
+
         // Process PDF
-       async function processPdf(pdfId) {
+        async function processPdf(pdfId) {
             try {
-                // Start the processing loop
-                await processingLoop(pdfId);
+                // First, check the status
+                const statusResponse = await fetch(`/check_status?pdf_id=${pdfId}`);
+                if (statusResponse.ok) {
+                    const statusData = await statusResponse.json();
+                    if (statusData.status === 'completed') {
+                        // If already completed, proceed to download
+                        await checkStatus(pdfId);
+                    } else {
+                        // Start the processing loop
+                        await processingLoop(pdfId);
+                    }
+                } else {
+                    throw new Error('Failed to check initial status.');
+                }
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred during processing. Please try again later.');
@@ -352,7 +361,7 @@
         }
 
         // Check Status and Download
-         async function checkStatus(pdfId) {
+        async function checkStatus(pdfId) {
             try {
                 const response = await fetch(`/check_status?pdf_id=${pdfId}`);
                 if (response.ok) {
@@ -362,11 +371,12 @@
                         loading.classList.add('hidden');
                         result.classList.remove('hidden');
                         triggerConfetti();
-
+    
                         // Update UI with processing details
                         document.getElementById('total-pages').textContent = data.total_pages;
                         document.getElementById('processing-time').textContent = data.processing_time !== 'N/A' ? `${data.processing_time} seconds` : 'N/A';
-
+                    
+    
                         // Create blob from base64 data
                         const binaryData = atob(data.docx);
                         const array = new Uint8Array(binaryData.length);
@@ -375,7 +385,7 @@
                         }
                         const blob = new Blob([array], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
                         const url = window.URL.createObjectURL(blob);
-
+    
                         // Set up download button
                         downloadButton.addEventListener('click', () => {
                             const link = document.createElement('a');
@@ -385,23 +395,20 @@
                             link.click();
                             document.body.removeChild(link);
                         });
-                    } else if (data.status === 'processing' || data.status === 'pending') {
+                    } else if (data.status === 'processing') {
                         // Update progress text
                         progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
-                        // Continue processing
-                        setTimeout(() => {
-                            processingLoop(pdfId);
-                        }, 1000);
+                        // Poll for status again
+                        setTimeout(() => checkStatus(pdfId), 1000);
                     } else {
                         throw new Error(data.error || 'Unknown status');
                     }
                 } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to check status');
+                    throw new Error('Failed to check status');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert(`An error occurred: ${error.message}`);
+                alert('An error occurred while checking the status. Please try again later.');
                 loading.classList.add('hidden');
                 form.classList.remove('hidden');
             }
