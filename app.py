@@ -111,10 +111,6 @@ firebase_admin.initialize_app(cred, {'storageBucket': STORAGE_BUCKET_URL})
 db = firestore.client()
 bucket = storage.bucket()
 
-
-
-# Set maximum file upload size to 50 MB
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB
 # Generation configurations
 generation_config = GenerationConfig(
     temperature=0.9,
@@ -583,27 +579,25 @@ rate_limit_lock = Lock()
 last_reset_time = time.time()
 request_count = 0
 
-# Rate Limiting for Gemini API
-class RateLimiter:
-    def __init__(self, rate_limit, time_window):
-        self.rate_limit = rate_limit  # Max requests per time window
-        self.time_window = time_window  # Time window in seconds
-        self.timestamps = []
-        self.lock = Lock()
-
-    def acquire(self):
-        with self.lock:
+def rate_limited(func):
+    from functools import wraps
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        global request_count, last_reset_time
+        with rate_limit_lock:
             current_time = time.time()
-            # Remove timestamps older than time_window
-            self.timestamps = [t for t in self.timestamps if current_time - t < self.time_window]
-            if len(self.timestamps) < self.rate_limit:
-                self.timestamps.append(current_time)
-                return True
-            else:
-                return False
+            if current_time - last_reset_time >= TIME_WINDOW:
+                request_count = 0
+                last_reset_time = current_time
+            if request_count >= REQUEST_LIMIT:
+                remaining_time = TIME_WINDOW - (current_time - last_reset_time)
+                return jsonify({
+                    'error': f'Rate limit exceeded. Please try again in {int(remaining_time)} seconds.'
+                }), 429
+            request_count += 1
+        return func(*args, **kwargs)
+    return wrapper
 
-# Initialize the RateLimiter for Gemini API
-gemini_rate_limiter = RateLimiter(15, 60)  # 15 requests per minute
 
 @app.route('/document_summarizer', methods=['GET', 'POST'])
 def document_summarizer():
@@ -625,8 +619,9 @@ def get_quote():
 def generate_summary(texts, images, max_retries=3):
     prompt = [
         """Summarize the following text into a concise and simplified summary. Ensure the summary is well-structured with clear headings and subheadings.
-        
+
 Formatting Guidelines:
+
 - Use `#` for main section titles.
 - Use `##` for subsections.
 - Use `-` for bullet points.
@@ -635,12 +630,13 @@ Formatting Guidelines:
 - **For tables**, use proper Markdown table syntax with pipes `|` and hyphens `-` for headers.
 
 **Example Table**:
-Component       Function
-Node 1  Receive user input
-Node 2  Process user input
-Node 3  Store processed data
-Node 4  Retrieve data for display
-Node 5  Display data to user
+Component	Function
+Node 1	Receive user input
+Node 2	Process user input
+Node 3	Store processed data
+Node 4	Retrieve data for display
+Node 5	Display data to user
+
 
 - Keep sentences short and use simple language.
 - Focus on the main ideas and avoid unnecessary details.
@@ -652,15 +648,26 @@ Here is the text to summarize:
     ]
     for img in images:
         prompt.append(img)
-    try:
-        response = model_vision.generate_content(prompt, safety_settings=safety_settings)
-        summary_text = response.text
-        # Log the AI model output for debugging
-        print("AI Model Output:\n", summary_text)
-        return summary_text
-    except Exception as e:
-        print(f"Error in Gemini API call: {e}")
-        return None  # Return None to indicate failure
+    retries = 0
+    backoff_time = 10  # Start with 10 seconds
+    while retries < max_retries:
+        try:
+            response = model_vision.generate_content(prompt, safety_settings=safety_settings)
+            summary_text = response.text
+            # Log the AI model output for debugging
+            print("AI Model Output:\n", summary_text)
+            return summary_text
+        except google.api_core.exceptions.ResourceExhausted as e:
+            print(f"Resource exhausted: {e}. Retrying after {backoff_time} seconds...")
+            time.sleep(backoff_time)
+            retries += 1
+            backoff_time *= 2  # Exponential backoff
+        except Exception as e:
+            print(f"Error in Gemini API call: {e}")
+            return None  # Return None to indicate failure
+    # If we exhaust retries, handle accordingly
+    print("Failed to generate summary after retries.")
+    return None
 
 def create_word_document(summary):
     doc = Document()
@@ -853,22 +860,14 @@ def add_table_to_document_from_html(doc, table_element):
                 shading_elm.set(qn('w:fill'), 'D9E1F2')  # Light blue background
                 row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
 
-# Adjusted the rate limiting parameters to a per-user basis
 @app.route('/upload', methods=['POST'])
+@rate_limited
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
-
-    # Check file size
-    file.seek(0, os.SEEK_END)
-    file_length = file.tell()
-    file.seek(0, 0)  # Reset pointer
-
-    if file_length > 50 * 1024 * 1024:
-        return jsonify({'error': 'File size exceeds 50 MB limit.'}), 400
 
     if file and file.filename.endswith('.pdf'):
         try:
@@ -886,12 +885,11 @@ def upload_file():
 
             # Initialize processing status in Firestore
             db.collection('pdf_processes').document(pdf_id).set({
-                'status': 'pending',
+                'status': 'processing',
                 'current_page': 0,
                 'total_pages': total_pages,
                 'summary': '',
-                'processing_start_time': None,
-                'processing_end_time': None,
+                'processing_start_time': time.time(),
                 'timestamp': firestore.SERVER_TIMESTAMP
             })
 
@@ -903,6 +901,7 @@ def upload_file():
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
 
 @app.route('/process_pdf', methods=['POST'])
+@rate_limited
 def process_pdf_endpoint():
     data = request.get_json()
     pdf_id = data.get('pdf_id')
@@ -928,19 +927,7 @@ def process_pdf_endpoint():
         current_page = result['current_page']
         summary = result['summary']
 
-        if result['status'] == 'pending':
-            # Update status to processing and set start time
-            doc_ref.update({'status': 'processing', 'processing_start_time': time.time()})
-
-        start_time = time.time()
-        max_duration = 50  # Max processing time in seconds to avoid Vercel timeout
-
-        while current_page < total_pages:
-            elapsed_time = time.time() - start_time
-            if elapsed_time >= max_duration:
-                break  # Stop processing to avoid function timeout
-
-            # Read page text
+        if current_page < total_pages:
             page = pdf_document[current_page]
             text = page.get_text()
             images = []
@@ -963,20 +950,23 @@ def process_pdf_endpoint():
                 summary += f"(Summary not available for page {current_page + 1})\n\n"
 
             current_page += 1
-            # Update the processing status in Firestore after each page
+            # Update the processing status in Firestore
             doc_ref.update({'current_page': current_page, 'summary': summary})
 
-        pdf_document.close()
+            pdf_document.close()
 
-        if current_page >= total_pages:
-            # Processing complete
-            doc_ref.update({'status': 'completed', 'processing_end_time': time.time()})
-            # Optionally delete the PDF from storage
-            blob.delete()
-            return jsonify({'status': 'completed'}), 200
+            if current_page >= total_pages:
+                # Processing complete
+                doc_ref.update({'status': 'completed', 'processing_end_time': time.time()})
+                # Optionally delete the PDF from storage
+                blob.delete()
+                return jsonify({'status': 'completed'}), 200
+            else:
+                # Processing not complete
+                return jsonify({'status': 'processing', 'current_page': current_page, 'total_pages': total_pages}), 200
         else:
-            # Processing not complete
-            return jsonify({'status': 'processing', 'current_page': current_page, 'total_pages': total_pages}), 200
+            # All pages are already processed
+            return jsonify({'status': 'completed'}), 200
 
     except Exception as e:
         logging.error(f"Error processing PDF: {e}")
@@ -995,7 +985,7 @@ def check_status():
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     result = doc.to_dict()
 
-    status = result.get('status', 'pending')
+    status = result.get('status', 'processing')
     if status == 'completed':
         # Create word document
         summary = result['summary']
@@ -1019,7 +1009,7 @@ def check_status():
         }), 200
     else:
         return jsonify({
-            'status': status,
+            'status': 'processing',
             'current_page': result.get('current_page', 0),
             'total_pages': result.get('total_pages', 0)
         }), 200
