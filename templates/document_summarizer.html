@@ -1,21 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Meta Tags -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SummarAI Nexus</title>
-
-    <!-- Fonts and CSS -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&family=Dancing+Script:wght@600&family=Kaushan+Script&display=swap" rel="stylesheet" />
-    <!-- Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
-    <!-- AOS CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet" />
-
-    <!-- Your custom styles -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
         body {
             font-family: 'Montserrat', sans-serif;
@@ -92,23 +88,6 @@
             }
         }
     </style>
-
-    <!-- Include Firebase SDK Version 8 -->
-    <!-- Firebase App (the core Firebase SDK) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <!-- Firebase Storage SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-    <!-- Include other Firebase products if needed -->
-
-    <!-- Include GSAP and other libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
-    <!-- Particles.js -->
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <!-- Typewriter Effect -->
-    <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
-    <!-- Confetti -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-
 </head>
 <body class="min-h-screen flex items-center justify-center p-4"> 
     <div id="particles-js" class="absolute inset-0"></div>
@@ -131,7 +110,7 @@
             </div>
 
             <!-- Upload Form -->
-            <form id="upload-form" class="space-y-6">
+            <form id="upload-form" class="space-y-6" enctype="multipart/form-data">
                 <!-- File Upload -->
                 <div class="flex items-center justify-center w-full" data-aos="fade-up">
                     <label for="file" class="file-upload-label relative flex flex-col items-center justify-center w-full h-48 sm:h-64 border-4 border-dashed rounded-2xl cursor-pointer bg-white hover:bg-gray-50 transition duration-500 ease-in-out transform hover:scale-105 glass-effect">
@@ -142,7 +121,7 @@
                                 or drag and drop
                             </p>
                             <p class="text-sm text-gray-500">
-                                PDF files only (Max 50MB)
+                                PDF files only (Max 5MB)
                             </p>
                         </div>
                         <input id="file" name="file" type="file" class="absolute inset-0 opacity-0 cursor-pointer" accept=".pdf"/>
@@ -197,7 +176,6 @@
             </div>
         </div>
     </div>
-
     <!-- AOS JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
     <!-- Initialize AOS -->
@@ -207,15 +185,7 @@
             once: true,
         });
     </script>
-
-    <!-- Your JavaScript Code -->
     <script>
-        // Firebase configuration passed from the server
-        const firebaseConfig = {{ firebase_config | tojson }};
-    
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-
         const form = document.getElementById('upload-form');
         const fileUpload = document.getElementById('file');
         const filePreview = document.getElementById('file-preview');
@@ -303,78 +273,38 @@
         // Form Submission
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const file = fileUpload.files[0];
-            if (!file) {
-                alert('Please select a file to upload.');
-                return;
-            }
-    
+            const formData = new FormData(form);
+        
             // Show loading
             form.classList.add('hidden');
             loading.classList.remove('hidden');
             progressText.textContent = 'Uploading file...';
-    
+        
             try {
-                // Upload the file to Firebase Storage
-                const storageRef = firebase.storage().ref();
-                const fileRef = storageRef.child(`pdfs/${Date.now()}_${file.name}`);
-                const uploadTask = fileRef.put(file);
-    
-                uploadTask.on(
-                    'state_changed',
-                    (snapshot) => {
-                        // Handle upload progress if needed
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        progressText.textContent = `Uploading: ${Math.round(progress)}%`;
-                    },
-                    (error) => {
-                        console.error('Upload error:', error);
-                        alert('An error occurred during upload. Please try again.');
-                        loading.classList.add('hidden');
-                        form.classList.remove('hidden');
-                    },
-                    async () => {
-                        // Upload completed successfully
-                        const fileUrl = await fileRef.getDownloadURL();
-                        // Notify your server to start processing
-                        await startProcessing(fileUrl);
-                    }
-                );
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred: ' + error.message);
-                loading.classList.add('hidden');
-                form.classList.remove('hidden');
-            }
-        });
-
-        async function startProcessing(fileUrl) {
-            try {
-                const response = await fetch('/start_processing', {
+                // Upload the file and get pdf_id
+                const response = await fetch('/upload', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ file_url: fileUrl }),
+                    body: formData,
                 });
         
-                const data = await response.json();
-        
                 if (response.ok) {
+                    const data = await response.json();
                     const pdfId = data.pdf_id;
-        
+    
                     // Start processing the PDF
                     progressText.textContent = 'Processing your PDF...';
                     await processPdf(pdfId);
                 } else {
-                    throw new Error(data.error || 'Processing failed');
+                    throw new Error('Upload failed');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred: ' + error.message);
+                alert('An error occurred. Please try again or upload a smaller PDF file.');
                 loading.classList.add('hidden');
                 form.classList.remove('hidden');
             }
-        }
-
+        });
+        
         async function processingLoop(pdfId) {
             try {
                 const response = await fetch('/process_pdf', {
@@ -391,9 +321,6 @@
                         progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
                         // Call process_pdf again after a short delay
                         setTimeout(() => processingLoop(pdfId), 1000);
-                    } else if (data.status === 'rate_limited') {
-                        progressText.textContent = `Rate limit reached. Retrying in ${data.retry_after} seconds...`;
-                        setTimeout(() => processingLoop(pdfId), data.retry_after * 1000);
                     } else {
                         throw new Error(data.error || 'Processing failed');
                     }
@@ -524,6 +451,19 @@
                 origin: { y: 0.6 }
             });
         }
+
+        // Add smooth scrolling to all links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Parallax effect removed (we're using a fixed background image)
 
         // Add hover effect to buttons
         const buttons = document.querySelectorAll('button, a');
