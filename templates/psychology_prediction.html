@@ -1,190 +1,339 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Meta and Title -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Psychology Prediction</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+    <title>AI Psychology Profiler</title>
 
-        * {
+    <!-- Include Google Fonts and Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.1/css/all.css">
+
+    <!-- Include Three.js and Vanta.js for background animation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.birds.min.js"></script>
+
+    <!-- Custom CSS Styles -->
+    <style>
+        /* Reset CSS */
+        *, *::before, *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
+        /* Body Styling */
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Montserrat', sans-serif;
             color: #333;
-            background-color: #f0f0f0;
             overflow-x: hidden;
+            position: relative;
+            background-color: #141E30; /* Fallback for older browsers */
+            background-image: linear-gradient(to right, #141E30, #243B55);
         }
 
+        /* Background Animation */
+        #vanta-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* Navbar Styling */
+        .navbar {
+            width: 100%;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+        }
+
+        .navbar h2 {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 20px;
+            transition: color 0.3s ease;
+        }
+
+        .navbar a:hover {
+            color: #00C9FF;
+        }
+
+        /* Container Styling */
         .container {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 120px 20px 40px;
+            position: relative;
+            z-index: 1;
         }
 
-        .psychology-container {
-            background-color: rgba(255, 255, 255, 0.9);
+        /* Header Styling */
+        .main-header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #fff;
+            text-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .main-header h1 {
+            font-size: 3.5em;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .main-header p {
+            font-size: 1.2em;
+            opacity: 0.85;
+        }
+
+        /* Form Styling */
+        .psychology-form {
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             padding: 40px;
-            width: 90%;
+            width: 100%;
             max-width: 800px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            opacity: 0;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
             transform: translateY(50px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
+            opacity: 0;
+            transition: all 0.7s ease;
         }
 
-        .psychology-container.visible {
-            opacity: 1;
+        .psychology-form.visible {
             transform: translateY(0);
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-            color: #2c3e50;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            opacity: 1;
         }
 
         form {
             display: grid;
-            gap: 20px;
+            gap: 25px;
         }
 
         .form-group {
             position: relative;
         }
 
-        label {
-            position: absolute;
-            top: 0;
-            left: 10px;
-            background-color: white;
-            padding: 0 5px;
-            font-size: 12px;
-            color: #7f8c8d;
-            transition: all 0.3s ease;
-        }
-
-        input[type="text"], select {
+        .form-group input, .form-group select, .form-group textarea {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
+            padding: 20px 25px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
             font-size: 16px;
+            background-color: #fff;
             transition: all 0.3s ease;
         }
 
-        input[type="text"]:focus, select:focus {
-            border-color: #3498db;
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: #00C9FF;
             outline: none;
+            box-shadow: 0 0 10px rgba(0,201,255,0.2);
         }
 
-        input[type="submit"] {
-            padding: 12px 24px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 18px;
+        .form-group label {
+            position: absolute;
+            top: 50%;
+            left: 25px;
+            transform: translateY(-50%);
+            color: #aaa;
+            font-size: 16px;
+            pointer-events: none;
             transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 20px;
+            background-color: transparent;
+            padding: 0 5px;
         }
 
-        input[type="submit"]:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        .form-group input:focus + label,
+        .form-group input:not(:placeholder-shown) + label,
+        .form-group select:focus + label,
+        .form-group select:not([value=""]) + label,
+        .form-group textarea:focus + label,
+        .form-group textarea:not(:placeholder-shown) + label {
+            top: -12px;
+            left: 20px;
+            background-color: #fff;
+            font-size: 14px;
+            color: #00C9FF;
+        }
+
+        /* Submit Button */
+        .submit-btn {
+            padding: 15px 30px;
+            background: linear-gradient(to right, #00C9FF, #92FE9D);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+            margin-top: 10px;
+            align-self: center;
+            width: 50%;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .submit-btn:hover {
+            background: linear-gradient(to right, #92FE9D, #00C9FF);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+        }
+
+        /* Output Styling */
+        .output-container {
+            margin-top: 40px;
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            display: none;
+            animation: fadeInUp 1s forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .output-container h2 {
+            color: #243B55;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #00C9FF;
+            padding-bottom: 5px;
+        }
+
+        .output-container p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .output-container ul {
+            list-style: none;
+            margin-left: 0;
+            padding-left: 0;
+        }
+
+        .output-container ul li {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .output-container ul li::before {
+            content: '\f111'; /* FontAwesome circle */
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: #00C9FF;
+            font-size: 10px;
+            margin-top: 7px;
+        }
+
+        /* Scrollbar Styling */
+        .output-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .output-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .output-container::-webkit-scrollbar-thumb {
+            background: #00C9FF;
+            border-radius: 4px;
+        }
+
+        .output-container::-webkit-scrollbar-thumb:hover {
+            background: #008cba;
         }
 
         .loader {
             display: none;
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
+            width: 70px;
+            height: 70px;
+            border: 8px solid rgba(255,255,255,0.3);
+            border-top-color: #00C9FF;
             border-radius: 50%;
-            margin: 20px auto;
             animation: spin 1s linear infinite;
+            margin: 30px auto;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
 
-      #output {
-    margin-top: 30px;
-    padding: 20px;
-    background-color: #ecf0f1;
-    border-radius: 10px;
-    font-size: 16px;
-    line-height: 1.6;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-#output.visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-#output .section {
-    margin-bottom: 20px;
-}
-
-#output .section:last-child {
-    margin-bottom: 0;
-}
-
-        #output strong {
-            color: #2c3e50;
-            font-weight: 600;
-        }
-
-        #output ul {
-            margin-left: 20px;
-            margin-bottom: 15px;
-        }
-
-        #output li {
-            margin-bottom: 5px;
-        }
-
-        @media (max-width: 600px) {
-            .psychology-container {
-                padding: 20px;
+        /* Media Queries */
+        @media (max-width: 768px) {
+            .main-header h1 {
+                font-size: 2.5em;
             }
 
-            h1 {
-                font-size: 2em;
+            .submit-btn {
+                width: 100%;
             }
 
-            input[type="text"], select, input[type="submit"] {
-                font-size: 14px;
+            .navbar {
+                padding: 15px 20px;
+            }
+
+            .main-header {
+                margin-bottom: 30px;
+            }
+
+            .psychology-form {
+                padding: 30px;
             }
         }
+
     </style>
 </head>
 <body>
+
+    <!-- Background Animation -->
     <div id="vanta-background"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <h2>AI Psychology Profiler</h2>
+        
+    </nav>
+
+    <!-- Main Content -->
     <div class="container">
-        <div class="psychology-container" id="psychologyContainer">
-            <h1>Psychology Prediction</h1>
+        <header class="main-header">
+            <h1>Discover Yourself</h1>
+            <p>Unlock insights with a personalized psychological profile</p>
+        </header>
+
+        <div class="psychology-form" id="psychologyFormContainer">
             <form id="psychologyForm">
                 <div class="form-group">
                     <input type="text" id="name" name="name" placeholder=" " required>
@@ -196,10 +345,10 @@
                 </div>
                 <div class="form-group">
                     <select id="gender" name="gender" required>
-                        <option value="" disabled selected>Select gender</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
+                        <option value="" disabled selected></option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
                     </select>
                     <label for="gender">Gender</label>
                 </div>
@@ -208,18 +357,23 @@
                     <label for="occupation">Occupation</label>
                 </div>
                 <div class="form-group">
-                    <input type="text" id="keywords" name="keywords" placeholder=" " required>
-                    <label for="keywords">Keywords (Describe yourself)</label>
+                    <textarea id="keywords" name="keywords" placeholder=" " rows="4" required></textarea>
+                    <label for="keywords">Describe Yourself (keywords)</label>
                 </div>
-                <input type="submit" value="Predict Psychology">
+                <button type="submit" class="submit-btn">Generate Profile</button>
             </form>
+
             <div class="loader" id="loader"></div>
-            <div id="output"></div>
+        </div>
+
+        <div class="output-container" id="outputContainer">
+            <!-- AI Output will be displayed here -->
         </div>
     </div>
 
+    <!-- Include Vanta.js Initialization -->
     <script>
-        VANTA.NET({
+        VANTA.BIRDS({
             el: "#vanta-background",
             mouseControls: true,
             touchControls: true,
@@ -228,59 +382,67 @@
             minWidth: 200.00,
             scale: 1.00,
             scaleMobile: 1.00,
-            color: 0x3498db,
-            backgroundColor: 0xf0f0f0,
-            points: 10.00,
-            maxDistance: 20.00,
-            spacing: 17.00
+            backgroundColor: 0x141e30,
+            color1: 0x00c9ff,
+            color2: 0x92fe9d,
+            birdSize: 1.20,
+            speedLimit: 4.00,
+            separation: 50.00,
+            alignment: 50.00,
+            cohesion: 50.00,
+            quantity: 4.00
         });
 
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
-                document.getElementById('psychologyContainer').classList.add('visible');
-            }, 100);
+                document.getElementById('psychologyFormContainer').classList.add('visible');
+            }, 200);
         });
 
-       document.getElementById('psychologyForm').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const loader = document.getElementById('loader');
-    const output = document.getElementById('output');
-    
-    loader.style.display = 'block';
-    output.classList.remove('visible');
+        document.getElementById('psychologyForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
 
-    const formData = new FormData(this);
-    
-    try {
-        const response = await fetch('/psychology_prediction', {
-            method: 'POST',
-            body: formData
+            const name = document.getElementById('name').value;
+            const age = document.getElementById('age').value;
+            const gender = document.getElementById('gender').value;
+            const occupation = document.getElementById('occupation').value;
+            const keywords = document.getElementById('keywords').value;
+
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('outputContainer').style.display = 'none';
+            document.getElementById('outputContainer').innerHTML = '';
+
+            try {
+                const response = await fetch('/psychology_prediction', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `name=${encodeURIComponent(name)}&age=${encodeURIComponent(age)}&gender=${encodeURIComponent(gender)}&occupation=${encodeURIComponent(occupation)}&keywords=${encodeURIComponent(keywords)}`
+                });
+
+                const data = await response.json();
+
+                if (data.response) {
+                    const outputDiv = document.getElementById('outputContainer');
+                    outputDiv.innerHTML = data.response;
+                    outputDiv.style.display = 'block';
+                    document.getElementById('loader').style.display = 'none';
+
+                    // Smooth scroll to output
+                    outputDiv.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert('An error occurred. Please try again.');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+            }
         });
-        
-        const data = await response.json();
-        
-        if (data.error) {
-            throw new Error(data.error);
-        }
-
-        // Simple formatting for the response
-        let formattedText = data.response
-            .replace(/(\d\. .*?)(?=\d\.|Concluding Insights:|$)/gs, '<div class="section">$1</div>')
-            .replace(/•/g, '&bull;')
-            .replace(/\n/g, '<br>');
-
-        output.innerHTML = formattedText;
-        
-        setTimeout(() => {
-            output.classList.add('visible');
-        }, 100);
-    } catch (error) {
-        output.innerHTML = `<strong>Error:</strong> ${error.message}`;
-        output.classList.add('visible');
-    } finally {
-        loader.style.display = 'none';
-    }
-});
     </script>
+
 </body>
 </html>
