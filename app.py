@@ -327,57 +327,60 @@ def psychology_prediction():
 
 Generate a captivating and well-structured response using the following format:
 
-1. First Impression & Key Traits
-[Start with 2-3 sentences about their immediate personality indicators]
-• [Key trait 1]
-• [Key trait 2]
-• [Key trait 3]
+<h2>1. First Impression & Key Traits</h2>
+<p>[Start with 2-3 sentences about their immediate personality indicators]</p>
+<ul>
+<li>[Key trait 1]</li>
+<li>[Key trait 2]</li>
+<li>[Key trait 3]</li>
+</ul>
 
-2. Cognitive Style & Decision Making
-[2-3 sentences about their thought processes]
-• Thinking style: [description]
-• Problem-solving approach: [description]
-• Learning preference: [description]
+<h2>2. Cognitive Style & Decision Making</h2>
+<p>[2-3 sentences about their thought processes]</p>
+<ul>
+<li><strong>Thinking style:</strong> [description]</li>
+<li><strong>Problem-solving approach:</strong> [description]</li>
+<li><strong>Learning preference:</strong> [description]</li>
+</ul>
 
-3. Emotional Landscape
-[2-3 sentences about emotional intelligence]
-• Emotional awareness: [description]
-• Relationship handling: [description]
-• Stress response: [description]
+<h2>3. Emotional Landscape</h2>
+<p>[2-3 sentences about emotional intelligence]</p>
+<ul>
+<li><strong>Emotional awareness:</strong> [description]</li>
+<li><strong>Relationship handling:</strong> [description]</li>
+<li><strong>Stress response:</strong> [description]</li>
+</ul>
 
-4. Motivations & Aspirations
-[2-3 sentences about what drives them]
-• Core values: [description]
-• Career motivations: [description]
-• Personal goals: [description]
+<h2>4. Motivations & Aspirations</h2>
+<p>[2-3 sentences about what drives them]</p>
+<ul>
+<li><strong>Core values:</strong> [description]</li>
+<li><strong>Career motivations:</strong> [description]</li>
+<li><strong>Personal goals:</strong> [description]</li>
+</ul>
 
-5. Interpersonal Dynamics
-[2-3 sentences about social interactions]
-• Communication style: [description]
-• Social preferences: [description]
-• Leadership tendencies: [description]
+<h2>5. Interpersonal Dynamics</h2>
+<p>[2-3 sentences about social interactions]</p>
+<ul>
+<li><strong>Communication style:</strong> [description]</li>
+<li><strong>Social preferences:</strong> [description]</li>
+<li><strong>Leadership tendencies:</strong> [description]</li>
+</ul>
 
-Concluding Insights:
-[3-4 sentences summarizing key strengths and potential areas for growth]
+<h2>Concluding Insights</h2>
+<p>[3-4 sentences summarizing key strengths and potential areas for growth]</p>
 
-Note: This analysis is an interpretation based on limited information and should be taken as exploratory rather than definitive.
+<p><em>Note: This analysis is an interpretation based on limited information and should be taken as exploratory rather than definitive.</em></p>
 
 Important formatting rules:
-1. Do not use any special characters or markdown syntax (no *, #, -, etc.)
-2. Use numbers followed by a period for main sections
-3. Use regular bullet points (•) for lists
-4. Keep consistent spacing between sections
-5. Use clear, natural language without any formatting symbols"""
+- Use appropriate HTML tags for headings, paragraphs, and lists as shown.
+- Ensure that the final response is valid HTML and can be rendered directly on a web page.
+- Do not include any extra text outside the HTML structure.
+"""
 
         try:
             response = psychology_model.generate_content([prompt], safety_settings=safety_settings)
             response_text = response.text.strip()
-            
-            # Additional cleanup to ensure no markdown symbols remain
-            response_text = response_text.replace('*', '')
-            response_text = response_text.replace('#', '')
-            response_text = response_text.replace('- ', '• ')
-            
             return jsonify({'response': response_text})
         except Exception as e:
             logging.error(f"Error generating psychology prediction: {e}")
