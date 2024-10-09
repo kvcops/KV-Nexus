@@ -325,36 +325,60 @@ def psychology_prediction():
         
         prompt = f"""As an expert psychological profiler, provide an insightful and engaging analysis for {name}, a {age}-year-old {gender} working as {occupation} who describes themselves as: {keywords}.
 
-Generate a captivating and well-structured response covering these areas:
+Generate a captivating and well-structured response using the following format:
 
-1. **First Impression & Key Traits**
-   Analyze the immediate personality indicators and standout characteristics.
+1. First Impression & Key Traits
+[Start with 2-3 sentences about their immediate personality indicators]
+• [Key trait 1]
+• [Key trait 2]
+• [Key trait 3]
 
-2. **Cognitive Style & Decision Making**
-   Explore their thought processes, problem-solving approach, and decision-making style.
+2. Cognitive Style & Decision Making
+[2-3 sentences about their thought processes]
+• Thinking style: [description]
+• Problem-solving approach: [description]
+• Learning preference: [description]
 
-3. **Emotional Landscape**
-   Dive into their emotional intelligence, how they likely process feelings, and handle relationships.
+3. Emotional Landscape
+[2-3 sentences about emotional intelligence]
+• Emotional awareness: [description]
+• Relationship handling: [description]
+• Stress response: [description]
 
-4. **Motivations & Aspirations**
-   Uncover what potentially drives them, their values, and long-term goals.
+4. Motivations & Aspirations
+[2-3 sentences about what drives them]
+• Core values: [description]
+• Career motivations: [description]
+• Personal goals: [description]
 
-5. **Interpersonal Dynamics**
-   Examine their social style, communication preferences, and relationship patterns.
+5. Interpersonal Dynamics
+[2-3 sentences about social interactions]
+• Communication style: [description]
+• Social preferences: [description]
+• Leadership tendencies: [description]
 
-For each section:
-- Start with a bold heading
-- Use bullet points for key insights
-- Include specific examples or scenarios
-- Maintain an encouraging, growth-oriented tone
+Concluding Insights:
+[3-4 sentences summarizing key strengths and potential areas for growth]
 
-End with a brief, empowering summary that highlights their unique strengths and potential areas for growth.
+Note: This analysis is an interpretation based on limited information and should be taken as exploratory rather than definitive.
 
-Note: Frame this as an educated interpretation based on limited information, emphasizing the speculative nature of the analysis."""
+Important formatting rules:
+1. Do not use any special characters or markdown syntax (no *, #, -, etc.)
+2. Use numbers followed by a period for main sections
+3. Use regular bullet points (•) for lists
+4. Keep consistent spacing between sections
+5. Use clear, natural language without any formatting symbols"""
 
         try:
             response = psychology_model.generate_content([prompt], safety_settings=safety_settings)
-            return jsonify({'response': response.text})
+            response_text = response.text.strip()
+            
+            # Additional cleanup to ensure no markdown symbols remain
+            response_text = response_text.replace('*', '')
+            response_text = response_text.replace('#', '')
+            response_text = response_text.replace('- ', '• ')
+            
+            return jsonify({'response': response_text})
         except Exception as e:
             logging.error(f"Error generating psychology prediction: {e}")
             return jsonify({'error': "An error occurred while generating the prediction. Please try again."}), 500
