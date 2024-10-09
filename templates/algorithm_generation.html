@@ -3,15 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Algorithm Wizard</title>
+    <title>Algorithm Wizard 3.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&family=Fira+Code&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
-
         :root {
-            --primary-color: #6c5ce7;
-            --secondary-color: #a29bfe;
-            --text-color: #2d3436;
-            --background-color: rgba(255, 255, 255, 0.9);
+            --primary-color: #00ffff;
+            --secondary-color: #ff00ff;
+            --text-color: #ffffff;
+            --background-color: #000033;
+            --code-background: #1a1a2e;
+            --card-background: rgba(255, 255, 255, 0.1);
         }
 
         * {
@@ -22,41 +27,81 @@
 
         body {
             font-family: 'Roboto', sans-serif;
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
-            background-attachment: fixed;
+            background-color: var(--background-color);
             color: var(--text-color);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 20px;
             overflow-x: hidden;
         }
 
-        .algo-container {
-            background-color: var(--background-color);
-            border-radius: 20px;
-            padding: 40px;
-            width: 90%;
-            max-width: 800px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            opacity: 0;
-            transform: translateY(50px);
-            transition: all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        #particles-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
         }
 
-        .algo-container.visible {
-            opacity: 1;
-            transform: translateY(0);
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
         }
 
         h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 3rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
             color: var(--primary-color);
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color), 0 0 30px var(--primary-color);
+            animation: glowText 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glowText {
+            from {
+                text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color), 0 0 30px var(--primary-color);
+            }
+            to {
+                text-shadow: 0 0 20px var(--primary-color), 0 0 30px var(--primary-color), 0 0 40px var(--primary-color);
+            }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .algo-card {
+            background-color: var(--card-background);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .algo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
         }
 
         form {
@@ -66,75 +111,65 @@
         }
 
         label {
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-weight: 700;
+            margin-bottom: 15px;
             font-size: 1.2rem;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
         }
 
         input[type="text"] {
             width: 100%;
-            padding: 15px;
-            margin-top: 10px;
-            border: none;
+            padding: 15px 20px;
+            border: 2px solid var(--primary-color);
             border-radius: 50px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             font-size: 1rem;
             transition: all 0.3s ease;
+            background-color: rgba(0, 0, 0, 0.3);
+            color: var(--text-color);
         }
 
         input[type="text"]:focus {
             outline: none;
-            box-shadow: 0 5px 20px rgba(108, 92, 231, 0.4);
+            box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.3);
         }
 
-        input[type="submit"] {
-            padding: 15px 40px;
-            margin-top: 20px;
+        .submit-btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
             background-color: var(--primary-color);
-            color: white;
+            color: var(--background-color);
             border: none;
             border-radius: 50px;
+            padding: 10px 20px;
             cursor: pointer;
             font-size: 1rem;
-            font-weight: bold;
+            font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        input[type="submit"]:hover {
+        .submit-btn:hover {
             background-color: var(--secondary-color);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        #output {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: rgba(255, 255, 255, 0.8);
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            font-family: 'Roboto Mono', monospace;
-            font-size: 0.9rem;
-            line-height: 1.6;
-            max-height: 400px;
-            overflow-y: auto;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.5s ease;
-            white-space: pre-wrap; /* Preserve formatting and line breaks */
-        }
-
-        #output.visible {
-            opacity: 1;
-            transform: translateY(0);
+            box-shadow: 0 0 10px var(--secondary-color);
         }
 
         .loader {
             display: none;
-            width: 50px;
-            height: 50px;
-            border: 5px solid var(--secondary-color);
-            border-top: 5px solid var(--primary-color);
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--background-color);
+            border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             margin: 20px auto;
             animation: spin 1s linear infinite;
@@ -145,56 +180,251 @@
             100% { transform: rotate(360deg); }
         }
 
-        @media (max-width: 600px) {
-            .algo-container {
-                width: 95%;
-                padding: 30px;
+        #output {
+            margin-top: 30px;
+            padding: 30px;
+            background-color: var(--code-background);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+            width: 100%;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        #output.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #output pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .explanation {
+            background-color: var(--card-background);
+            color: var(--text-color);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-family: 'Roboto', sans-serif;
+            backdrop-filter: blur(5px);
+        }
+
+        .explanation h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .explanation ol {
+            padding-left: 20px;
+        }
+
+        .explanation li {
+            margin-bottom: 10px;
+        }
+
+        .explanation strong {
+            color: var(--secondary-color);
+        }
+
+        .example-usage {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .example-usage h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .example-output {
+            background-color: var(--code-background);
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Fira Code', monospace;
+            margin-top: 10px;
+        }
+
+        .features {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 40px;
+        }
+
+        .feature {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--card-background);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 30%;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--secondary-color);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .feature-description {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
             }
 
             h1 {
                 font-size: 2.5rem;
             }
 
-            input[type="text"], input[type="submit"] {
-                font-size: 1rem;
+            .algo-card {
+                padding: 30px;
+            }
+
+            .features {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .feature {
+                width: 100%;
+                max-width: 300px;
+                margin-bottom: 20px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="algo-container" id="algoContainer">
-        <h1>Algorithm Wizard</h1>
-        <form id="algoForm">
-            <label for="algorithm">What algorithm do you seek?</label>
-            <input type="text" id="algorithm" name="algorithm" placeholder="Enter algorithm name...">
-            <input type="submit" value="Conjure Algorithm">
-        </form>
-        <div class="loader" id="loader"></div>
-        <div id="output"></div>
+    <div id="particles-background"></div>
+    <div class="container">
+        <div class="header">
+            <h1></h1>
+            <p class="subtitle">Unleash the power of advanced algorithms</p>
+        </div>
+
+        <div class="algo-card">
+            <form id="algoForm">
+                <label for="algorithm">Summon Your Algorithm</label>
+                <div class="input-group">
+                    <input type="text" id="algorithm" name="algorithm" placeholder="Enter algorithm name...">
+                    <button type="submit" class="submit-btn">Conjure</button>
+                </div>
+            </form>
+            <div class="loader" id="loader"></div>
+            <div id="output"></div>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🚀</div>
+                <h3 class="feature-title">Quantum Speed</h3>
+                <p class="feature-description">Generate algorithms at the speed of thought</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🧠</div>
+                <h3 class="feature-title">AI Synergy</h3>
+                <p class="feature-description">Harness the power of next-gen AI</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔮</div>
+                <h3 class="feature-title">Infinite Possibilities</h3>
+                <p class="feature-description">Customize algorithms beyond imagination</p>
+            </div>
+        </div>
     </div>
 
     <script>
-        async function fetchRandomAlgorithmImage() {
-            try {
-                const response = await fetch('/fetch_image?genre=coding');
-                const data = await response.json();
-                return data.image_url || null;
-            } catch (error) {
-                console.error('Failed to fetch image:', error);
-                return null;
+        // Particle background
+        function setupParticleBackground() {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('particles-background').appendChild(renderer.domElement);
+
+            const particles = new THREE.BufferGeometry();
+            const particleCount = 1000;
+
+            const posArray = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 5;
             }
+
+            particles.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.005,
+                color: 0x00ffff,
+            });
+
+            const particlesMesh = new THREE.Points(particles, material);
+            scene.add(particlesMesh);
+
+            camera.position.z = 2;
+
+            function animate() {
+                requestAnimationFrame(animate);
+                particlesMesh.rotation.x += 0.0001;
+                particlesMesh.rotation.y += 0.0001;
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            const imageUrl = await fetchRandomAlgorithmImage();
-            if (imageUrl) {
-                const backgroundImage = new Image();
-                backgroundImage.src = imageUrl;
-                backgroundImage.onload = function() {
-                    document.body.style.backgroundImage = `url(${imageUrl})`;
-                    document.getElementById('algoContainer').classList.add('visible');
-                };
-            }
+        document.addEventListener('DOMContentLoaded', () => {
+            setupParticleBackground();
+
+            gsap.from('.header', { opacity: 0, y: -50, duration: 1, ease: 'power3.out' });
+            gsap.from('.algo-card', { opacity: 0, y: 50, duration: 1, delay: 0.5, ease: 'power3.out' });
+            gsap.from('.feature', { 
+                opacity: 0, 
+                y: 50, 
+                duration: 1, 
+                delay: 1, 
+                ease: 'power3.out',
+                stagger: 0.2
+            });
         });
 
         document.getElementById('algoForm').addEventListener('submit', async function(event) {
@@ -202,11 +432,11 @@
             const algorithm = document.getElementById('algorithm').value;
             const loader = document.getElementById('loader');
             const output = document.getElementById('output');
-
+    
             loader.style.display = 'block';
             output.style.display = 'none';
             output.classList.remove('visible');
-
+    
             try {
                 const response = await fetch('/algorithm_generation', {
                     method: 'POST',
@@ -214,24 +444,129 @@
                     body: `algorithm=${encodeURIComponent(algorithm)}`
                 });
                 const data = await response.json();
-
-                const formattedResponse = data.response
-                    .replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>')  // Bold text
-                    .replace(/\*([^\*]+)\*/g, '<em>$1</em>')  // Italic text
-                    .replace(/\n/g, '<br>');  // Line breaks
-
-                output.innerHTML = formattedResponse;
+    
+                if (data.error) {
+                    output.innerHTML = `<pre><code class="language-plaintext">${data.error}</code></pre>`;
+                } else {
+                    // Split the response into code and explanation
+                    const [code, ...explanationParts] = data.response.split('**Explanation:**');
+                    const explanation = explanationParts.join('**Explanation:**').trim();
+    
+                    // Format the code
+                    const formattedCode = `<pre><code class="language-python">${code.trim()}</code></pre>`;
+    
+                    // Format the explanation
+                    const formattedExplanation = formatExplanation(explanation);
+    
+                    // Combine formatted code and explanation
+                    output.innerHTML = formattedCode + formattedExplanation;
+                }
+                
                 output.style.display = 'block';
-                setTimeout(() => output.classList.add('visible'), 100);
+                gsap.to(output, { 
+                    opacity: 1, 
+                    y: 0, 
+                    duration: 0.5, 
+                    ease: 'power3.out',
+                    onComplete: () => {
+                        hljs.highlightAll();
+                        animateExplanation();
+                    }
+                });
+                output.classList.add('visible');
             } catch (error) {
                 console.error('Error fetching algorithm:', error);
-                output.innerHTML = 'Error conjuring algorithm. Please try again later.';
+                output.innerHTML = '<pre><code class="language-plaintext">Error conjuring algorithm. Please try again later.</code></pre>';
                 output.style.display = 'block';
-                setTimeout(() => output.classList.add('visible'), 100);
+                gsap.to(output, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' });
+                output.classList.add('visible');
             } finally {
                 loader.style.display = 'none';
             }
         });
+    
+        function formatExplanation(explanation) {
+            // Convert numbered list to HTML ordered list
+            explanation = explanation.replace(/(\d+\.)\s/g, '<li>');
+            explanation = '<ol>' + explanation + '</ol>';
+    
+            // Convert **text** to <strong>text</strong>
+            explanation = explanation.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+            // Format Example Usage and Output sections
+            explanation = explanation.replace(
+                /Example Usage:([\s\S]*?)Output:([\s\S]*?)$/,
+                '<div class="example-usage"><h4>Example Usage:</h4>$1<h4>Output:</h4><div class="example-output">$2</div></div>'
+            );
+    
+            return `<div class="explanation"><h3>Explanation:</h3>${explanation}</div>`;
+        }
+    
+        function animateExplanation() {
+            gsap.from('.explanation li', {
+                opacity: 0,
+                x: -20,
+                duration: 0.5,
+                stagger: 0.1,
+                ease: 'power2.out'
+            });
+    
+            gsap.from('.example-usage', {
+                opacity: 0,
+                y: 20,
+                duration: 0.5,
+                delay: 0.5,
+                ease: 'power2.out'
+            });
+        }
+    
+        // Typing effect for the header
+        function typeEffect(element, text, speed = 100) {
+            let i = 0;
+            const timer = setInterval(() => {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(timer);
+                }
+            }, speed);
+        }
+    
+        // Apply typing effect to the header
+        const header = document.querySelector('h1');
+        typeEffect(header, 'Algorithm Wizard', 100);
+    
+        // Glowing effect for feature icons
+        const featureIcons = document.querySelectorAll('.feature-icon');
+        featureIcons.forEach(icon => {
+            gsap.to(icon, {
+                textShadow: '0 0 20px var(--primary-color), 0 0 30px var(--primary-color)',
+                repeat: -1,
+                yoyo: true,
+                duration: 2
+            });
+        });
+    
+        // Interactive hover effect for features
+        const features = document.querySelectorAll('.feature');
+        features.forEach(feature => {
+            feature.addEventListener('mouseenter', () => {
+                gsap.to(feature, {
+                    scale: 1.05,
+                    duration: 0.3,
+                    ease: 'power2.out'
+                });
+            });
+    
+            feature.addEventListener('mouseleave', () => {
+                gsap.to(feature, {
+                    scale: 1,
+                    duration: 0.3,
+                    ease: 'power2.out'
+                });
+            });
+        });
     </script>
-</body>
-</html>
+    </body>
+    </html>
