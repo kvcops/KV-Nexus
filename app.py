@@ -407,13 +407,29 @@ def code_generation():
 def algorithm_generation():
     if request.method == 'POST':
         algo = request.form['algorithm']
-        prompt = f"Write a Python function to implement the {algo} algorithm. Ensure the function is well-structured and follows best practices for readability and efficiency."
-        response = algorithm_model.generate_content([prompt], safety_settings=safety_settings)  # Use algorithm_model here
-        if response.candidates and response.candidates[0].content.parts:
-            response_text = response.candidates[0].content.parts[0].text
-        else:
-            response_text = "No valid response found."
-        return jsonify({'response': response_text})
+        prompt = f"""
+        Write a function to implement the {algo} algorithm. Follow these guidelines:
+        1. Ensure the function is well-structured and follows best practices for readability and efficiency.
+        2. Include clear comments explaining the logic and any complex steps.
+        3. Use type hints for function parameters and return values.
+        4. Include a brief docstring explaining the purpose of the function and its parameters.
+        5. If applicable, include a simple example of how to use the function.
+        6. If the algorithm is complex, consider breaking it down into smaller helper functions.
+        """
+        
+        try:
+            response = algorithm_model.generate_content([prompt], safety_settings=safety_settings)
+            if response.candidates and response.candidates[0].content.parts:
+                response_text = response.candidates[0].content.parts[0].text
+                # Format the response for better display
+                formatted_response = response_text.replace('```python', '<pre><code class="language-python">').replace('```', '</code></pre>')
+                return jsonify({'response': formatted_response})
+            else:
+                return jsonify({'error': "No valid response generated. Please try again."}), 500
+        except Exception as e:
+            logging.error(f"Error generating algorithm: {e}")
+            return jsonify({'error': f"An error occurred: {str(e)}"}), 500
+
     return render_template('algorithm_generation.html')
 
 
