@@ -37,14 +37,6 @@
             width: 90%;
             max-width: 800px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            opacity: 0;
-            transform: translateY(50px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
-
-        .psychology-container.visible {
-            opacity: 1;
-            transform: translateY(0);
         }
 
         h1 {
@@ -85,18 +77,6 @@
             transition: all 0.3s ease;
         }
 
-        input[type="text"]:focus, select:focus {
-            border-color: #3498db;
-            outline: none;
-        }
-
-        input[type="text"]:focus + label, select:focus + label,
-        input[type="text"]:not(:placeholder-shown) + label, select:not(:placeholder-shown) + label {
-            top: -10px;
-            font-size: 12px;
-            color: #3498db;
-        }
-
         input[type="submit"] {
             padding: 12px 24px;
             background-color: #3498db;
@@ -108,13 +88,55 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-top: 20px;
         }
 
-        input[type="submit"]:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        .output-container {
+            margin-top: 40px;
+            display: none;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #3498db;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 36px;
+            margin-right: 20px;
+        }
+
+        .profile-info {
+            flex-grow: 1;
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .profile-details {
+            color: #7f8c8d;
+        }
+
+        .analysis-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
         }
 
         .loader {
@@ -124,59 +146,28 @@
             border: 5px solid #f3f3f3;
             border-top: 5px solid #3498db;
             border-radius: 50%;
-            margin: 20px auto;
             animation: spin 1s linear infinite;
+            margin: 20px auto;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        #output {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #ecf0f1;
-            border-radius: 10px;
-            font-size: 16px;
-            line-height: 1.6;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
-
-        #output.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        @media (max-width: 600px) {
-            .psychology-container {
-                padding: 20px;
-            }
-
-            h1 {
-                font-size: 2em;
-            }
-
-            input[type="text"], select, input[type="submit"] {
-                font-size: 14px;
-            }
-        }
     </style>
 </head>
 <body>
     <div id="vanta-background"></div>
     <div class="container">
-        <div class="psychology-container" id="psychologyContainer">
+        <div class="psychology-container">
             <h1>Psychology Prediction</h1>
             <form id="psychologyForm">
                 <div class="form-group">
-                    <input type="text" id="name" name="name" placeholder=" " required>
+                    <input type="text" id="name" name="name" required>
                     <label for="name">Name</label>
                 </div>
                 <div class="form-group">
-                    <input type="text" id="age" name="age" placeholder=" " required>
+                    <input type="text" id="age" name="age" required>
                     <label for="age">Age</label>
                 </div>
                 <div class="form-group">
@@ -186,20 +177,21 @@
                         <option value="female">Female</option>
                         <option value="other">Other</option>
                     </select>
-                    <label for="gender">Gender</label>
                 </div>
                 <div class="form-group">
-                    <input type="text" id="occupation" name="occupation" placeholder=" " required>
+                    <input type="text" id="occupation" name="occupation" required>
                     <label for="occupation">Occupation</label>
                 </div>
                 <div class="form-group">
-                    <input type="text" id="keywords" name="keywords" placeholder=" " required>
+                    <input type="text" id="keywords" name="keywords" required>
                     <label for="keywords">Keywords (Describe yourself)</label>
                 </div>
-                <input type="submit" value="Predict Psychology">
+                <input type="submit" value="Generate Psychological Profile">
             </form>
             <div class="loader" id="loader"></div>
-            <div id="output"></div>
+            <div class="output-container" id="output">
+                <!-- Results will be dynamically inserted here -->
+            </div>
         </div>
     </div>
 
@@ -214,56 +206,71 @@
             scale: 1.00,
             scaleMobile: 1.00,
             color: 0x3498db,
-            backgroundColor: 0xf0f0f0,
-            points: 10.00,
-            maxDistance: 20.00,
-            spacing: 17.00
+            backgroundColor: 0xf0f0f0
         });
 
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                document.getElementById('psychologyContainer').classList.add('visible');
-            }, 100);
-        });
+        document.getElementById('psychologyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const loader = document.getElementById('loader');
+            const output = document.getElementById('output');
+            
+            loader.style.display = 'block';
+            output.style.display = 'none';
 
-        document.getElementById('psychologyForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const name = document.getElementById('name').value;
-            const age = document.getElementById('age').value;
-            const gender = document.getElementById('gender').value;
-            const occupation = document.getElementById('occupation').value;
-            const keywords = document.getElementById('keywords').value;
-
-            document.getElementById('loader').style.display = 'block';
-            document.getElementById('output').classList.remove('visible');
-
+            const formData = new FormData(this);
+            
             try {
                 const response = await fetch('/psychology_prediction', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: `name=${name}&age=${age}&gender=${gender}&occupation=${occupation}&keywords=${keywords}`
+                    body: formData
                 });
-                const data = await response.json();
-                const response_text = data.response;
-                const formatted_response = response_text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                    .replace(/(\d+\.\s+)/g, '<br>$1')
-                    .replace(/\n/g, '<br>');
                 
-                document.getElementById('output').innerHTML = formatted_response;
-                setTimeout(() => {
-                    document.getElementById('output').classList.add('visible');
-                }, 100);
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Create the output HTML
+                const outputHtml = `
+                    <div class="profile-header">
+                        <div class="profile-avatar">${data.name.charAt(0)}</div>
+                        <div class="profile-info">
+                            <div class="profile-name">${data.name}</div>
+                            <div class="profile-details">${data.age} years old · ${data.gender} · ${data.occupation}</div>
+                        </div>
+                    </div>
+                    <div class="analysis-content">
+                        ${formatAnalysis(data.analysis)}
+                    </div>
+                `;
+                
+                output.innerHTML = outputHtml;
+                output.style.display = 'block';
             } catch (error) {
-                console.error('Error fetching psychology prediction:', error);
-                document.getElementById('output').innerHTML = 'Error generating prediction. Please try again later.';
-                document.getElementById('output').classList.add('visible');
+                output.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+                output.style.display = 'block';
             } finally {
-                document.getElementById('loader').style.display = 'none';
+                loader.style.display = 'none';
             }
         });
+
+        function formatAnalysis(analysis) {
+            // Split the analysis into sections
+            const sections = analysis.split(/\d+\./g).filter(section => section.trim());
+            
+            return sections.map((section, index) => {
+                const [title, ...content] = section.split(':');
+                if (!title || !content.length) return '';
+                
+                return `
+                    <div class="analysis-section">
+                        <h3 class="section-title">${index + 1}. ${title.trim()}</h3>
+                        <p>${content.join(':').trim()}</p>
+                    </div>
+                `;
+            }).join('');
+        }
     </script>
 </body>
 </html>
