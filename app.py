@@ -323,69 +323,43 @@ def psychology_prediction():
         occupation = request.form['occupation']
         keywords = request.form['keywords']
         
-        prompt = f"""As an expert psychological profiler, conduct a comprehensive psychological analysis for {name}, who is a {age}-year-old {gender} working as {occupation} and self-describes as: {keywords}.
+        prompt = f"""As an expert psychological profiler, provide an insightful and engaging analysis for {name}, a {age}-year-old {gender} working as {occupation} who describes themselves as: {keywords}.
 
-Please provide a detailed, well-structured analysis in the following format:
+Generate a captivating and well-structured response covering these areas:
 
-1. Personality Overview:
-   - Analyze potential Big Five personality traits (Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism)
-   - Identify possible strengths and growth areas
+1. **First Impression & Key Traits**
+   Analyze the immediate personality indicators and standout characteristics.
 
-2. Cognitive Style:
-   - Describe likely decision-making approaches
-   - Analyze problem-solving tendencies
-   - Assess potential learning preferences
+2. **Cognitive Style & Decision Making**
+   Explore their thought processes, problem-solving approach, and decision-making style.
 
-3. Emotional Intelligence:
-   - Evaluate possible emotional awareness and regulation
-   - Analyze potential interpersonal skills
-   - Assess empathy and social awareness
+3. **Emotional Landscape**
+   Dive into their emotional intelligence, how they likely process feelings, and handle relationships.
 
-4. Motivations & Values:
-   - Identify potential core values
-   - Analyze career motivations
-   - Assess personal goals and aspirations
+4. **Motivations & Aspirations**
+   Uncover what potentially drives them, their values, and long-term goals.
 
-5. Relationship Dynamics:
-   - Describe potential interaction styles
-   - Analyze communication preferences
-   - Assess relationship patterns
+5. **Interpersonal Dynamics**
+   Examine their social style, communication preferences, and relationship patterns.
 
-6. Stress Response & Resilience:
-   - Evaluate potential stress management style
-   - Analyze adaptability and coping mechanisms
-   - Assess emotional resilience
+For each section:
+- Start with a bold heading
+- Use bullet points for key insights
+- Include specific examples or scenarios
+- Maintain an encouraging, growth-oriented tone
 
-Remember to:
-- Use professional yet accessible language
-- Provide specific, relatable examples
-- Maintain a balanced, constructive tone
-- Emphasize that this is a speculative analysis based on limited information
+End with a brief, empowering summary that highlights their unique strengths and potential areas for growth.
 
-End with a positive, growth-oriented summary that empowers {name} to leverage their potential strengths while being mindful of possible growth areas."""
+Note: Frame this as an educated interpretation based on limited information, emphasizing the speculative nature of the analysis."""
 
         try:
             response = psychology_model.generate_content([prompt], safety_settings=safety_settings)
-            response_text = response.text if response.text else "Could not generate prediction."
-            
-            # Format the response for better presentation
-            formatted_response = {
-                "name": name,
-                "age": age,
-                "gender": gender,
-                "occupation": occupation,
-                "analysis": response_text
-            }
-            
-            return jsonify(formatted_response)
+            return jsonify({'response': response.text})
         except Exception as e:
             logging.error(f"Error generating psychology prediction: {e}")
-            return jsonify({
-                "error": "An error occurred while generating the prediction. Please try again."
-            }), 500
-    
-    return render_template('psychology_prediction.html')
+            return jsonify({'error': "An error occurred while generating the prediction. Please try again."}), 500
 
+    return render_template('psychology_prediction.html')
 
 @app.route('/code_generation', methods=['GET', 'POST'])
 def code_generation():
