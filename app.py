@@ -322,16 +322,68 @@ def psychology_prediction():
         gender = request.form['gender']
         occupation = request.form['occupation']
         keywords = request.form['keywords']
-        prompt = f"""Analyze the likely psychological traits of {name}, 
-            a {age}-year-old {gender} {occupation}, who describes 
-            themself as {keywords}. Based on this limited information, 
-            consider their potential personality characteristics, 
-            motivations, and social tendencies. Keep in mind that this 
-            analysis is speculative and may not be a complete or 
-            accurate representation of {name}'s psychology."""
-        response = psychology_model.generate_content([prompt], safety_settings=safety_settings)  # Use psychology_model here
-        response_text = format_response(response.text)
-        return jsonify({'response': response_text})
+        
+        prompt = f"""As an expert psychological profiler, conduct a comprehensive psychological analysis for {name}, who is a {age}-year-old {gender} working as {occupation} and self-describes as: {keywords}.
+
+Please provide a detailed, well-structured analysis in the following format:
+
+1. Personality Overview:
+   - Analyze potential Big Five personality traits (Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism)
+   - Identify possible strengths and growth areas
+
+2. Cognitive Style:
+   - Describe likely decision-making approaches
+   - Analyze problem-solving tendencies
+   - Assess potential learning preferences
+
+3. Emotional Intelligence:
+   - Evaluate possible emotional awareness and regulation
+   - Analyze potential interpersonal skills
+   - Assess empathy and social awareness
+
+4. Motivations & Values:
+   - Identify potential core values
+   - Analyze career motivations
+   - Assess personal goals and aspirations
+
+5. Relationship Dynamics:
+   - Describe potential interaction styles
+   - Analyze communication preferences
+   - Assess relationship patterns
+
+6. Stress Response & Resilience:
+   - Evaluate potential stress management style
+   - Analyze adaptability and coping mechanisms
+   - Assess emotional resilience
+
+Remember to:
+- Use professional yet accessible language
+- Provide specific, relatable examples
+- Maintain a balanced, constructive tone
+- Emphasize that this is a speculative analysis based on limited information
+
+End with a positive, growth-oriented summary that empowers {name} to leverage their potential strengths while being mindful of possible growth areas."""
+
+        try:
+            response = psychology_model.generate_content([prompt], safety_settings=safety_settings)
+            response_text = response.text if response.text else "Could not generate prediction."
+            
+            # Format the response for better presentation
+            formatted_response = {
+                "name": name,
+                "age": age,
+                "gender": gender,
+                "occupation": occupation,
+                "analysis": response_text
+            }
+            
+            return jsonify(formatted_response)
+        except Exception as e:
+            logging.error(f"Error generating psychology prediction: {e}")
+            return jsonify({
+                "error": "An error occurred while generating the prediction. Please try again."
+            }), 500
+    
     return render_template('psychology_prediction.html')
 
 
