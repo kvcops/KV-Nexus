@@ -126,22 +126,30 @@
             100% { transform: rotate(360deg); }
         }
 
-        #output {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #ecf0f1;
-            border-radius: 10px;
-            font-size: 16px;
-            line-height: 1.6;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
+      #output {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #ecf0f1;
+    border-radius: 10px;
+    font-size: 16px;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
 
-        #output.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+#output.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#output .section {
+    margin-bottom: 20px;
+}
+
+#output .section:last-child {
+    margin-bottom: 0;
+}
 
         #output strong {
             color: #2c3e50;
@@ -233,43 +241,46 @@
             }, 100);
         });
 
-        document.getElementById('psychologyForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const loader = document.getElementById('loader');
-            const output = document.getElementById('output');
-            
-            loader.style.display = 'block';
-            output.classList.remove('visible');
+       document.getElementById('psychologyForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const loader = document.getElementById('loader');
+    const output = document.getElementById('output');
+    
+    loader.style.display = 'block';
+    output.classList.remove('visible');
 
-            const formData = new FormData(this);
-            
-            try {
-                const response = await fetch('/psychology_prediction', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
-                output.innerHTML = data.response.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                    .replace(/(\d+\.\s+)/g, '<br>$1')
-                    .replace(/\n/g, '<br>');
-                
-                setTimeout(() => {
-                    output.classList.add('visible');
-                }, 100);
-            } catch (error) {
-                output.innerHTML = `<strong>Error:</strong> ${error.message}`;
-                output.classList.add('visible');
-            } finally {
-                loader.style.display = 'none';
-            }
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch('/psychology_prediction', {
+            method: 'POST',
+            body: formData
         });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        // Simple formatting for the response
+        let formattedText = data.response
+            .replace(/(\d\. .*?)(?=\d\.|Concluding Insights:|$)/gs, '<div class="section">$1</div>')
+            .replace(/•/g, '&bull;')
+            .replace(/\n/g, '<br>');
+
+        output.innerHTML = formattedText;
+        
+        setTimeout(() => {
+            output.classList.add('visible');
+        }, 100);
+    } catch (error) {
+        output.innerHTML = `<strong>Error:</strong> ${error.message}`;
+        output.classList.add('visible');
+    } finally {
+        loader.style.display = 'none';
+    }
+});
     </script>
 </body>
 </html>
