@@ -519,6 +519,108 @@
             }
         }
 
+
+        .team-member {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+    
+        .team-member:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
+        }
+    
+        .linkedin-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+    
+        .team-member:hover .linkedin-icon {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    
+        .linkedin-link {
+            color: #0077B5;
+            text-decoration: none;
+            font-size: 24px;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+    
+        .linkedin-link:hover {
+            color: var(--primary-color);
+            transform: scale(1.2);
+        }
+    
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    
+        .team-member:hover .linkedin-link {
+            animation: pulse 1s infinite;
+        }
+
+
+        .error {
+            color: #ff0000;
+            font-size: 0.8rem;
+            margin-top: 0.2rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+    
+        .error.show {
+            opacity: 1;
+        }
+    
+        .contact-form input.invalid {
+            border-color: #ff0000;
+            animation: shake 0.5s ease-in-out;
+        }
+    
+        @keyframes shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-10px);
+            }
+            75% {
+                transform: translateX(10px);
+            }
+        }
+    
+        .validation-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+    
+        .validation-icon.show {
+            opacity: 1;
+        }
+    
+        .input-container {
+            position: relative;
+        }
+    
+
         
     </style>
 </head>
@@ -662,18 +764,38 @@
                 <h2>Our Team</h2>
                 <div class="team-grid">
                     <div class="team-member">
+                        <div class="linkedin-icon">
+                            <a href="https://www.linkedin.com/in/karri-vamsi-krishna-966537251/" target="_blank" class="linkedin-link">
+                                <i class="fab fa-linkedin"></i>
+                            </a>
+                        </div>
                         <h3>K. Vamsi Krishna</h3>
-                        <p>Project Founder & Lead Developer</p> 
+                        <p>Project Founder & Lead Developer</p>
                     </div>
                     <div class="team-member">
+                        <div class="linkedin-icon">
+                            <a href="https://www.linkedin.com/in/jason-girish-b92078253/" target="_blank" class="linkedin-link">
+                                <i class="fab fa-linkedin"></i>
+                            </a>
+                        </div>
                         <h3>M. Girish</h3>
                         <p>UI/UX Designer</p>
                     </div>
                     <div class="team-member">
+                        <div class="linkedin-icon">
+                            <a href="https://www.linkedin.com/in/manohara-sai-subba-raju-golla-734a81281/" target="_blank" class="linkedin-link">
+                                <i class="fab fa-linkedin"></i>
+                            </a>
+                        </div>
                         <h3>G. Manohar</h3>
                         <p>AI/ML Research & Development Contributor</p>
                     </div>
                     <div class="team-member">
+                        <div class="linkedin-icon">
+                            <a href="https://www.linkedin.com/in/jarapala-manikanta-naik-3a37a52a6/" target="_blank" class="linkedin-link">
+                                <i class="fab fa-linkedin"></i>
+                            </a>
+                        </div>
                         <h3>J. Manikanta Naik</h3>
                         <p>Quality Assurance Specialist</p>
                     </div>
