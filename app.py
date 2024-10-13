@@ -69,7 +69,9 @@ api_key = os.environ.get("API_KEY")
 unsplash_api_key = os.getenv('UNSPLASH_API_KEY')
 API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
 # Set up logging
+# Configure logging
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 # Configure the Google Generative AI API
 genai.configure(api_key=api_key)
 #session key
