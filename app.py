@@ -640,6 +640,7 @@ def send_email():
 
 
 #docuement summarize 
+
 # Rate limiting parameters
 REQUEST_LIMIT = 15
 TIME_WINDOW = 60
@@ -657,6 +658,7 @@ def rate_limited(func):
             last_reset_time = current_time
         if request_count >= REQUEST_LIMIT:
             remaining_time = TIME_WINDOW - (current_time - last_reset_time)
+            logger.warning(f"Rate limit exceeded. Cooling down for {int(remaining_time)} seconds.")
             return jsonify({
                 'error': f'Rate limit exceeded. Please try again in {int(remaining_time)} seconds.'
             }), 429
@@ -664,8 +666,10 @@ def rate_limited(func):
         return func(*args, **kwargs)
     return wrapper
 
+
 @rate_limited
 def process_page(pdf_document, page_num, doc_ref):
+    logger.info(f"Processing page {page_num + 1}")
     page = pdf_document[page_num]
     text = page.get_text()
     images = []
@@ -680,15 +684,18 @@ def process_page(pdf_document, page_num, doc_ref):
 
     page_summary = generate_summary([text], images)
     if page_summary:
+        logger.info(f"Summary generated for page {page_num + 1}")
         doc_ref.update({
             'current_page': page_num + 1,
             'summary': firestore.ArrayUnion([page_summary])
         })
     else:
+        logger.warning(f"Failed to generate summary for page {page_num + 1}")
         doc_ref.update({
             'current_page': page_num + 1,
             'summary': firestore.ArrayUnion([f"(Summary not available for page {page_num + 1})"])
         })
+
 
 @app.route('/document_summarizer', methods=['GET', 'POST'])
 def document_summarizer():
@@ -996,11 +1003,13 @@ def process_pdf_endpoint():
     data = request.get_json()
     pdf_id = data.get('pdf_id')
     if not pdf_id:
+        logger.error("No PDF ID provided")
         return jsonify({'error': 'No PDF ID provided.'}), 400
 
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
     if not doc.exists:
+        logger.error(f"Invalid PDF ID: {pdf_id}")
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     
     result = doc.to_dict()
@@ -1008,9 +1017,11 @@ def process_pdf_endpoint():
     total_pages = result['total_pages']
 
     if current_page >= total_pages:
+        logger.info(f"PDF {pdf_id} processing already completed")
         return jsonify({'status': 'completed'}), 200
 
     try:
+        logger.info(f"Processing PDF {pdf_id}, page {current_page + 1} of {total_pages}")
         blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
         pdf_bytes = blob.download_as_bytes()
         pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -1020,6 +1031,7 @@ def process_pdf_endpoint():
 
         updated_doc = doc_ref.get().to_dict()
         if updated_doc['current_page'] >= total_pages:
+            logger.info(f"PDF {pdf_id} processing completed")
             doc_ref.update({
                 'status': 'completed',
                 'processing_end_time': time.time()
@@ -1027,6 +1039,7 @@ def process_pdf_endpoint():
             blob.delete()
             return jsonify({'status': 'completed'}), 200
         else:
+            logger.info(f"PDF {pdf_id} processing in progress. Current page: {updated_doc['current_page']}")
             return jsonify({
                 'status': 'processing',
                 'current_page': updated_doc['current_page'],
@@ -1034,24 +1047,27 @@ def process_pdf_endpoint():
             }), 200
 
     except Exception as e:
-        logging.error(f"Error processing PDF: {e}")
+        logger.error(f"Error processing PDF {pdf_id}: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/check_status', methods=['GET'])
 def check_status():
     pdf_id = request.args.get('pdf_id')
     if not pdf_id:
+        logger.error("No PDF ID provided for status check")
         return jsonify({'error': 'No PDF ID provided.'}), 400
 
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
     if not doc.exists:
+        logger.error(f"Invalid PDF ID for status check: {pdf_id}")
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     
     result = doc.to_dict()
     status = result.get('status', 'processing')
 
     if status == 'completed':
+        logger.info(f"Status check: PDF {pdf_id} processing completed")
         summary = '\n\n'.join(result['summary'])
         docx_buffer = create_word_document(summary)
         docx_base64 = base64.b64encode(docx_buffer.getvalue()).decode('utf-8')
@@ -1067,11 +1083,11 @@ def check_status():
             'processing_time': processing_time
         }), 200
     else:
+        logger.info(f"Status check: PDF {pdf_id} processing in progress. Current page: {result.get('current_page', 0)}")
         return jsonify({
             'status': 'processing',
             'current_page': result.get('current_page', 0),
             'total_pages': result.get('total_pages', 0)
         }), 200
-
 if __name__ == '__main__':
     app.run(debug=True)
