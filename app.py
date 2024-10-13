@@ -643,12 +643,40 @@ def send_email():
 
 #docuement summarize 
 
+import base64
+import io
+import json
+import logging
+import os
+import re
+import time
+import uuid
+from functools import wraps
+from io import BytesIO
+
+import fitz  # PyMuPDF
+import google.api_core.exceptions
+import google.generativeai as genai
+from bs4 import BeautifulSoup, NavigableString
+from docx import Document
+from docx.enum.style import WD_STYLE_TYPE
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Inches, Pt, RGBColor
+from firebase_admin import credentials, firestore, initialize_app, storage
+from flask import Flask, jsonify, render_template, request
+from google.generativeai.types import (GenerationConfig, HarmBlockThreshold,
+                                       HarmCategory)
+from PIL import Image
+from tenacity import retry, stop_after_attempt, wait_exponential
+# Rate limiting parameters
 # Rate limiting parameters
 REQUEST_LIMIT = 15
 TIME_WINDOW = 60
-rate_limit_lock = None  # Replace with your lock mechanism
-last_reset_time = time.time()
 request_count = 0
+last_reset_time = time.time()
 
 def rate_limited(func):
     @wraps(func)
@@ -716,27 +744,19 @@ def get_quote():
     quote = random.choice(quotes)
     return jsonify({'quote': quote})
 
-def generate_summary(texts, images, max_retries=3):
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
+def generate_summary(texts, images):
     prompt = [
         """Summarize the following text into a concise and simplified summary. Ensure the summary is well-structured with clear headings and subheadings.
 
 Formatting Guidelines:
-
 - Use `#` for main section titles.
 - Use `##` for subsections.
 - Use `-` for bullet points.
-- For **bold text**, wrap the text with double asterisks, e.g., `**important**`.
-- For *italic text*, wrap the text with single asterisks, e.g., `*note*`.
-- **For tables**, use proper Markdown table syntax with pipes `|` and hyphens `-` for headers.
-
-**Example Table**:
-Component	Function
-Node 1	Receive user input
-Node 2	Process user input
-Node 3	Store processed data
-Node 4	Retrieve data for display
-Node 5	Display data to user
-
+- For **bold text**, wrap the text with double asterisks.
+- For *italic text*, wrap the text with single asterisks.
+- For tables, use proper Markdown table syntax.
 
 - Keep sentences short and use simple language.
 - Focus on the main ideas and avoid unnecessary details.
@@ -748,27 +768,35 @@ Here is the text to summarize:
     ]
     for img in images:
         prompt.append(img)
-    retries = 0
-    backoff_time = 10  # Start with 10 seconds
-    while retries < max_retries:
-        try:
-            response = model_vision.generate_content(prompt, safety_settings=safety_settings)
-            summary_text = response.text
-            # Log the AI model output for debugging
-            print("AI Model Output:\n", summary_text)
-            return summary_text
-        except google.api_core.exceptions.ResourceExhausted as e:
-            print(f"Resource exhausted: {e}. Retrying after {backoff_time} seconds...")
-            time.sleep(backoff_time)
-            retries += 1
-            backoff_time *= 2  # Exponential backoff
-        except Exception as e:
-            print(f"Error in Gemini API call: {e}")
-            return None  # Return None to indicate failure
-    # If we exhaust retries, handle accordingly
-    print("Failed to generate summary after retries.")
-    return None
+    
+    response = model_vision.generate_content(prompt, safety_settings=safety_settings)
+    summary_text = response.text
+    logger.info("AI Model Output:\n%s", summary_text)
+    return summary_text
 
+def process_chunk(chunk_text, chunk_images, doc_ref, chunk_number):
+    logger.info(f"Processing chunk {chunk_number}")
+    try:
+        chunk_summary = generate_summary([chunk_text], chunk_images)
+        if chunk_summary:
+            logger.info(f"Summary generated for chunk {chunk_number}")
+            doc_ref.update({
+                'current_chunk': chunk_number,
+                'summary': firestore.ArrayUnion([chunk_summary])
+            })
+        else:
+            logger.warning(f"Failed to generate summary for chunk {chunk_number}")
+            doc_ref.update({
+                'current_chunk': chunk_number,
+                'summary': firestore.ArrayUnion([f"(Summary not available for chunk {chunk_number})"])
+            })
+    except Exception as e:
+        logger.error(f"Error processing chunk {chunk_number}: {e}")
+        doc_ref.update({
+            'current_chunk': chunk_number,
+            'summary': firestore.ArrayUnion([f"(Error processing chunk {chunk_number})"])
+        })
+        
 def create_word_document(summary):
     doc = Document()
 
@@ -971,23 +999,18 @@ def upload_file():
 
     if file and file.filename.endswith('.pdf'):
         try:
-            # Generate a unique PDF ID
             pdf_id = str(uuid.uuid4())
-
-            # Upload the PDF to Firebase Storage
             blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
             blob.upload_from_file(file)
 
-            # Get the total number of pages
             pdf_document = fitz.open(stream=blob.download_as_bytes(), filetype="pdf")
             total_pages = len(pdf_document)
             pdf_document.close()
 
-            # Initialize processing status in Firestore
             db.collection('pdf_processes').document(pdf_id).set({
                 'status': 'processing',
-                'current_page': 0,
-                'total_pages': total_pages,
+                'current_chunk': 0,
+                'total_chunks': 0,  # Will be updated during processing
                 'summary': '',
                 'processing_start_time': time.time(),
                 'timestamp': firestore.SERVER_TIMESTAMP
@@ -1015,24 +1038,85 @@ def process_pdf_endpoint():
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     
     result = doc.to_dict()
-    current_page = result['current_page']
-    total_pages = result['total_pages']
+    current_chunk = result['current_chunk']
+    total_chunks = result.get('total_chunks', 0)
 
-    if current_page >= total_pages:
+    if total_chunks == 0:
+        # Initialize chunking
+        blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
+        pdf_bytes = blob.download_as_bytes()
+        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+        
+        chunks = []
+        current_chunk = ""
+        chunk_images = []
+        
+        for page in pdf_document:
+            page_text = page.get_text()
+            current_chunk += page_text
+            
+            for img in page.get_images(full=True):
+                xref = img[0]
+                base_image = pdf_document.extract_image(xref)
+                image_bytes = base_image["image"]
+                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                chunk_images.append(image_base64)
+            
+            if len(current_chunk) > 1000:  # Adjust chunk size as needed
+                chunks.append((current_chunk, chunk_images))
+                current_chunk = ""
+                chunk_images = []
+        
+        if current_chunk:
+            chunks.append((current_chunk, chunk_images))
+        
+        total_chunks = len(chunks)
+        doc_ref.update({'total_chunks': total_chunks})
+        pdf_document.close()
+    else:
+        # Continue processing from where we left off
+        blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
+        pdf_bytes = blob.download_as_bytes()
+        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+        
+        chunks = []
+        current_chunk = ""
+        chunk_images = []
+        chunk_count = 0
+        
+        for page in pdf_document:
+            page_text = page.get_text()
+            current_chunk += page_text
+            
+            for img in page.get_images(full=True):
+                xref = img[0]
+                base_image = pdf_document.extract_image(xref)
+                image_bytes = base_image["image"]
+                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                chunk_images.append(image_base64)
+            
+            if len(current_chunk) > 1000:  # Adjust chunk size as needed
+                chunk_count += 1
+                if chunk_count > current_chunk:
+                    chunks.append((current_chunk, chunk_images))
+                current_chunk = ""
+                chunk_images = []
+        
+        if current_chunk and chunk_count > current_chunk:
+            chunks.append((current_chunk, chunk_images))
+        
+        pdf_document.close()
+
+    if current_chunk >= total_chunks:
         logger.info(f"PDF {pdf_id} processing already completed")
         return jsonify({'status': 'completed'}), 200
 
     try:
-        logger.info(f"Processing PDF {pdf_id}, page {current_page + 1} of {total_pages}")
-        blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
-        pdf_bytes = blob.download_as_bytes()
-        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
-
-        process_page(pdf_document, current_page, doc_ref)
-        pdf_document.close()
+        chunk_text, chunk_images = chunks[current_chunk]
+        process_chunk(chunk_text, chunk_images, doc_ref, current_chunk)
 
         updated_doc = doc_ref.get().to_dict()
-        if updated_doc['current_page'] >= total_pages:
+        if updated_doc['current_chunk'] >= total_chunks - 1:
             logger.info(f"PDF {pdf_id} processing completed")
             doc_ref.update({
                 'status': 'completed',
@@ -1041,16 +1125,17 @@ def process_pdf_endpoint():
             blob.delete()
             return jsonify({'status': 'completed'}), 200
         else:
-            logger.info(f"PDF {pdf_id} processing in progress. Current page: {updated_doc['current_page']}")
+            logger.info(f"PDF {pdf_id} processing in progress. Current chunk: {updated_doc['current_chunk']}")
             return jsonify({
                 'status': 'processing',
-                'current_page': updated_doc['current_page'],
-                'total_pages': total_pages
+                'current_chunk': updated_doc['current_chunk'],
+                'total_chunks': total_chunks
             }), 200
 
     except Exception as e:
         logger.error(f"Error processing PDF {pdf_id}: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/check_status', methods=['GET'])
 def check_status():
@@ -1081,15 +1166,15 @@ def check_status():
         return jsonify({
             'status': 'completed',
             'docx': docx_base64,
-            'total_pages': result.get('total_pages', 0),
+            'total_chunks': result.get('total_chunks', 0),
             'processing_time': processing_time
         }), 200
     else:
-        logger.info(f"Status check: PDF {pdf_id} processing in progress. Current page: {result.get('current_page', 0)}")
+        logger.info(f"Status check: PDF {pdf_id} processing in progress. Current chunk: {result.get('current_chunk', 0)}")
         return jsonify({
             'status': 'processing',
-            'current_page': result.get('current_page', 0),
-            'total_pages': result.get('total_pages', 0)
+            'current_chunk': result.get('current_chunk', 0),
+            'total_chunks': result.get('total_chunks', 0)
         }), 200
 if __name__ == '__main__':
     app.run(debug=True)
