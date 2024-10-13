@@ -929,6 +929,7 @@ def add_table_to_document_from_html(doc, table_element):
                 shading_elm.set(qn('w:fill'), 'D9E1F2')  # Light blue background
                 row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
 
+# Update the upload_file function
 @app.route('/upload', methods=['POST'])
 @rate_limited
 def upload_file():
@@ -940,26 +941,25 @@ def upload_file():
 
     if file and file.filename.endswith('.pdf'):
         try:
-            # Generate a unique PDF ID
             pdf_id = str(uuid.uuid4())
-
-            # Upload the PDF to Firebase Storage
             blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
             blob.upload_from_file(file)
 
-            # Get the total number of pages
             pdf_document = fitz.open(stream=blob.download_as_bytes(), filetype="pdf")
             total_pages = len(pdf_document)
             pdf_document.close()
 
-            # Initialize processing status in Firestore
+            total_chunks = math.ceil(total_pages / CHUNK_SIZE)
+
             db.collection('pdf_processes').document(pdf_id).set({
                 'status': 'processing',
                 'current_page': 0,
                 'total_pages': total_pages,
                 'summary': '',
                 'processing_start_time': time.time(),
-                'timestamp': firestore.SERVER_TIMESTAMP
+                'timestamp': firestore.SERVER_TIMESTAMP,
+                'current_chunk': 0,
+                'total_chunks': total_chunks
             })
 
             return jsonify({'pdf_id': pdf_id}), 200
@@ -969,6 +969,13 @@ def upload_file():
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
 
+import math
+
+# Constants
+CHUNK_SIZE = 10  # Number of pages to process in each chunk
+MAX_RETRIES = 3
+
+# Update the process_pdf_endpoint function
 @app.route('/process_pdf', methods=['POST'])
 @rate_limited
 def process_pdf_endpoint():
@@ -977,7 +984,6 @@ def process_pdf_endpoint():
     if not pdf_id:
         return jsonify({'error': 'No PDF ID provided.'}), 400
 
-    # Retrieve processing status from Firestore
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
     if not doc.exists:
@@ -995,59 +1001,76 @@ def process_pdf_endpoint():
 
         current_page = result['current_page']
         summary = result['summary']
+        current_chunk = result.get('current_chunk', 0)
+        total_chunks = math.ceil(total_pages / CHUNK_SIZE)
 
-        if current_page < total_pages:
-            page = pdf_document[current_page]
-            text = page.get_text()
-            images = []
+        if current_chunk < total_chunks:
+            chunk_start = current_chunk * CHUNK_SIZE
+            chunk_end = min(chunk_start + CHUNK_SIZE, total_pages)
+            
+            for page_num in range(chunk_start, chunk_end):
+                page = pdf_document[page_num]
+                text = page.get_text()
+                images = extract_images(pdf_document, page)
 
-            # Extract images
-            image_list = page.get_images(full=True)
-            for img_index, img in enumerate(image_list):
-                xref = img[0]
-                base_image = pdf_document.extract_image(xref)
-                image_bytes = base_image["image"]
-                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-                images.append(image_base64)
+                page_summary = generate_summary([text], images)
+                if page_summary:
+                    summary += page_summary + '\n\n'
+                else:
+                    summary += f"(Summary not available for page {page_num + 1})\n\n"
 
-            # Generate summary for the page
-            page_summary = generate_summary([text], images)
-            if page_summary:
-                summary += page_summary + '\n\n'
-            else:
-                print(f"Failed to generate summary for page {current_page + 1}. Skipping this page.")
-                summary += f"(Summary not available for page {current_page + 1})\n\n"
+                current_page = page_num + 1
+                doc_ref.update({
+                    'current_page': current_page, 
+                    'summary': summary,
+                    'current_chunk': current_chunk
+                })
 
-            current_page += 1
-            # Update the processing status in Firestore
-            doc_ref.update({'current_page': current_page, 'summary': summary})
+            current_chunk += 1
+            doc_ref.update({'current_chunk': current_chunk})
 
             pdf_document.close()
 
-            if current_page >= total_pages:
-                # Processing complete
+            if current_chunk >= total_chunks:
                 doc_ref.update({'status': 'completed', 'processing_end_time': time.time()})
-                # Optionally delete the PDF from storage
                 blob.delete()
                 return jsonify({'status': 'completed'}), 200
             else:
-                # Processing not complete
-                return jsonify({'status': 'processing', 'current_page': current_page, 'total_pages': total_pages}), 200
+                return jsonify({
+                    'status': 'processing', 
+                    'current_page': current_page, 
+                    'total_pages': total_pages,
+                    'current_chunk': current_chunk,
+                    'total_chunks': total_chunks
+                }), 200
         else:
-            # All pages are already processed
             return jsonify({'status': 'completed'}), 200
 
     except Exception as e:
         logging.error(f"Error processing PDF: {e}")
         return jsonify({'error': str(e)}), 500
 
+
+# Helper function to extract images
+def extract_images(pdf_document, page):
+    images = []
+    image_list = page.get_images(full=True)
+    for img_index, img in enumerate(image_list):
+        xref = img[0]
+        base_image = pdf_document.extract_image(xref)
+        image_bytes = base_image["image"]
+        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+        images.append(image_base64)
+    return images
+
+
+# Update the check_status function
 @app.route('/check_status', methods=['GET'])
 def check_status():
     pdf_id = request.args.get('pdf_id')
     if not pdf_id:
         return jsonify({'error': 'No PDF ID provided.'}), 400
 
-    # Retrieve processing status from Firestore
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
     if not doc.exists:
@@ -1056,19 +1079,13 @@ def check_status():
 
     status = result.get('status', 'processing')
     if status == 'completed':
-        # Create word document
         summary = result['summary']
         docx_buffer = create_word_document(summary)
-        # Encode the docx file to base64
         docx_base64 = base64.b64encode(docx_buffer.getvalue()).decode('utf-8')
 
-        # Calculate processing time
         processing_start_time = result.get('processing_start_time')
         processing_end_time = result.get('processing_end_time')
-        if processing_start_time and processing_end_time:
-            processing_time = int(processing_end_time - processing_start_time)
-        else:
-            processing_time = 'N/A'
+        processing_time = int(processing_end_time - processing_start_time) if processing_start_time and processing_end_time else 'N/A'
 
         return jsonify({
             'status': 'completed',
@@ -1080,7 +1097,9 @@ def check_status():
         return jsonify({
             'status': 'processing',
             'current_page': result.get('current_page', 0),
-            'total_pages': result.get('total_pages', 0)
+            'total_pages': result.get('total_pages', 0),
+            'current_chunk': result.get('current_chunk', 0),
+            'total_chunks': math.ceil(result.get('total_pages', 0) / CHUNK_SIZE)
         }), 200
 
 if __name__ == '__main__':
