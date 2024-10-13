@@ -643,6 +643,43 @@ def send_email():
 
 #docuement summarize 
 
+import time
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+import google.api_core.exceptions
+import threading
+
+# Token bucket for rate limiting
+class TokenBucket:
+    def __init__(self, tokens, fill_rate):
+        self.capacity = tokens
+        self.tokens = tokens
+        self.fill_rate = fill_rate
+        self.last_check = time.time()
+        self.lock = threading.Lock()
+
+    def get_token(self):
+        with self.lock:
+            now = time.time()
+            time_passed = now - self.last_check
+            self.tokens = min(self.capacity, self.tokens + time_passed * self.fill_rate)
+            self.last_check = now
+            if self.tokens >= 1:
+                self.tokens -= 1
+                return True
+            return False
+
+# Initialize the token bucket (10 tokens, refill 1 token every 6 seconds)
+token_bucket = TokenBucket(10, 1/6)
+
+def rate_limit_check():
+    while not token_bucket.get_token():
+        time.sleep(1)
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_fixed(10),  # Wait 10 seconds between retries
+    retry=retry_if_exception_type(google.api_core.exceptions.ResourceExhausted)
+)
 # Rate limiting parameters
 REQUEST_LIMIT = 15
 TIME_WINDOW = 60
@@ -669,7 +706,6 @@ def rate_limited(func):
     return wrapper
 
 
-@rate_limited
 def process_page(pdf_document, page_num, doc_ref):
     logger.info(f"Processing page {page_num + 1}")
     page = pdf_document[page_num]
@@ -684,18 +720,25 @@ def process_page(pdf_document, page_num, doc_ref):
         image_base64 = base64.b64encode(image_bytes).decode('utf-8')
         images.append(image_base64)
 
-    page_summary = generate_summary([text], images)
-    if page_summary:
-        logger.info(f"Summary generated for page {page_num + 1}")
+    try:
+        page_summary = generate_summary([text], images)
+        if page_summary:
+            logger.info(f"Summary generated for page {page_num + 1}")
+            doc_ref.update({
+                'current_page': page_num + 1,
+                'summary': firestore.ArrayUnion([page_summary])
+            })
+        else:
+            logger.warning(f"Failed to generate summary for page {page_num + 1}")
+            doc_ref.update({
+                'current_page': page_num + 1,
+                'summary': firestore.ArrayUnion([f"(Summary not available for page {page_num + 1})"])
+            })
+    except Exception as e:
+        logger.error(f"Error processing page {page_num + 1}: {e}")
         doc_ref.update({
             'current_page': page_num + 1,
-            'summary': firestore.ArrayUnion([page_summary])
-        })
-    else:
-        logger.warning(f"Failed to generate summary for page {page_num + 1}")
-        doc_ref.update({
-            'current_page': page_num + 1,
-            'summary': firestore.ArrayUnion([f"(Summary not available for page {page_num + 1})"])
+            'summary': firestore.ArrayUnion([f"(Error processing page {page_num + 1})"])
         })
 
 
@@ -716,7 +759,9 @@ def get_quote():
     quote = random.choice(quotes)
     return jsonify({'quote': quote})
 
-def generate_summary(texts, images, max_retries=3):
+def generate_summary(texts, images):
+    rate_limit_check()  # Wait for a token before making the API call
+    
     prompt = [
         """Summarize the following text into a concise and simplified summary. Ensure the summary is well-structured with clear headings and subheadings.
 
@@ -748,26 +793,18 @@ Here is the text to summarize:
     ]
     for img in images:
         prompt.append(img)
-    retries = 0
-    backoff_time = 10  # Start with 10 seconds
-    while retries < max_retries:
-        try:
-            response = model_vision.generate_content(prompt, safety_settings=safety_settings)
-            summary_text = response.text
-            # Log the AI model output for debugging
-            print("AI Model Output:\n", summary_text)
-            return summary_text
-        except google.api_core.exceptions.ResourceExhausted as e:
-            print(f"Resource exhausted: {e}. Retrying after {backoff_time} seconds...")
-            time.sleep(backoff_time)
-            retries += 1
-            backoff_time *= 2  # Exponential backoff
-        except Exception as e:
-            print(f"Error in Gemini API call: {e}")
-            return None  # Return None to indicate failure
-    # If we exhaust retries, handle accordingly
-    print("Failed to generate summary after retries.")
-    return None
+
+    try:
+        response = model_vision.generate_content(prompt, safety_settings=safety_settings)
+        summary_text = response.text
+        logger.info("Summary generated successfully")
+        return summary_text
+    except google.api_core.exceptions.ResourceExhausted as e:
+        logger.warning(f"Resource exhausted: {e}. Retrying...")
+        raise  # This will trigger a retry
+    except Exception as e:
+        logger.error(f"Error in Gemini API call: {e}")
+        return None  # Return None for non-retryable errors
 
 def create_word_document(summary):
     doc = Document()
