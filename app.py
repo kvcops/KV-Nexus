@@ -640,13 +640,19 @@ def send_email():
 
 
 #docuement summarize 
-
 # Rate limiting setup
 REQUEST_LIMIT = 15
 TIME_WINDOW = 60
 rate_limit_lock = Lock()
 last_reset_time = time.time()
 request_count = 0
+
+# Gemini API rate limiting
+GEMINI_RATE_LIMIT = 60  # Adjust based on your Gemini API quota
+GEMINI_TIME_WINDOW = 60
+gemini_request_count = 0
+gemini_last_reset_time = time.time()
+
 
 def rate_limited(func):
     @wraps(func)
@@ -666,6 +672,28 @@ def rate_limited(func):
         return func(*args, **kwargs)
     return wrapper
 
+
+def gemini_rate_limit():
+    global gemini_request_count, gemini_last_reset_time
+    current_time = time.time()
+    if current_time - gemini_last_reset_time >= GEMINI_TIME_WINDOW:
+        gemini_request_count = 0
+        gemini_last_reset_time = current_time
+    if gemini_request_count >= GEMINI_RATE_LIMIT:
+        sleep_time = GEMINI_TIME_WINDOW - (current_time - gemini_last_reset_time)
+        time.sleep(max(0, sleep_time))
+        gemini_request_count = 0
+        gemini_last_reset_time = time.time()
+    gemini_request_count += 1
+
+@tenacity.retry(
+    stop=tenacity.stop_after_attempt(5),
+    wait=tenacity.wait_exponential(multiplier=1, min=4, max=10),
+    retry=tenacity.retry_if_exception_type(google.api_core.exceptions.ResourceExhausted),
+    before_sleep=lambda retry_state: gemini_rate_limit()
+)
+def generate_summary_with_retry(texts, images):
+    return generate_summary(texts, images)
 
 @app.route('/document_summarizer', methods=['GET', 'POST'])
 def document_summarizer():
@@ -962,7 +990,6 @@ def upload_file():
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
-
 @app.route('/process_pdf', methods=['POST'])
 @rate_limited
 def process_pdf_endpoint():
@@ -988,7 +1015,7 @@ def process_pdf_endpoint():
 
         current_chunk = result.get('current_chunk', 0)
         summary = result.get('summary', '')
-        chunk_size = 5  # Process 5 pages per request
+        chunk_size = 2  # Process 2 pages per request to avoid timeouts
 
         start_page = current_chunk * chunk_size
         end_page = min(start_page + chunk_size, total_pages)
@@ -1006,12 +1033,15 @@ def process_pdf_endpoint():
                 image_base64 = base64.b64encode(image_bytes).decode('utf-8')
                 images.append(image_base64)
 
-            page_summary = generate_summary([text], images)
-            if page_summary:
-                summary += page_summary + '\n\n'
-            else:
-                print(f"Failed to generate summary for page {page_num + 1}. Skipping this page.")
-                summary += f"(Summary not available for page {page_num + 1})\n\n"
+            try:
+                page_summary = generate_summary_with_retry([text], images)
+                if page_summary:
+                    summary += page_summary + '\n\n'
+                else:
+                    summary += f"(Summary not available for page {page_num + 1})\n\n"
+            except Exception as e:
+                logging.error(f"Error generating summary for page {page_num + 1}: {e}")
+                summary += f"(Error generating summary for page {page_num + 1})\n\n"
 
         current_chunk += 1
         status = 'processing' if end_page < total_pages else 'completed'
@@ -1037,7 +1067,6 @@ def process_pdf_endpoint():
     except Exception as e:
         logging.error(f"Error processing PDF: {e}")
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/check_status', methods=['GET'])
 def check_status():
@@ -1073,7 +1102,7 @@ def check_status():
     else:
         return jsonify({
             'status': status,
-            'current_page': result.get('current_chunk', 0) * 5,  # Assuming 5 pages per chunk
+            'current_page': result.get('current_chunk', 0) * 2,  # Assuming 2 pages per chunk
             'total_pages': result.get('total_pages', 0)
         }), 200
 
