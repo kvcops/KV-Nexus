@@ -1038,8 +1038,8 @@ def process_pdf_endpoint():
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     
     result = doc.to_dict()
-    current_chunk = result['current_chunk']
-    total_chunks = result.get('total_chunks', 0)
+    current_chunk = int(result.get('current_chunk', 0))  # Ensure it's an integer
+    total_chunks = int(result.get('total_chunks', 0))  # Ensure it's an integer
 
     if total_chunks == 0:
         # Initialize chunking
@@ -1048,12 +1048,12 @@ def process_pdf_endpoint():
         pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
         
         chunks = []
-        current_chunk = ""
+        current_chunk_text = ""
         chunk_images = []
         
         for page in pdf_document:
             page_text = page.get_text()
-            current_chunk += page_text
+            current_chunk_text += page_text
             
             for img in page.get_images(full=True):
                 xref = img[0]
@@ -1062,13 +1062,13 @@ def process_pdf_endpoint():
                 image_base64 = base64.b64encode(image_bytes).decode('utf-8')
                 chunk_images.append(image_base64)
             
-            if len(current_chunk) > 1000:  # Adjust chunk size as needed
-                chunks.append((current_chunk, chunk_images))
-                current_chunk = ""
+            if len(current_chunk_text) > 1000:  # Adjust chunk size as needed
+                chunks.append((current_chunk_text, chunk_images))
+                current_chunk_text = ""
                 chunk_images = []
         
-        if current_chunk:
-            chunks.append((current_chunk, chunk_images))
+        if current_chunk_text:
+            chunks.append((current_chunk_text, chunk_images))
         
         total_chunks = len(chunks)
         doc_ref.update({'total_chunks': total_chunks})
@@ -1080,13 +1080,13 @@ def process_pdf_endpoint():
         pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
         
         chunks = []
-        current_chunk = ""
+        current_chunk_text = ""
         chunk_images = []
         chunk_count = 0
         
         for page in pdf_document:
             page_text = page.get_text()
-            current_chunk += page_text
+            current_chunk_text += page_text
             
             for img in page.get_images(full=True):
                 xref = img[0]
@@ -1095,15 +1095,15 @@ def process_pdf_endpoint():
                 image_base64 = base64.b64encode(image_bytes).decode('utf-8')
                 chunk_images.append(image_base64)
             
-            if len(current_chunk) > 1000:  # Adjust chunk size as needed
+            if len(current_chunk_text) > 1000:  # Adjust chunk size as needed
                 chunk_count += 1
                 if chunk_count > current_chunk:
-                    chunks.append((current_chunk, chunk_images))
-                current_chunk = ""
+                    chunks.append((current_chunk_text, chunk_images))
+                current_chunk_text = ""
                 chunk_images = []
         
-        if current_chunk and chunk_count > current_chunk:
-            chunks.append((current_chunk, chunk_images))
+        if current_chunk_text and chunk_count > current_chunk:
+            chunks.append((current_chunk_text, chunk_images))
         
         pdf_document.close()
 
@@ -1116,7 +1116,8 @@ def process_pdf_endpoint():
         process_chunk(chunk_text, chunk_images, doc_ref, current_chunk)
 
         updated_doc = doc_ref.get().to_dict()
-        if updated_doc['current_chunk'] >= total_chunks - 1:
+        updated_current_chunk = int(updated_doc.get('current_chunk', 0))  # Ensure it's an integer
+        if updated_current_chunk >= total_chunks - 1:
             logger.info(f"PDF {pdf_id} processing completed")
             doc_ref.update({
                 'status': 'completed',
@@ -1125,10 +1126,10 @@ def process_pdf_endpoint():
             blob.delete()
             return jsonify({'status': 'completed'}), 200
         else:
-            logger.info(f"PDF {pdf_id} processing in progress. Current chunk: {updated_doc['current_chunk']}")
+            logger.info(f"PDF {pdf_id} processing in progress. Current chunk: {updated_current_chunk}")
             return jsonify({
                 'status': 'processing',
-                'current_chunk': updated_doc['current_chunk'],
+                'current_chunk': updated_current_chunk,
                 'total_chunks': total_chunks
             }), 200
 
