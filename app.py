@@ -692,22 +692,26 @@ def rate_limited(func):
     return wrapper
 
 
+import fitz  # PyMuPDF
+import io
+from PIL import Image
+import base64
+
 def process_page(pdf_document, page_num, doc_ref):
     logger.info(f"Processing page {page_num + 1}")
     page = pdf_document[page_num]
-    text = page.get_text()
-    images = []
-
-    image_list = page.get_images(full=True)
-    for img in image_list:
-        xref = img[0]
-        base_image = pdf_document.extract_image(xref)
-        image_bytes = base_image["image"]
-        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-        images.append(image_base64)
+    
+    # Convert page to image
+    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # Increase resolution
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    
+    # Convert image to base64
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
     try:
-        page_summary = generate_summary([text], images)
+        page_summary = generate_summary(img_base64)
         if page_summary:
             logger.info(f"Summary generated for page {page_num + 1}")
             doc_ref.update({
@@ -727,7 +731,6 @@ def process_page(pdf_document, page_num, doc_ref):
             'summary': firestore.ArrayUnion([f"(Error processing page {page_num + 1})"])
         })
 
-
 @app.route('/document_summarizer', methods=['GET', 'POST'])
 def document_summarizer():
     return render_template('document_summarizer.html')
@@ -746,11 +749,11 @@ def get_quote():
     return jsonify({'quote': quote})
 
 @rate_limited
-def generate_summary(texts, images):
+def generate_summary(image_base64):
     rate_limit_check()  # Wait for a token before making the API call
     
     prompt = [
-        """Summarize the following text into a concise and simplified summary. Ensure the summary is well-structured with clear headings and subheadings.
+        """Analyze the following image, which is a page from a document, and provide a concise and simplified summary. Ensure the summary is well-structured with clear headings and subheadings.
 
 Formatting Guidelines:
 
@@ -761,25 +764,14 @@ Formatting Guidelines:
 - For *italic text*, wrap the text with single asterisks, e.g., `*note*`.
 - **For tables**, use proper Markdown table syntax with pipes `|` and hyphens `-` for headers.
 
-**Example Table**:
-Component	Function
-Node 1	Receive user input
-Node 2	Process user input
-Node 3	Store processed data
-Node 4	Retrieve data for display
-Node 5	Display data to user
-
-
 - Keep sentences short and use simple language.
 - Focus on the main ideas and avoid unnecessary details.
 - Do not include direct error messages or irrelevant information.
 
-Here is the text to summarize:
+Here is the image to analyze and summarize:
 """,
-        "\n".join(texts)
+        Image.open(io.BytesIO(base64.b64decode(image_base64)))
     ]
-    for img in images:
-        prompt.append(img)
 
     try:
         response = model_vision.generate_content(prompt, safety_settings=safety_settings)
@@ -1024,6 +1016,7 @@ def upload_file():
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
 
+# Update the process_pdf_endpoint function
 @app.route('/process_pdf', methods=['POST'])
 def process_pdf_endpoint():
     data = request.get_json()
