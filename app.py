@@ -649,6 +649,10 @@ import google.api_core.exceptions
 import threading
 
 # Token bucket for rate limiting
+# Rate limiting parameters
+REQUEST_LIMIT = 15
+TIME_WINDOW = 60
+
 class TokenBucket:
     def __init__(self, tokens, fill_rate):
         self.capacity = tokens
@@ -668,21 +672,14 @@ class TokenBucket:
                 return True
             return False
 
-# Initialize the token bucket (10 tokens, refill 1 token every 6 seconds)
-token_bucket = TokenBucket(10, 1/6)
+# Initialize the token bucket (15 tokens, refill 1 token every 4 seconds)
+token_bucket = TokenBucket(REQUEST_LIMIT, 1 / (TIME_WINDOW / REQUEST_LIMIT))
 
 def rate_limit_check():
     while not token_bucket.get_token():
         time.sleep(1)
-
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_fixed(10),  # Wait 10 seconds between retries
-    retry=retry_if_exception_type(google.api_core.exceptions.ResourceExhausted)
-)
 # Rate limiting parameters
-REQUEST_LIMIT = 15
-TIME_WINDOW = 60
+
 rate_limit_lock = None  # Replace with your lock mechanism
 last_reset_time = time.time()
 request_count = 0
@@ -690,18 +687,7 @@ request_count = 0
 def rate_limited(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        global request_count, last_reset_time
-        current_time = time.time()
-        if current_time - last_reset_time >= TIME_WINDOW:
-            request_count = 0
-            last_reset_time = current_time
-        if request_count >= REQUEST_LIMIT:
-            remaining_time = TIME_WINDOW - (current_time - last_reset_time)
-            logger.warning(f"Rate limit exceeded. Cooling down for {int(remaining_time)} seconds.")
-            return jsonify({
-                'error': f'Rate limit exceeded. Please try again in {int(remaining_time)} seconds.'
-            }), 429
-        request_count += 1
+        rate_limit_check()
         return func(*args, **kwargs)
     return wrapper
 
@@ -759,6 +745,7 @@ def get_quote():
     quote = random.choice(quotes)
     return jsonify({'quote': quote})
 
+@rate_limited
 def generate_summary(texts, images):
     rate_limit_check()  # Wait for a token before making the API call
     
