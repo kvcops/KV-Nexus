@@ -640,60 +640,55 @@ def send_email():
 
 
 #docuement summarize 
-# Rate limiting setup
+# Rate limiting parameters
 REQUEST_LIMIT = 15
 TIME_WINDOW = 60
-rate_limit_lock = Lock()
+rate_limit_lock = None  # Replace with your lock mechanism
 last_reset_time = time.time()
 request_count = 0
-
-# Gemini API rate limiting
-GEMINI_RATE_LIMIT = 60  # Adjust based on your Gemini API quota
-GEMINI_TIME_WINDOW = 60
-gemini_request_count = 0
-gemini_last_reset_time = time.time()
-
 
 def rate_limited(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         global request_count, last_reset_time
-        with rate_limit_lock:
-            current_time = time.time()
-            if current_time - last_reset_time >= TIME_WINDOW:
-                request_count = 0
-                last_reset_time = current_time
-            if request_count >= REQUEST_LIMIT:
-                remaining_time = TIME_WINDOW - (current_time - last_reset_time)
-                return jsonify({
-                    'error': f'Rate limit exceeded. Please try again in {int(remaining_time)} seconds.'
-                }), 429
-            request_count += 1
+        current_time = time.time()
+        if current_time - last_reset_time >= TIME_WINDOW:
+            request_count = 0
+            last_reset_time = current_time
+        if request_count >= REQUEST_LIMIT:
+            remaining_time = TIME_WINDOW - (current_time - last_reset_time)
+            return jsonify({
+                'error': f'Rate limit exceeded. Please try again in {int(remaining_time)} seconds.'
+            }), 429
+        request_count += 1
         return func(*args, **kwargs)
     return wrapper
 
+@rate_limited
+def process_page(pdf_document, page_num, doc_ref):
+    page = pdf_document[page_num]
+    text = page.get_text()
+    images = []
 
-def gemini_rate_limit():
-    global gemini_request_count, gemini_last_reset_time
-    current_time = time.time()
-    if current_time - gemini_last_reset_time >= GEMINI_TIME_WINDOW:
-        gemini_request_count = 0
-        gemini_last_reset_time = current_time
-    if gemini_request_count >= GEMINI_RATE_LIMIT:
-        sleep_time = GEMINI_TIME_WINDOW - (current_time - gemini_last_reset_time)
-        time.sleep(max(0, sleep_time))
-        gemini_request_count = 0
-        gemini_last_reset_time = time.time()
-    gemini_request_count += 1
+    image_list = page.get_images(full=True)
+    for img in image_list:
+        xref = img[0]
+        base_image = pdf_document.extract_image(xref)
+        image_bytes = base_image["image"]
+        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+        images.append(image_base64)
 
-@tenacity.retry(
-    stop=tenacity.stop_after_attempt(5),
-    wait=tenacity.wait_exponential(multiplier=1, min=4, max=10),
-    retry=tenacity.retry_if_exception_type(google.api_core.exceptions.ResourceExhausted),
-    before_sleep=lambda retry_state: gemini_rate_limit()
-)
-def generate_summary_with_retry(texts, images):
-    return generate_summary(texts, images)
+    page_summary = generate_summary([text], images)
+    if page_summary:
+        doc_ref.update({
+            'current_page': page_num + 1,
+            'summary': firestore.ArrayUnion([page_summary])
+        })
+    else:
+        doc_ref.update({
+            'current_page': page_num + 1,
+            'summary': firestore.ArrayUnion([f"(Summary not available for page {page_num + 1})"])
+        })
 
 @app.route('/document_summarizer', methods=['GET', 'POST'])
 def document_summarizer():
@@ -967,17 +962,22 @@ def upload_file():
 
     if file and file.filename.endswith('.pdf'):
         try:
+            # Generate a unique PDF ID
             pdf_id = str(uuid.uuid4())
+
+            # Upload the PDF to Firebase Storage
             blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
             blob.upload_from_file(file)
 
+            # Get the total number of pages
             pdf_document = fitz.open(stream=blob.download_as_bytes(), filetype="pdf")
             total_pages = len(pdf_document)
             pdf_document.close()
 
+            # Initialize processing status in Firestore
             db.collection('pdf_processes').document(pdf_id).set({
-                'status': 'pending',
-                'current_chunk': 0,
+                'status': 'processing',
+                'current_page': 0,
                 'total_pages': total_pages,
                 'summary': '',
                 'processing_start_time': time.time(),
@@ -990,8 +990,8 @@ def upload_file():
             return jsonify({'error': str(e)}), 500
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
+
 @app.route('/process_pdf', methods=['POST'])
-@rate_limited
 def process_pdf_endpoint():
     data = request.get_json()
     pdf_id = data.get('pdf_id')
@@ -1002,67 +1002,36 @@ def process_pdf_endpoint():
     doc = doc_ref.get()
     if not doc.exists:
         return jsonify({'error': 'Invalid PDF ID.'}), 400
+    
     result = doc.to_dict()
+    current_page = result['current_page']
+    total_pages = result['total_pages']
+
+    if current_page >= total_pages:
+        return jsonify({'status': 'completed'}), 200
 
     try:
         blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
-        if not blob.exists():
-            return jsonify({'error': 'File not found.'}), 404
-
         pdf_bytes = blob.download_as_bytes()
         pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
-        total_pages = result.get('total_pages', len(pdf_document))
 
-        current_chunk = result.get('current_chunk', 0)
-        summary = result.get('summary', '')
-        chunk_size = 2  # Process 2 pages per request to avoid timeouts
-
-        start_page = current_chunk * chunk_size
-        end_page = min(start_page + chunk_size, total_pages)
-
-        for page_num in range(start_page, end_page):
-            page = pdf_document[page_num]
-            text = page.get_text()
-            images = []
-
-            image_list = page.get_images(full=True)
-            for img_index, img in enumerate(image_list):
-                xref = img[0]
-                base_image = pdf_document.extract_image(xref)
-                image_bytes = base_image["image"]
-                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
-                images.append(image_base64)
-
-            try:
-                page_summary = generate_summary_with_retry([text], images)
-                if page_summary:
-                    summary += page_summary + '\n\n'
-                else:
-                    summary += f"(Summary not available for page {page_num + 1})\n\n"
-            except Exception as e:
-                logging.error(f"Error generating summary for page {page_num + 1}: {e}")
-                summary += f"(Error generating summary for page {page_num + 1})\n\n"
-
-        current_chunk += 1
-        status = 'processing' if end_page < total_pages else 'completed'
-        
-        doc_ref.update({
-            'status': status,
-            'current_chunk': current_chunk,
-            'summary': summary
-        })
-
-        if status == 'completed':
-            doc_ref.update({'processing_end_time': time.time()})
-            blob.delete()
-
+        process_page(pdf_document, current_page, doc_ref)
         pdf_document.close()
 
-        return jsonify({
-            'status': status,
-            'current_page': end_page,
-            'total_pages': total_pages
-        }), 200
+        updated_doc = doc_ref.get().to_dict()
+        if updated_doc['current_page'] >= total_pages:
+            doc_ref.update({
+                'status': 'completed',
+                'processing_end_time': time.time()
+            })
+            blob.delete()
+            return jsonify({'status': 'completed'}), 200
+        else:
+            return jsonify({
+                'status': 'processing',
+                'current_page': updated_doc['current_page'],
+                'total_pages': total_pages
+            }), 200
 
     except Exception as e:
         logging.error(f"Error processing PDF: {e}")
@@ -1078,20 +1047,18 @@ def check_status():
     doc = doc_ref.get()
     if not doc.exists:
         return jsonify({'error': 'Invalid PDF ID.'}), 400
+    
     result = doc.to_dict()
-
     status = result.get('status', 'processing')
+
     if status == 'completed':
-        summary = result['summary']
+        summary = '\n\n'.join(result['summary'])
         docx_buffer = create_word_document(summary)
         docx_base64 = base64.b64encode(docx_buffer.getvalue()).decode('utf-8')
 
-        processing_start_time = result.get('processing_start_time')
-        processing_end_time = result.get('processing_end_time')
-        if processing_start_time and processing_end_time:
-            processing_time = int(processing_end_time - processing_start_time)
-        else:
-            processing_time = 'N/A'
+        processing_time = 'N/A'
+        if result.get('processing_start_time') and result.get('processing_end_time'):
+            processing_time = int(result['processing_end_time'] - result['processing_start_time'])
 
         return jsonify({
             'status': 'completed',
@@ -1101,11 +1068,10 @@ def check_status():
         }), 200
     else:
         return jsonify({
-            'status': status,
-            'current_page': result.get('current_chunk', 0) * 2,  # Assuming 2 pages per chunk
+            'status': 'processing',
+            'current_page': result.get('current_page', 0),
             'total_pages': result.get('total_pages', 0)
         }), 200
-
 
 if __name__ == '__main__':
     app.run(debug=True)
