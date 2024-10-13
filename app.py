@@ -641,15 +641,14 @@ def send_email():
 
 #docuement summarize 
 
-# Rate limiting parameters
-REQUEST_LIMIT = 15  # Max requests per time window
-TIME_WINDOW = 60    # Time window in seconds
+# Rate limiting setup
+REQUEST_LIMIT = 15
+TIME_WINDOW = 60
 rate_limit_lock = Lock()
 last_reset_time = time.time()
 request_count = 0
 
 def rate_limited(func):
-    from functools import wraps
     @wraps(func)
     def wrapper(*args, **kwargs):
         global request_count, last_reset_time
@@ -940,22 +939,17 @@ def upload_file():
 
     if file and file.filename.endswith('.pdf'):
         try:
-            # Generate a unique PDF ID
             pdf_id = str(uuid.uuid4())
-
-            # Upload the PDF to Firebase Storage
             blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
             blob.upload_from_file(file)
 
-            # Get the total number of pages
             pdf_document = fitz.open(stream=blob.download_as_bytes(), filetype="pdf")
             total_pages = len(pdf_document)
             pdf_document.close()
 
-            # Initialize processing status in Firestore
             db.collection('pdf_processes').document(pdf_id).set({
-                'status': 'processing',
-                'current_page': 0,
+                'status': 'pending',
+                'current_chunk': 0,
                 'total_pages': total_pages,
                 'summary': '',
                 'processing_start_time': time.time(),
@@ -977,10 +971,9 @@ def process_pdf_endpoint():
     if not pdf_id:
         return jsonify({'error': 'No PDF ID provided.'}), 400
 
-    # Retrieve processing status from Firestore
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
-    if not doc.exists():
+    if not doc.exists:
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     result = doc.to_dict()
 
@@ -993,18 +986,18 @@ def process_pdf_endpoint():
         pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
         total_pages = result.get('total_pages', len(pdf_document))
 
-        current_page = result['current_page']
-        summary = result['summary']
+        current_chunk = result.get('current_chunk', 0)
+        summary = result.get('summary', '')
+        chunk_size = 5  # Process 5 pages per request
 
-        # Process the PDF in chunks, say 5 pages at a time
-        pages_to_process = min(current_page + 5, total_pages)
+        start_page = current_chunk * chunk_size
+        end_page = min(start_page + chunk_size, total_pages)
 
-        for page_num in range(current_page, pages_to_process):
+        for page_num in range(start_page, end_page):
             page = pdf_document[page_num]
             text = page.get_text()
             images = []
 
-            # Extract images
             image_list = page.get_images(full=True)
             for img_index, img in enumerate(image_list):
                 xref = img[0]
@@ -1013,32 +1006,38 @@ def process_pdf_endpoint():
                 image_base64 = base64.b64encode(image_bytes).decode('utf-8')
                 images.append(image_base64)
 
-            # Generate summary for the page
             page_summary = generate_summary([text], images)
             if page_summary:
                 summary += page_summary + '\n\n'
             else:
+                print(f"Failed to generate summary for page {page_num + 1}. Skipping this page.")
                 summary += f"(Summary not available for page {page_num + 1})\n\n"
 
-        current_page = pages_to_process
-        # Update the processing status in Firestore
-        doc_ref.update({'current_page': current_page, 'summary': summary})
+        current_chunk += 1
+        status = 'processing' if end_page < total_pages else 'completed'
+        
+        doc_ref.update({
+            'status': status,
+            'current_chunk': current_chunk,
+            'summary': summary
+        })
+
+        if status == 'completed':
+            doc_ref.update({'processing_end_time': time.time()})
+            blob.delete()
 
         pdf_document.close()
 
-        if current_page >= total_pages:
-            # Processing complete
-            doc_ref.update({'status': 'completed', 'processing_end_time': time.time()})
-            # Optionally delete the PDF from storage
-            blob.delete()
-            return jsonify({'status': 'completed'}), 200
-        else:
-            # Processing not complete, client should continue to poll for status
-            return jsonify({'status': 'processing', 'current_page': current_page, 'total_pages': total_pages}), 200
+        return jsonify({
+            'status': status,
+            'current_page': end_page,
+            'total_pages': total_pages
+        }), 200
 
     except Exception as e:
         logging.error(f"Error processing PDF: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/check_status', methods=['GET'])
 def check_status():
@@ -1046,7 +1045,6 @@ def check_status():
     if not pdf_id:
         return jsonify({'error': 'No PDF ID provided.'}), 400
 
-    # Retrieve processing status from Firestore
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
     if not doc.exists:
@@ -1055,13 +1053,10 @@ def check_status():
 
     status = result.get('status', 'processing')
     if status == 'completed':
-        # Create word document
         summary = result['summary']
         docx_buffer = create_word_document(summary)
-        # Encode the docx file to base64
         docx_base64 = base64.b64encode(docx_buffer.getvalue()).decode('utf-8')
 
-        # Calculate processing time
         processing_start_time = result.get('processing_start_time')
         processing_end_time = result.get('processing_end_time')
         if processing_start_time and processing_end_time:
@@ -1077,10 +1072,11 @@ def check_status():
         }), 200
     else:
         return jsonify({
-            'status': 'processing',
-            'current_page': result.get('current_page', 0),
+            'status': status,
+            'current_page': result.get('current_chunk', 0) * 5,  # Assuming 5 pages per chunk
             'total_pages': result.get('total_pages', 0)
         }), 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)
