@@ -113,6 +113,8 @@ firebase_admin.initialize_app(cred, {'storageBucket': STORAGE_BUCKET_URL})
 db = firestore.client()
 bucket = storage.bucket()
 
+
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
 # Generation configurations
 generation_config = GenerationConfig(
     temperature=0.9,
@@ -985,17 +987,25 @@ def upload_file():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    if file and file.filename.endswith('.pdf'):
+    if file and file.filename.lower().endswith('.pdf'):
         try:
+            # Read the file into memory
+            file_content = file.read()
+            file_size = len(file_content)
+
+            # Check file size (10MB limit)
+            if file_size > 10 * 1024 * 1024:
+                return jsonify({'error': 'File size exceeds 10MB limit'}), 400
+
             # Generate a unique PDF ID
             pdf_id = str(uuid.uuid4())
 
             # Upload the PDF to Firebase Storage
             blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
-            blob.upload_from_file(file)
+            blob.upload_from_string(file_content, content_type='application/pdf')
 
             # Get the total number of pages
-            pdf_document = fitz.open(stream=blob.download_as_bytes(), filetype="pdf")
+            pdf_document = fitz.open(stream=file_content, filetype="pdf")
             total_pages = len(pdf_document)
             pdf_document.close()
 
@@ -1006,13 +1016,18 @@ def upload_file():
                 'total_pages': total_pages,
                 'summary': '',
                 'processing_start_time': time.time(),
-                'timestamp': firestore.SERVER_TIMESTAMP
+                'timestamp': firestore.SERVER_TIMESTAMP,
+                'file_size': file_size
             })
 
-            return jsonify({'pdf_id': pdf_id}), 200
+            return jsonify({
+                'pdf_id': pdf_id,
+                'total_pages': total_pages,
+                'file_size': file_size
+            }), 200
         except Exception as e:
             logging.error(f"Error uploading file: {e}")
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': f'Error uploading file: {str(e)}'}), 500
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
 
