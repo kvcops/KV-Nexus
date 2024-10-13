@@ -745,8 +745,16 @@ def get_quote():
     return jsonify({'quote': quote})
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-def generate_summary(texts, images):
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from google.api_core.exceptions import ResourceExhausted
+
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=4, max=10),
+    retry=retry_if_exception_type(ResourceExhausted),
+    reraise=True
+)
+def generate_summary_with_retry(texts, images):
     prompt = [
         """Summarize the following text into a concise and simplified summary. Ensure the summary is well-structured with clear headings and subheadings.
 
@@ -777,7 +785,7 @@ Here is the text to summarize:
 def process_chunk(chunk_text, chunk_images, doc_ref, chunk_number):
     logger.info(f"Processing chunk {chunk_number}")
     try:
-        chunk_summary = generate_summary([chunk_text], chunk_images)
+        chunk_summary = generate_summary_with_retry([chunk_text], chunk_images)
         if chunk_summary:
             logger.info(f"Summary generated for chunk {chunk_number}")
             doc_ref.update({
@@ -794,8 +802,9 @@ def process_chunk(chunk_text, chunk_images, doc_ref, chunk_number):
         logger.error(f"Error processing chunk {chunk_number}: {e}")
         doc_ref.update({
             'current_chunk': chunk_number,
-            'summary': firestore.ArrayUnion([f"(Error processing chunk {chunk_number})"])
+            'summary': firestore.ArrayUnion([f"(Error processing chunk {chunk_number}: {str(e)})"])
         })
+        raise  # Re-raise the exception to be caught by the caller
         
 def create_word_document(summary):
     doc = Document()
