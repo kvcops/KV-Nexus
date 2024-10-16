@@ -987,118 +987,49 @@ def upload_file():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    if file and file.filename.lower().endswith(('.pdf', '.docx')): # Added docx support
+    if file and file.filename.lower().endswith('.pdf'):
         try:
-            # Generate a unique ID
-            file_id = str(uuid.uuid4())
-            file_extension = file.filename.split('.')[-1] #get the extension
-            file_name = f'{file_id}.{file_extension}' # create filename for firebase
+            # Read the file into memory
+            file_content = file.read()
+            file_size = len(file_content)
 
-            # Upload to Firebase Storage
-            blob = bucket.blob(f'uploads/{file_name}')
-            blob.upload_from_file(file, content_type=file.content_type) # upload directly from file object
-            public_url = blob.public_url # get public url
+            # Check file size (10MB limit)
+            if file_size > 10 * 1024 * 1024:
+                return jsonify({'error': 'File size exceeds 10MB limit'}), 400
 
+            # Generate a unique PDF ID
+            pdf_id = str(uuid.uuid4())
 
-            # Store metadata in Firestore (only the file ID and URL for now)
-            db.collection('uploads').document(file_id).set({
-                'id': file_id,
-                'url': public_url,
-                'status': 'pending',  # Add a status field
+            # Upload the PDF to Firebase Storage
+            blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
+            blob.upload_from_string(file_content, content_type='application/pdf')
+
+            # Get the total number of pages
+            pdf_document = fitz.open(stream=file_content, filetype="pdf")
+            total_pages = len(pdf_document)
+            pdf_document.close()
+
+            # Initialize processing status in Firestore
+            db.collection('pdf_processes').document(pdf_id).set({
+                'status': 'processing',
+                'current_page': 0,
+                'total_pages': total_pages,
+                'summary': '',
+                'processing_start_time': time.time(),
                 'timestamp': firestore.SERVER_TIMESTAMP,
-                'file_name': file.filename
+                'file_size': file_size
             })
 
-
-            return jsonify({'file_id': file_id, 'url': public_url, 'file_name': file.filename}), 200
-
+            return jsonify({
+                'pdf_id': pdf_id,
+                'total_pages': total_pages,
+                'file_size': file_size
+            }), 200
         except Exception as e:
             logging.error(f"Error uploading file: {e}")
             return jsonify({'error': f'Error uploading file: {str(e)}'}), 500
     else:
-        return jsonify({'error': 'Invalid file type. Please upload a PDF or DOCX.'}), 400
-
-@app.route('/process_file', methods=['POST'])
-def process_file():
-    data = request.get_json()
-    file_id = data.get('file_id')
-    if not file_id:
-        return jsonify({'error': 'No file ID provided.'}), 400
-
-    doc_ref = db.collection('uploads').document(file_id)
-    doc = doc_ref.get()
-    if not doc.exists:
-        return jsonify({'error': 'Invalid file ID.'}), 400
-
-    try:
-        file_data = doc.to_dict()
-        file_url = file_data['url']
-        file_name = file_data['file_name']
-        file_extension = file_name.split('.')[-1]
-
-        # Download the file from Firebase storage only if it is 'pending'
-        if file_data['status'] == 'pending':
-            response = requests.get(file_url, stream=True)
-            response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
-
-            # Process the downloaded file depending on its type
-            if file_extension == 'pdf':
-                pdf_document = fitz.open(stream=response.content, filetype="pdf")  #Using PyMuPDF
-                summary = process_pdf(pdf_document)
-                pdf_document.close()
-
-            elif file_extension == 'docx':
-                summary = process_docx(response.content) # Function to handle docx files (add this function)
-
-
-            doc_ref.update({'status': 'processed', 'summary': summary})
-            return jsonify({'status': 'processed', 'summary': summary}), 200
-        else:
-            # File has already been processed
-            return jsonify({'status': 'processed', 'summary': file_data['summary']}), 200
-
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error downloading file: {e}")
-        return jsonify({'error': f'Error downloading file: {str(e)}'}), 500
-    except Exception as e:
-        logger.error(f"Error processing file: {e}")
-        return jsonify({'error': f'Error processing file: {str(e)}'}), 500
-
-def process_pdf(pdf_document):
-    #Modified to handle multipage PDFs efficiently (see explanation below)
-    total_pages = len(pdf_document)
-    summaries = []
-    for page_num in range(total_pages):
-        page = pdf_document[page_num]
-        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-        buffered = io.BytesIO()
-        img.save(buffered, format="PNG")
-        img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        summaries.append(generate_summary(img_base64))
-        
-    return "\n\n".join(s for s in summaries if s) # Join summaries, skipping None values
-
-@app.route('/download', methods=['GET'])
-def download():
-    file_id = request.args.get('file_id')
-    if not file_id:
-        return jsonify({'error': 'No file ID provided.'}), 400
-    doc_ref = db.collection('uploads').document(file_id)
-    doc = doc_ref.get()
-    if not doc.exists:
-        return jsonify({'error': 'Invalid file ID.'}), 400
-
-    file_data = doc.to_dict()
-
-    # Create a docx file from the summary
-    summary = file_data.get('summary', '')
-    docx_buffer = create_word_document(summary)
-    docx_buffer.seek(0)
-
-    # Return the document as a file download
-    return send_file(docx_buffer, as_attachment=True, download_name='summary.docx')
-
+        return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
 
 # Update the process_pdf_endpoint function
 @app.route('/process_pdf', methods=['POST'])
