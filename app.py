@@ -1006,22 +1006,32 @@ def add_table_to_document_from_html(doc, table_element):
                 shading_elm.set(qn('w:fill'), 'D9E1F2')  # Light blue background
                 row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
 
+import datetime
+from werkzeug.utils import secure_filename
+import uuid
+
 @app.route('/get_upload_url', methods=['POST'])
 def get_upload_url():
     try:
+        if not request.is_json:
+            return jsonify({'error': 'Missing JSON in request'}), 400
+            
         file_name = request.json.get('fileName')
+        if not file_name:
+            return jsonify({'error': 'fileName is required'}), 400
+            
+        # Generate a unique ID for the upload
         pdf_id = str(uuid.uuid4())
         safe_file_name = f"pdfs/{pdf_id}/{secure_filename(file_name)}"
         
         # Generate a signed URL for direct upload
-        bucket = storage.bucket()
         blob = bucket.blob(safe_file_name)
         
         url = blob.generate_signed_url(
             version="v4",
-            expiration=datetime.timedelta(minutes=15),  # Adjust as needed
+            expiration=datetime.timedelta(minutes=15),
             method="PUT",
-            content_type="application/pdf"  # Or application/octet-stream
+            content_type="application/pdf"
         )
         
         return jsonify({
@@ -1029,60 +1039,56 @@ def get_upload_url():
             'pdf_id': pdf_id,
             'fileName': safe_file_name
         })
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
+        logger.error(f"Error generating upload URL: {str(e)}")
+        return jsonify({'error': 'Failed to generate upload URL'}), 500
 
 @app.route('/confirm_upload', methods=['POST'])
 def confirm_upload():
     try:
+        if not request.is_json:
+            return jsonify({'error': 'Missing JSON in request'}), 400
+            
         pdf_id = request.json.get('pdf_id')
         file_name = request.json.get('fileName')
+        
+        if not pdf_id or not file_name:
+            return jsonify({'error': 'pdf_id and fileName are required'}), 400
 
-        # Check if the file exists in Firebase storage
+        # Verify the file exists in storage
         blob = bucket.blob(file_name)
-        print(f"File Name: {file_name}")
-        print(f"File Exists: {blob.exists()}")  # Debug: Check if the file exists
-
         if not blob.exists():
-            return jsonify({'error': 'File not found in storage.'}), 400   
+            return jsonify({'error': 'File not found in storage'}), 404
 
-        total_pages = 0
-        file_size = 0
+        # Get PDF metadata
+        pdf_bytes = blob.download_as_bytes()
+        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+        total_pages = len(pdf_document)
+        pdf_document.close()
 
-        try:
-            pdf_bytes = blob.download_as_bytes() # Dowload PDF Byte
-            file_size = len(pdf_bytes)
-            print(f"PDF Bytes Length: {file_size}")  # Debug: Check the length of PDF bytes
-
-            pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf") # Open with fitz library
-            total_pages = len(pdf_document)
-            print(f"Total Pages: {total_pages}")  # Debug: Check the total number of pages
-            pdf_document.close()
-
-        except Exception as e:
-            return jsonify({'error':f'Failed to process uploaded file: {str(e)}'}), 500
-
-        # ... create firestore record now that we know it exists
-        db.collection('pdf_processes').document(pdf_id).set({
+        # Create Firestore record
+        doc_ref = db.collection('pdf_processes').document(pdf_id)
+        doc_ref.set({
             'status': 'processing',
             'current_page': 0,
             'total_pages': total_pages,
-            'summary': [],  # Initialize as empty list
+            'summary': [],
             'processing_start_time': time.time(),
             'timestamp': firestore.SERVER_TIMESTAMP,
             'file_size': blob.size,
-            "file_name":file_name,
+            'file_name': file_name,
         })
 
         return jsonify({
             'pdf_id': pdf_id,
             'total_pages': total_pages,
-            'file_size': blob.size  # Use file_size calculated above 
+            'file_size': blob.size
         })
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error confirming upload: {str(e)}")
+        return jsonify({'error': f'Failed to confirm upload: {str(e)}'}), 500
 
 
 
