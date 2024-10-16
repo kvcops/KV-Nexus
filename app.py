@@ -1013,26 +1013,27 @@ def confirm_upload():
 
         # Check if the file exists in Firebase storage
         blob = bucket.blob(file_name)
+        print(f"File Name: {file_name}")
+        print(f"File Exists: {blob.exists()}")  # Debug: Check if the file exists
 
         if not blob.exists():
-             return jsonify({'error': 'File not found in storage.'}), 400   
+            return jsonify({'error': 'File not found in storage.'}), 400   
 
-        total_pages = 0 #Initialize total page 
-        file_size = 0 # Initialize file_size
+        total_pages = 0
+        file_size = 0
 
         try:
-             pdf_bytes = blob.download_as_bytes() # Dowload PDF Byte
-             file_size = len(pdf_bytes)
+            pdf_bytes = blob.download_as_bytes() # Dowload PDF Byte
+            file_size = len(pdf_bytes)
+            print(f"PDF Bytes Length: {file_size}")  # Debug: Check the length of PDF bytes
 
-             pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf") # Open with fitz library
-             total_pages = len(pdf_document)
-             pdf_document.close()
+            pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf") # Open with fitz library
+            total_pages = len(pdf_document)
+            print(f"Total Pages: {total_pages}")  # Debug: Check the total number of pages
+            pdf_document.close()
 
         except Exception as e:
             return jsonify({'error':f'Failed to process uploaded file: {str(e)}'}), 500
-
-
-
 
         # ... create firestore record now that we know it exists
         db.collection('pdf_processes').document(pdf_id).set({
