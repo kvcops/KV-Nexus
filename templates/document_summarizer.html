@@ -273,94 +273,162 @@
         // Form Submission
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(form);
-        
-            // Show loading
-            form.classList.add('hidden');
-            loading.classList.remove('hidden');
-            progressText.textContent = 'Uploading file...';
-        
+            const file = fileUpload.files[0];
+
+            if (!file) {
+                alert("Please select a file.");
+                return;
+            }
+
             try {
-                // Upload the file and get pdf_id
-                const response = await fetch('/upload', {
+                // 1. Get Upload URL from your server
+                const getUploadUrlResponse = await fetch('/get_upload_url', {
                     method: 'POST',
-                    body: formData,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fileName: file.name }) // Send the filename
                 });
-        
-                if (response.ok) {
-                    const data = await response.json();
-                    const pdfId = data.pdf_id;
-    
-                    // Start processing the PDF
-                    progressText.textContent = 'Processing your PDF...';
-                    await processPdf(pdfId);
-                } else {
+
+                if (!getUploadUrlResponse.ok) {
+                    const errorData = await getUploadUrlResponse.json();
+                    throw new Error(errorData.error || 'Failed to get upload URL');
+                }
+
+                const { url, fields } = await getUploadUrlResponse.json();
+
+
+                // 2. Create FormData and append file and fields
+                const formData = new FormData();
+                formData.append('file', file);
+                for (const key in fields) {
+                    formData.append(key, fields[key]);
+                }
+
+
+                // Show loading indicator
+                form.classList.add('hidden');
+                loading.classList.remove('hidden');
+                progressText.textContent = 'Uploading file...';
+
+                // 3. Upload directly to Firebase Storage
+                const uploadResponse = await fetch(url, {
+                    method: 'PUT',
+                    body: formData
+                });
+
+                if (!uploadResponse.ok) {
                     throw new Error('Upload failed');
                 }
+
+                // 4. Get the Blob URL and process
+                const uploadData = await uploadResponse.json();
+                const blobUrl = uploadData.url;  // URL of the uploaded file in blob storage
+
+
+                const pdfId = blobUrl; // Use blobUrl as pdfId for now (or any identifier you prefer)
+                progressText.textContent = 'Processing PDF...'
+                await processPdf(pdfId); // Now call processPdf with the blob URL
+
+
+
+
             } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again or upload a smaller PDF file.');
+                console.error("Error:", error);
+                alert('An error occurred during upload. Please try again later.');
                 loading.classList.add('hidden');
                 form.classList.remove('hidden');
             }
         });
-        
-        async function processingLoop(pdfId) {
+
+
+        async function uploadFile(file) {
             try {
-                const response = await fetch('/process_pdf', {
+                // Step 1: Get signed URL
+                const urlResponse = await fetch('/get_upload_url', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({pdf_id: pdfId}),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        fileName: file.name
+                    })
                 });
-        
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.status === 'completed') {
-                        await checkStatus(pdfId);
-                    } else if (data.status === 'processing') {
-                        progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
-                        // Call process_pdf again after a short delay
-                        setTimeout(() => processingLoop(pdfId), 1000);
-                    } else {
-                        throw new Error(data.error || 'Processing failed');
+                const { uploadUrl, pdf_id, fileName } = await urlResponse.json();
+
+                // Step 2: Upload directly to Firebase Storage
+                await fetch(uploadUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': 'application/pdf'
                     }
-                } else {
-                    throw new Error('Processing failed');
-                }
+                });
+
+                // Step 3: Confirm upload and start processing
+                const confirmResponse = await fetch('/confirm_upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        pdf_id: pdf_id,
+                        fileName: fileName
+                    })
+                });
+
+                const result = await confirmResponse.json();
+                return result;
+
             } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred during processing. Please try again later.');
-                loading.classList.add('hidden');
-                form.classList.remove('hidden');
+                console.error('Upload failed:', error);
+                throw error;
             }
         }
 
-        // Process PDF
-        async function processPdf(pdfId) {
+        // Usage in your form submit handler
+        document.querySelector('form').onsubmit = async (e) => {
+            e.preventDefault();
+            const file = document.querySelector('input[type="file"]').files[0];
             try {
-                // First, check the status
-                const statusResponse = await fetch(`/check_status?pdf_id=${pdfId}`);
-                if (statusResponse.ok) {
-                    const statusData = await statusResponse.json();
-                    if (statusData.status === 'completed') {
-                        // If already completed, proceed to download
-                        await checkStatus(pdfId);
-                    } else {
-                        // Start the processing loop
-                        await processingLoop(pdfId);
-                    }
-                } else {
-                    throw new Error('Failed to check initial status.');
-                }
+                const result = await uploadFile(file);
+                // Handle successful upload result
+                startProcessing(result.pdf_id);
             } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred during processing. Please try again later.');
-                loading.classList.add('hidden');
-                form.classList.remove('hidden');
+                // Handle error
+                console.error('Upload failed:', error);
+            }
+        };
+
+        function validateFile(file) {
+            // Maximum file size (e.g., 100MB)
+            const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB in bytes
+
+            if (file.size > MAX_FILE_SIZE) {
+                throw new Error(`File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`);
+            }
+
+            if (!file.type.match('application/pdf')) {
+                throw new Error('Only PDF files are allowed');
+            }
+
+            return true;
+        }
+
+        async function handleFileUpload(file) {
+            try {
+                validateFile(file);
+                showUploadProgress(true);
+                const result = await uploadFile(file);
+                await startProcessing(result.pdf_id);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                showUploadProgress(false);
             }
         }
 
-        // Check Status and Download
+
         async function checkStatus(pdfId) {
             try {
                 const response = await fetch(`/check_status?pdf_id=${pdfId}`);
@@ -371,12 +439,12 @@
                         loading.classList.add('hidden');
                         result.classList.remove('hidden');
                         triggerConfetti();
-    
+
                         // Update UI with processing details
                         document.getElementById('total-pages').textContent = data.total_pages;
                         document.getElementById('processing-time').textContent = data.processing_time !== 'N/A' ? `${data.processing_time} seconds` : 'N/A';
                     
-    
+
                         // Create blob from base64 data
                         const binaryData = atob(data.docx);
                         const array = new Uint8Array(binaryData.length);
@@ -385,7 +453,7 @@
                         }
                         const blob = new Blob([array], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
                         const url = window.URL.createObjectURL(blob);
-    
+
                         // Set up download button
                         downloadButton.addEventListener('click', () => {
                             const link = document.createElement('a');
