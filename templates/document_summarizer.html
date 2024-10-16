@@ -270,6 +270,177 @@
             }
         });
 
+
+        // Frontend JavaScript Fix
+
+// 1. First, create a proper upload handler function
+async function handleFileUpload(file) {
+    try {
+        // Step 1: Get the upload URL
+        const getUrlResponse = await fetch('/get_upload_url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                fileName: file.name
+            })
+        });
+
+        if (!getUrlResponse.ok) {
+            throw new Error('Failed to get upload URL');
+        }
+
+        const { uploadUrl, pdf_id, fileName } = await getUrlResponse.json();
+
+        if (!uploadUrl) {
+            throw new Error('No upload URL received');
+        }
+
+        // Step 2: Upload file to Firebase
+        const uploadResponse = await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/pdf',
+            },
+            body: file
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error('Failed to upload file');
+        }
+
+        // Step 3: Confirm upload and start processing
+        const confirmResponse = await fetch('/confirm_upload', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                pdf_id: pdf_id,
+                fileName: fileName
+            })
+        });
+
+        if (!confirmResponse.ok) {
+            throw new Error('Failed to confirm upload');
+        }
+
+        const result = await confirmResponse.json();
+        return result;
+
+    } catch (error) {
+        console.error('Upload error:', error);
+        throw error;
+    }
+}
+
+// 2. HTML Form Example
+`
+<form id="uploadForm" class="upload-form">
+    <input type="file" id="pdfFile" accept=".pdf" required />
+    <button type="submit">Upload PDF</button>
+</form>
+`
+
+// 3. Form Event Handler
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('pdfFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a PDF file');
+        return;
+    }
+
+    if (file.type !== 'application/pdf') {
+        alert('Please upload only PDF files');
+        return;
+    }
+
+    try {
+        const result = await handleFileUpload(file);
+        // Handle successful upload
+        console.log('Upload successful:', result);
+        
+        // Start checking processing status
+        checkProcessingStatus(result.pdf_id);
+    } catch (error) {
+        console.error('Upload failed:', error);
+        alert('Upload failed: ' + error.message);
+    }
+});
+
+// 4. Processing Status Checker
+async function checkProcessingStatus(pdfId) {
+    try {
+        const response = await fetch(`/check_status?pdf_id=${pdfId}`);
+        if (!response.ok) {
+            throw new Error('Failed to check status');
+        }
+
+        const data = await response.json();
+        
+        if (data.status === 'processing') {
+            // Update progress UI
+            updateProgress(data.current_page, data.total_pages);
+            // Check again in 2 seconds
+            setTimeout(() => checkProcessingStatus(pdfId), 2000);
+        } else if (data.status === 'completed') {
+            // Handle completion
+            handleCompletion(data);
+        }
+    } catch (error) {
+        console.error('Status check failed:', error);
+        alert('Failed to check processing status: ' + error.message);
+    }
+}
+
+// 5. Progress Update Function
+function updateProgress(currentPage, totalPages) {
+    const progress = Math.round((currentPage / totalPages) * 100);
+    // Update your progress UI here
+    document.getElementById('progress').style.width = progress + '%';
+    document.getElementById('progress-text').textContent = `Processing: ${progress}%`;
+}
+
+// 6. Completion Handler
+function handleCompletion(data) {
+    // Handle the completed document
+    if (data.docx) {
+        // Create download link for Word document
+        const blob = base64ToBlob(data.docx, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'summarized-document.docx';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+}
+
+// 7. Base64 to Blob Converter
+function base64ToBlob(base64, mimeType) {
+    const byteCharacters = atob(base64);
+    const byteArrays = [];
+
+    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        const byteNumbers = new Array(slice.length);
+        
+        for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+        
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+    }
+
+    return new Blob(byteArrays, { type: mimeType });
+}
+
         // Form Submission
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
