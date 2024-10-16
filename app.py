@@ -1,3 +1,4 @@
+from flask_cors import CORS
 from flask import Flask, render_template, request, jsonify, send_file
 import google.generativeai as genai
 from dotenv import load_dotenv
