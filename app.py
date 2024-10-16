@@ -978,6 +978,85 @@ def add_table_to_document_from_html(doc, table_element):
                 shading_elm.set(qn('w:fill'), 'D9E1F2')  # Light blue background
                 row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
 
+@app.route('/get_upload_url', methods=['POST'])
+def get_upload_url():
+    try:
+        file_name = request.json.get('fileName')
+        pdf_id = str(uuid.uuid4())
+        safe_file_name = f"pdfs/{pdf_id}/{secure_filename(file_name)}"
+        
+        # Generate a signed URL for direct upload
+        bucket = storage.bucket()
+        blob = bucket.blob(safe_file_name)
+        
+        url = blob.generate_signed_url(
+            version="v4",
+            expiration=datetime.timedelta(minutes=15),  # Adjust as needed
+            method="PUT",
+            content_type="application/pdf"  # Or application/octet-stream
+        )
+        
+        return jsonify({
+            'uploadUrl': url,
+            'pdf_id': pdf_id,
+            'fileName': safe_file_name
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/confirm_upload', methods=['POST'])
+def confirm_upload():
+    try:
+        pdf_id = request.json.get('pdf_id')
+        file_name = request.json.get('fileName')
+
+        # Check if the file exists in Firebase storage
+        blob = bucket.blob(file_name)
+
+        if not blob.exists():
+             return jsonify({'error': 'File not found in storage.'}), 400   
+
+        total_pages = 0 #Initialize total page 
+        file_size = 0 # Initialize file_size
+
+        try:
+             pdf_bytes = blob.download_as_bytes() # Dowload PDF Byte
+             file_size = len(pdf_bytes)
+
+             pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf") # Open with fitz library
+             total_pages = len(pdf_document)
+             pdf_document.close()
+
+        except Exception as e:
+            return jsonify({'error':f'Failed to process uploaded file: {str(e)}'}), 500
+
+
+
+
+        # ... create firestore record now that we know it exists
+        db.collection('pdf_processes').document(pdf_id).set({
+            'status': 'processing',
+            'current_page': 0,
+            'total_pages': total_pages,
+            'summary': [],  # Initialize as empty list
+            'processing_start_time': time.time(),
+            'timestamp': firestore.SERVER_TIMESTAMP,
+            'file_size': blob.size,
+            "file_name":file_name,
+        })
+
+        return jsonify({
+            'pdf_id': pdf_id,
+            'total_pages': total_pages,
+            'file_size': blob.size  # Use file_size calculated above 
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
 @app.route('/upload', methods=['POST'])
 @rate_limited
 def upload_file():
@@ -1084,6 +1163,47 @@ def process_pdf_endpoint():
         logger.error(f"Error processing PDF {pdf_id}: {e}")
         return jsonify({'error': str(e)}), 500
 
+
+# Update processPdf to get file from firebase storage and not use a pdf_id
+async def processPdf(pdfId): # Note pdfID now holds the actual fileName
+     try:
+
+        # Get the blob and download as bytes
+        blob = bucket.blob(pdfId)
+        if not blob.exists():
+             raise Exception("File not found in blob storage")
+        pdf_bytes = blob.download_as_bytes() # this holds our PDF data
+        doc_ref = db.collection('pdf_processes').where('file_name','==',pdfId).get()
+
+        if not doc_ref: # Document associated with the upload probably doesn't exist. Throw error
+            raise Exception(f"Could not locate the file name'{pdfId} in firestore. Is there an upload error?'")
+        doc_ref = doc_ref[0].reference
+
+
+        pdf_document = fitz.open("pdf_data.pdf", filetype="pdf")  # Provide the bytes
+
+        for current_page in range(len(pdf_document)):  
+             process_page(pdf_document, current_page, doc_ref) # Pass docRef
+
+
+
+        # Close pdf once we have finished processing.
+        pdf_document.close() 
+
+        # Indicate finished processing in our db:
+
+        doc_ref.update({
+            'status': 'completed',
+            'processing_end_time': time.time()
+        })
+       
+       # Delete from firebase storage if succesful?
+       # blob.delete()
+        # Rest of processing steps
+
+     except Exception as e:
+        print(f"error{e}")
+         
 @app.route('/check_status', methods=['GET'])
 def check_status():
     pdf_id = request.args.get('pdf_id')
