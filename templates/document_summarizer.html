@@ -12,6 +12,9 @@
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
     <style>
         body {
             font-family: 'Montserrat', sans-serif;
@@ -121,7 +124,7 @@
                                 or drag and drop
                             </p>
                             <p class="text-sm text-gray-500">
-                                PDF files only (Max 5MB)
+                                PDF files only (Max 10MB)
                             </p>
                         </div>
                         <input id="file" name="file" type="file" class="absolute inset-0 opacity-0 cursor-pointer" accept=".pdf"/>
@@ -139,9 +142,9 @@
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <button type="submit" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 px-6 rounded-xl font-bold shadow-lg hover:from-purple-600 hover:to-pink-600 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-200 hover-effect" data-aos="zoom-in-up">
-                    Summarize PDF
+                <!-- Upload and Summarize Button -->
+                <button type="button" id="upload-button" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 px-6 rounded-xl font-bold shadow-lg hover:from-purple-600 hover:to-pink-600 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-200 hover-effect" data-aos="zoom-in-up">
+                    Upload and Summarize PDF
                 </button>
             </form>
 
@@ -185,11 +188,19 @@
             once: true,
         });
     </script>
+    <!-- Initialize Firebase -->
+    <script>
+        // Initialize Firebase with the passed config
+        const firebaseConfig = {{ firebase_config | safe }};
+        firebase.initializeApp(firebaseConfig);
+        const storage = firebase.storage();
+    </script>
     <script>
         const form = document.getElementById('upload-form');
         const fileUpload = document.getElementById('file');
         const filePreview = document.getElementById('file-preview');
         const fileName = document.getElementById('file-name');
+        const uploadButton = document.getElementById('upload-button');
         const loading = document.getElementById('loading');
         const result = document.getElementById('result');
         const downloadButton = document.getElementById('download-button');
@@ -270,49 +281,84 @@
             }
         });
 
-        // Form Submission
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-        
+        // Upload and Summarize Button Click
+        uploadButton.addEventListener('click', async () => {
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a PDF file to upload.');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                alert('File size exceeds 10MB limit.');
+                return;
+            }
+
+            const storageRef = storage.ref();
+            const fileRef = storageRef.child(`pdfs/${Date.now()}_${file.name}`);
+
             // Show loading
             form.classList.add('hidden');
             loading.classList.remove('hidden');
             progressText.textContent = 'Uploading file...';
-        
+
             try {
-                // Upload the file and get pdf_id
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-        
-                if (response.ok) {
-                    const data = await response.json();
-                    const pdfId = data.pdf_id;
-    
-                    // Start processing the PDF
-                    progressText.textContent = 'Processing your PDF...';
-                    await processPdf(pdfId);
-                } else {
-                    throw new Error('Upload failed');
-                }
+                // Upload file
+                const uploadTask = fileRef.put(file);
+
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        progressText.textContent = `Upload is ${progress.toFixed(2)}% done...`;
+                    }, 
+                    (error) => {
+                        console.error('Upload error:', error);
+                        alert('An error occurred during file upload.');
+                        loading.classList.add('hidden');
+                        form.classList.remove('hidden');
+                    }, 
+                    async () => {
+                        const downloadURL = await fileRef.getDownloadURL();
+                        progressText.textContent = 'Upload completed. Initiating processing...';
+
+                        // Notify the server with the download URL
+                        const response = await fetch('/notify_upload', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ file_url: downloadURL })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            const pdfId = data.pdf_id;
+                            progressText.textContent = 'Processing your PDF...';
+                            await processingLoop(pdfId);
+                        } else {
+                            throw new Error('Server failed to initiate processing.');
+                        }
+                    }
+                );
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred. Please try again or upload a smaller PDF file.');
+                alert('An error occurred. Please try again.');
                 loading.classList.add('hidden');
                 form.classList.remove('hidden');
             }
         });
-        
+
+        // Processing Loop to Poll Backend
         async function processingLoop(pdfId) {
             try {
-                const response = await fetch('/process_pdf', {
+                const response = await fetch(`/process_pdf`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({pdf_id: pdfId}),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pdf_id: pdfId }),
                 });
-        
+
                 if (response.ok) {
                     const data = await response.json();
                     if (data.status === 'completed') {
@@ -321,36 +367,13 @@
                         progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
                         // Call process_pdf again after a short delay
                         setTimeout(() => processingLoop(pdfId), 1000);
+                    } else if (data.status === 'failed') {
+                        throw new Error(data.reason || 'Processing failed');
                     } else {
-                        throw new Error(data.error || 'Processing failed');
+                        throw new Error('Unknown status');
                     }
                 } else {
                     throw new Error('Processing failed');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred during processing. Please try again later.');
-                loading.classList.add('hidden');
-                form.classList.remove('hidden');
-            }
-        }
-
-        // Process PDF
-        async function processPdf(pdfId) {
-            try {
-                // First, check the status
-                const statusResponse = await fetch(`/check_status?pdf_id=${pdfId}`);
-                if (statusResponse.ok) {
-                    const statusData = await statusResponse.json();
-                    if (statusData.status === 'completed') {
-                        // If already completed, proceed to download
-                        await checkStatus(pdfId);
-                    } else {
-                        // Start the processing loop
-                        await processingLoop(pdfId);
-                    }
-                } else {
-                    throw new Error('Failed to check initial status.');
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -371,12 +394,11 @@
                         loading.classList.add('hidden');
                         result.classList.remove('hidden');
                         triggerConfetti();
-    
+
                         // Update UI with processing details
                         document.getElementById('total-pages').textContent = data.total_pages;
                         document.getElementById('processing-time').textContent = data.processing_time !== 'N/A' ? `${data.processing_time} seconds` : 'N/A';
                     
-    
                         // Create blob from base64 data
                         const binaryData = atob(data.docx);
                         const array = new Uint8Array(binaryData.length);
@@ -385,7 +407,7 @@
                         }
                         const blob = new Blob([array], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
                         const url = window.URL.createObjectURL(blob);
-    
+
                         // Set up download button
                         downloadButton.addEventListener('click', () => {
                             const link = document.createElement('a');
@@ -400,8 +422,10 @@
                         progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
                         // Poll for status again
                         setTimeout(() => checkStatus(pdfId), 1000);
+                    } else if (data.status === 'failed') {
+                        throw new Error(data.reason || 'Processing failed');
                     } else {
-                        throw new Error(data.error || 'Unknown status');
+                        throw new Error('Unknown status');
                     }
                 } else {
                     throw new Error('Failed to check status');
@@ -462,8 +486,6 @@
                 });
             });
         });
-
-        // Parallax effect removed (we're using a fixed background image)
 
         // Add hover effect to buttons
         const buttons = document.querySelectorAll('button, a');
