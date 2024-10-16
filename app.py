@@ -1,5 +1,3 @@
-import flask_cors
-from flask_cors import CORS
 from flask import Flask, render_template, request, jsonify, send_file
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -657,24 +655,18 @@ import threading
 REQUEST_LIMIT = 15
 TIME_WINDOW = 60
 
-import datetime  # Missing import for datetime.timedelta
-from threading import Lock  # Lock is imported but never used effectively
-from flask_cors import CORS  # Missing CORS configuration
-
-# 2. Rate Limiting Implementation Issues
 class TokenBucket:
     def __init__(self, tokens, fill_rate):
         self.capacity = tokens
         self.tokens = tokens
         self.fill_rate = fill_rate
         self.last_check = time.time()
-        self.lock = threading.Lock()  # Lock is created but not used consistently
+        self.lock = threading.Lock()
 
     def get_token(self):
         with self.lock:
             now = time.time()
-            # Add error handling for negative time_passed
-            time_passed = max(0, now - self.last_check)
+            time_passed = now - self.last_check
             self.tokens = min(self.capacity, self.tokens + time_passed * self.fill_rate)
             self.last_check = now
             if self.tokens >= 1:
@@ -709,57 +701,37 @@ import base64
 
 def process_page(pdf_document, page_num, doc_ref):
     logger.info(f"Processing page {page_num + 1}")
+    page = pdf_document[page_num]
+    
+    # Convert page to image
+    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # Increase resolution
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    
+    # Convert image to base64
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
     try:
-        page = pdf_document[page_num]
-        
-        # Add error handling for page conversion
-        try:
-            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-        except Exception as e:
-            logger.error(f"Error converting page to image: {e}")
-            raise
-
-        # Add image size validation
-        if pix.width * pix.height > 25000000:  # Example size limit
-            raise ValueError("Image too large for processing")
-
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-        
-        # Add memory management
-        buffered = io.BytesIO()
-        img.save(buffered, format="PNG", optimize=True)
-        img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        
-        # Clear buffer
-        buffered.close()
-        
-        summary = generate_summary(img_base64)
-        if not summary:
-            raise ValueError("Failed to generate summary")
-
-        # Use transaction for atomic updates
-        transaction = db.transaction()
-        @transaction
-        def update_in_transaction(transaction):
-            doc = doc_ref.get(transaction=transaction)
-            current_summaries = doc.get('summary', [])
-            current_summaries.append(summary)
-            transaction.update(doc_ref, {
+        page_summary = generate_summary(img_base64)
+        if page_summary:
+            logger.info(f"Summary generated for page {page_num + 1}")
+            doc_ref.update({
                 'current_page': page_num + 1,
-                'summary': current_summaries
+                'summary': firestore.ArrayUnion([page_summary])
             })
-
-        update_in_transaction()
-
+        else:
+            logger.warning(f"Failed to generate summary for page {page_num + 1}")
+            doc_ref.update({
+                'current_page': page_num + 1,
+                'summary': firestore.ArrayUnion([f"(Summary not available for page {page_num + 1})"])
+            })
     except Exception as e:
         logger.error(f"Error processing page {page_num + 1}: {e}")
         doc_ref.update({
             'current_page': page_num + 1,
-            'error': str(e),
-            'status': 'error'
+            'summary': firestore.ArrayUnion([f"(Error processing page {page_num + 1})"])
         })
-        raise
-
 
 @app.route('/document_summarizer', methods=['GET', 'POST'])
 def document_summarizer():
@@ -1006,165 +978,58 @@ def add_table_to_document_from_html(doc, table_element):
                 shading_elm.set(qn('w:fill'), 'D9E1F2')  # Light blue background
                 row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
 
-import datetime
-from werkzeug.utils import secure_filename
-import uuid
-
-@app.route('/get_upload_url', methods=['POST'])
-def get_upload_url():
-    try:
-        if not request.is_json:
-            return jsonify({'error': 'Missing JSON in request'}), 400
-            
-        file_name = request.json.get('fileName')
-        if not file_name:
-            return jsonify({'error': 'fileName is required'}), 400
-            
-        # Generate a unique ID for the upload
-        pdf_id = str(uuid.uuid4())
-        safe_file_name = f"pdfs/{pdf_id}/{secure_filename(file_name)}"
-        
-        # Generate a signed URL for direct upload
-        blob = bucket.blob(safe_file_name)
-        
-        url = blob.generate_signed_url(
-            version="v4",
-            expiration=datetime.timedelta(minutes=15),
-            method="PUT",
-            content_type="application/pdf"
-        )
-        
-        return jsonify({
-            'uploadUrl': url,
-            'pdf_id': pdf_id,
-            'fileName': safe_file_name
-        })
-        
-    except Exception as e:
-        logger.error(f"Error generating upload URL: {str(e)}")
-        return jsonify({'error': 'Failed to generate upload URL'}), 500
-
-@app.route('/confirm_upload', methods=['POST'])
-def confirm_upload():
-    try:
-        if not request.is_json:
-            return jsonify({'error': 'Missing JSON in request'}), 400
-            
-        pdf_id = request.json.get('pdf_id')
-        file_name = request.json.get('fileName')
-        
-        if not pdf_id or not file_name:
-            return jsonify({'error': 'pdf_id and fileName are required'}), 400
-
-        # Verify the file exists in storage
-        blob = bucket.blob(file_name)
-        if not blob.exists():
-            return jsonify({'error': 'File not found in storage'}), 404
-
-        # Get PDF metadata
-        pdf_bytes = blob.download_as_bytes()
-        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
-        total_pages = len(pdf_document)
-        pdf_document.close()
-
-        # Create Firestore record
-        doc_ref = db.collection('pdf_processes').document(pdf_id)
-        doc_ref.set({
-            'status': 'processing',
-            'current_page': 0,
-            'total_pages': total_pages,
-            'summary': [],
-            'processing_start_time': time.time(),
-            'timestamp': firestore.SERVER_TIMESTAMP,
-            'file_size': blob.size,
-            'file_name': file_name,
-        })
-
-        return jsonify({
-            'pdf_id': pdf_id,
-            'total_pages': total_pages,
-            'file_size': blob.size
-        })
-
-    except Exception as e:
-        logger.error(f"Error confirming upload: {str(e)}")
-        return jsonify({'error': f'Failed to confirm upload: {str(e)}'}), 500
-
-
-
-# 4. Upload Endpoint Fix
 @app.route('/upload', methods=['POST'])
 @rate_limited
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
-    
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    if not file.filename.lower().endswith('.pdf'):
-        return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
-
-    try:
-        # Add content type validation
-        if file.content_type != 'application/pdf':
-            return jsonify({'error': 'Invalid content type'}), 400
-
-        file_content = file.read()
-        file_size = len(file_content)
-
-        if file_size > 10 * 1024 * 1024:
-            return jsonify({'error': 'File size exceeds 10MB limit'}), 400
-
-        # Validate PDF structure
+    if file and file.filename.lower().endswith('.pdf'):
         try:
-            pdf_document = fitz.open(stream=file_content, filetype="pdf")
-            if not pdf_document.is_pdf:
-                raise ValueError("Not a valid PDF file")
-            total_pages = len(pdf_document)
-            if total_pages == 0:
-                raise ValueError("PDF has no pages")
-            pdf_document.close()
-        except Exception as e:
-            return jsonify({'error': f'Invalid PDF file: {str(e)}'}), 400
+            # Read the file into memory
+            file_content = file.read()
+            file_size = len(file_content)
 
-        # Generate unique ID with timestamp prefix for better organization
-        pdf_id = f"{int(time.time())}_{uuid.uuid4()}"
-        
-        # Use a transaction for atomic operations
-        transaction = db.transaction()
-        @transaction
-        def create_pdf_record(transaction):
-            doc_ref = db.collection('pdf_processes').document(pdf_id)
-            
-            # Upload to storage
+            # Check file size (10MB limit)
+            if file_size > 10 * 1024 * 1024:
+                return jsonify({'error': 'File size exceeds 10MB limit'}), 400
+
+            # Generate a unique PDF ID
+            pdf_id = str(uuid.uuid4())
+
+            # Upload the PDF to Firebase Storage
             blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
             blob.upload_from_string(file_content, content_type='application/pdf')
-            
-            # Create Firestore record
-            doc_ref.set({
+
+            # Get the total number of pages
+            pdf_document = fitz.open(stream=file_content, filetype="pdf")
+            total_pages = len(pdf_document)
+            pdf_document.close()
+
+            # Initialize processing status in Firestore
+            db.collection('pdf_processes').document(pdf_id).set({
                 'status': 'processing',
                 'current_page': 0,
                 'total_pages': total_pages,
-                'summary': [],
+                'summary': '',
                 'processing_start_time': time.time(),
                 'timestamp': firestore.SERVER_TIMESTAMP,
-                'file_size': file_size,
-                'original_filename': secure_filename(file.filename)
+                'file_size': file_size
             })
 
-        create_pdf_record()
-
-        return jsonify({
-            'pdf_id': pdf_id,
-            'total_pages': total_pages,
-            'file_size': file_size
-        }), 200
-
-    except Exception as e:
-        logger.error(f"Error uploading file: {e}")
-        return jsonify({'error': str(e)}), 500
+            return jsonify({
+                'pdf_id': pdf_id,
+                'total_pages': total_pages,
+                'file_size': file_size
+            }), 200
+        except Exception as e:
+            logging.error(f"Error uploading file: {e}")
+            return jsonify({'error': f'Error uploading file: {str(e)}'}), 500
+    else:
+        return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
 
 # Update the process_pdf_endpoint function
 @app.route('/process_pdf', methods=['POST'])
@@ -1219,67 +1084,6 @@ def process_pdf_endpoint():
         logger.error(f"Error processing PDF {pdf_id}: {e}")
         return jsonify({'error': str(e)}), 500
 
-# 5. Main Application Configuration Fix
-def create_app():
-    app = Flask(__name__)
-    CORS(app)  # Add CORS support
-    
-    # Add error handlers
-    @app.errorhandler(413)
-    def request_entity_too_large(error):
-        return jsonify({'error': 'File too large'}), 413
-
-    @app.errorhandler(500)
-    def internal_server_error(error):
-        return jsonify({'error': 'Internal server error'}), 500
-
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    
-    return app
-# Update processPdf to get file from firebase storage and not use a pdf_id
-async def processPdf(pdfId): # Note pdfID now holds the actual fileName
-     try:
-
-        # Get the blob and download as bytes
-        blob = bucket.blob(pdfId)
-        if not blob.exists():
-             raise Exception("File not found in blob storage")
-        pdf_bytes = blob.download_as_bytes() # this holds our PDF data
-        doc_ref = db.collection('pdf_processes').where('file_name','==',pdfId).get()
-
-        if not doc_ref: # Document associated with the upload probably doesn't exist. Throw error
-            raise Exception(f"Could not locate the file name'{pdfId} in firestore. Is there an upload error?'")
-        doc_ref = doc_ref[0].reference
-
-
-        pdf_document = fitz.open("pdf_data.pdf", filetype="pdf")  # Provide the bytes
-
-        for current_page in range(len(pdf_document)):  
-             process_page(pdf_document, current_page, doc_ref) # Pass docRef
-
-
-
-        # Close pdf once we have finished processing.
-        pdf_document.close() 
-
-        # Indicate finished processing in our db:
-
-        doc_ref.update({
-            'status': 'completed',
-            'processing_end_time': time.time()
-        })
-       
-       # Delete from firebase storage if succesful?
-       # blob.delete()
-        # Rest of processing steps
-
-     except Exception as e:
-        print(f"error{e}")
-         
 @app.route('/check_status', methods=['GET'])
 def check_status():
     pdf_id = request.args.get('pdf_id')
