@@ -147,7 +147,7 @@ story_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=genera
 psychology_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
 code_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
 algorithm_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
-model_vision = genai.GenerativeModel('gemini-1.5-flash-latest',generation_config=generation_config_health)
+model_vision = genai.GenerativeModel('gemini-1.5-flash-8b-latest',generation_config=generation_config_health)
 model_text = genai.GenerativeModel('gemini-pro',generation_config=generation_config_health)
 model = genai.GenerativeModel('gemini-1.5-flash')  # Model for flowchart generation
 
