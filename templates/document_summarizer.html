@@ -8,46 +8,97 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet" />
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-image: url('https://images.stockcake.com/public/4/e/f/4ef87898-2e97-4e79-8da4-9a82a2288fed/enchanted-nighttime-reading-stockcake.jpg'); 
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
         .glass-effect {
+            background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
-            background-color: rgba(255, 255, 255, 0.8);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
-        
-        .loader {
-            border-top-color: #4F46E5;
-            animation: spinner 1.5s linear infinite;
-        }
-        
-        @keyframes spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
         .animate-fade-in {
-            animation: fadeIn 0.5s ease-in;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-in forwards;
         }
-        
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            to {
+                opacity: 1;
+            }
         }
-        
+        .loader {
+            border-top-color: #3498db;
+            animation: spinner 1s linear infinite;
+        }
+        @keyframes spinner {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .animated-bg {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
         .hover-effect {
             transition: all 0.3s ease;
         }
-        
         .hover-effect:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        @media (max-width: 768px) {
+            .flex-container {
+                flex-direction: column;
+            }
+            .quote-container {
+                width: 100%;
+                margin-bottom: 2rem;
+            }
+            .main-content {
+                width: 100%;
+                padding-left: 0;
+            }
+            #title {
+                font-size: 3rem;
+            }
+            .file-upload-label {
+                height: 12rem;
+            }
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 bg-gray-50"> 
+<body class="min-h-screen flex items-center justify-center p-4"> 
     <div id="particles-js" class="absolute inset-0"></div>
-    <div class="container mx-auto relative z-10">
-        <div class="main-content w-full sm:w-2/3 mx-auto">
+    <div class="bg-white bg-opacity-50 rounded-2xl shadow-2xl w-full max-w-6xl p-4 sm:p-8 animate-fade-in flex flex-container glass-effect relative z-10">
+        <!-- Quote of the Day -->
+        <div class="quote-container w-full sm:w-1/3 p-6 rounded-2xl text-white flex flex-col items-center justify-center animated-bg mb-4 sm:mb-0" data-aos="fade-right">
+            <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="font-family: 'Kaushan Script', cursive;">Quote of the Day</h2>
+            <p id="quote" class="text-xl sm:text-2xl text-center"></p>
+        </div>
+        <!-- Main Content -->
+        <div class="main-content w-full sm:w-2/3 sm:pl-8">
             <!-- Header -->
             <div class="text-center mb-8" data-aos="zoom-in">
                 <h1 id="title" class="text-4xl sm:text-6xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-teal-400">
@@ -60,6 +111,7 @@
 
             <!-- Upload Form -->
             <form id="upload-form" class="space-y-6" enctype="multipart/form-data">
+                <!-- File Upload -->
                 <div class="flex items-center justify-center w-full" data-aos="fade-up">
                     <label for="file" class="file-upload-label relative flex flex-col items-center justify-center w-full h-48 sm:h-64 border-4 border-dashed rounded-2xl cursor-pointer bg-white hover:bg-gray-50 transition duration-500 ease-in-out transform hover:scale-105 glass-effect">
                         <div class="flex flex-col items-center justify-center">
@@ -69,7 +121,7 @@
                                 or drag and drop
                             </p>
                             <p class="text-sm text-gray-500">
-                                PDF files only (Max 10MB)
+                                PDF files only (Max 5MB)
                             </p>
                         </div>
                         <input id="file" name="file" type="file" class="absolute inset-0 opacity-0 cursor-pointer" accept=".pdf"/>
@@ -78,7 +130,9 @@
 
                 <!-- File Preview -->
                 <div id="file-preview" class="hidden bg-gray-50 p-4 rounded-lg border border-gray-200 glass-effect" data-aos="fade-up">
-                    <h3 class="font-semibold text-gray-700 mb-2">Selected File:</h3>
+                    <h3 class="font-semibold text-gray-700 mb-2">
+                        Selected File:
+                    </h3>
                     <div class="flex items-center">
                         <i class="far fa-file-pdf text-red-500 text-2xl mr-2"></i>
                         <span id="file-name" class="text-gray-800"></span>
@@ -94,14 +148,20 @@
             <!-- Loading Indicator -->
             <div id="loading" class="hidden mt-8 flex flex-col items-center" data-aos="fade-up">
                 <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16 mb-4"></div>
-                <p class="text-lg font-medium text-gray-700 mb-2">Processing your PDF, please wait...</p>
-                <p class="text-sm text-gray-600">Processing large PDFs may take several minutes</p>
+                <p class="text-lg font-medium text-gray-700 mb-2">
+                    Processing your PDF, please wait...
+                </p>
+                <p class="text-sm text-gray-600">
+                    Processing large PDFs may take several minutes
+                </p>
                 <p id="progress-text" class="text-sm text-gray-600 mt-2"></p>
             </div>
 
             <!-- Result Section -->
-            <div id="result" class="hidden mt-8 animate-fade-in bg-white p-6 rounded-xl shadow-lg" data-aos="fade-up">
-                <h2 class="text-3xl font-semibold mb-4 text-gray-800">Your Summary is Ready!</h2>
+            <div id="result" class="hidden mt-8 animate-fade-in" data-aos="fade-up">
+                <h2 class="text-3xl font-semibold mb-4 text-gray-800">
+                    Your Summary is Ready!
+                </h2>
                 <div class="mb-4">
                     <p class="text-lg text-gray-700">
                         Total pages processed: <span id="total-pages" class="font-semibold">0</span>
@@ -116,82 +176,16 @@
             </div>
         </div>
     </div>
-
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-storage-compat.js"></script>
+    <!-- AOS JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
-
+    <!-- Initialize AOS -->
     <script>
-        // Initialize AOS
         AOS.init({
             duration: 1000,
             once: true,
         });
-
-        // Initialize particles.js
-        particlesJS('particles-js', {
-            particles: {
-                number: {
-                    value: 80,
-                    density: {
-                        enable: true,
-                        value_area: 800
-                    }
-                },
-                color: {
-                    value: '#4F46E5'
-                },
-                shape: {
-                    type: 'circle'
-                },
-                opacity: {
-                    value: 0.5,
-                    random: false
-                },
-                size: {
-                    value: 3,
-                    random: true
-                },
-                line_linked: {
-                    enable: true,
-                    distance: 150,
-                    color: '#4F46E5',
-                    opacity: 0.4,
-                    width: 1
-                },
-                move: {
-                    enable: true,
-                    speed: 2,
-                    direction: 'none',
-                    random: false,
-                    straight: false,
-                    out_mode: 'out',
-                    bounce: false
-                }
-            },
-            interactivity: {
-                detect_on: 'canvas',
-                events: {
-                    onhover: {
-                        enable: true,
-                        mode: 'grab'
-                    },
-                    onclick: {
-                        enable: true,
-                        mode: 'push'
-                    },
-                    resize: true
-                }
-            },
-            retina_detect: true
-        });
-
-        let storage;
+    </script>
+    <script>
         const form = document.getElementById('upload-form');
         const fileUpload = document.getElementById('file');
         const filePreview = document.getElementById('file-preview');
@@ -199,44 +193,73 @@
         const loading = document.getElementById('loading');
         const result = document.getElementById('result');
         const downloadButton = document.getElementById('download-button');
+        const quoteElement = document.getElementById('quote');
         const progressText = document.getElementById('progress-text');
 
-        // Fetch Firebase config and initialize
-        async function initializeApp() {
+        // Random Fonts and Colors
+        const fonts = [
+            'Dancing Script',
+            'Kaushan Script',
+            'Montserrat',
+            'Roboto',
+            'Courier New',
+            'Georgia',
+            'Times New Roman',
+        ];
+        const colors = [
+            '#ff6b6b',
+            '#feca57',
+            '#48dbfb',
+            '#1dd1a1',
+            '#5f27cd',
+            '#222f3e',
+            '#ee5253',
+            '#0abde3',
+            '#10ac84',
+            '#341f97',
+        ];
+
+        // Apply Random Font and Color to Quote
+        function styleQuote() {
+            const randomFont =
+                fonts[Math.floor(Math.random() * fonts.length)];
+            const randomColor =
+                colors[Math.floor(Math.random() * colors.length)];
+            quoteElement.style.fontFamily = randomFont;
+            quoteElement.style.color = randomColor;
+            gsap.from(quoteElement, {
+                opacity: 0,
+                y: -20,
+                duration: 1,
+                ease: "bounce.out",
+            });
+        }
+
+        // Fetch Quote from Server
+        async function fetchQuote() {
             try {
-                const response = await fetch('/firebase-config');
-                if (!response.ok) throw new Error('Failed to fetch Firebase config');
-                
-                const firebaseConfig = await response.json();
-                firebase.initializeApp(firebaseConfig);
-                storage = firebase.storage();
+                const response = await fetch('/quote');
+                if (response.ok) {
+                    const data = await response.json();
+                    quoteElement.textContent = `${data.quote}`;
+                    styleQuote();
+                } else {
+                    quoteElement.textContent =
+                        'Error fetching quote. Please try again later.';
+                }
             } catch (error) {
-                console.error('Firebase initialization error:', error);
-                alert('Failed to initialize application. Please try again later.');
+                quoteElement.textContent =
+                    'Error fetching quote. Please try again later.';
             }
         }
 
-        // Initialize the application
-        initializeApp();
-
-        // File validation
-        function validateFile(file) {
-            const maxSize = 10 * 1024 * 1024; // 10MB
-            if (file.size > maxSize) {
-                alert('File size exceeds 10MB limit');
-                return false;
-            }
-            if (file.type !== 'application/pdf') {
-                alert('Only PDF files are allowed');
-                return false;
-            }
-            return true;
-        }
+        // Load Quote on Page Load
+        window.addEventListener('load', fetchQuote);
 
         // File Upload Preview
         fileUpload.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file && validateFile(file)) {
+            if (file) {
                 fileName.textContent = file.name;
                 filePreview.classList.remove('hidden');
                 gsap.from(filePreview, {
@@ -244,129 +267,93 @@
                     y: -20,
                     duration: 0.5,
                 });
-            } else {
-                fileUpload.value = '';
-                filePreview.classList.add('hidden');
             }
         });
-
-        // Generate UUID
-        function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
 
         // Form Submission
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const file = fileUpload.files[0];
-            if (!file || !validateFile(file)) return;
-
+            const formData = new FormData(form);
+        
+            // Show loading
+            form.classList.add('hidden');
+            loading.classList.remove('hidden');
+            progressText.textContent = 'Uploading file...';
+        
             try {
-                form.classList.add('hidden');
-                loading.classList.remove('hidden');
-                progressText.textContent = 'Preparing file for upload...';
-
-                const pdfId = generateUUID();
-                const storageRef = storage.ref(`pdfs/${pdfId}.pdf`);
-                const uploadTask = storageRef.put(file, { contentType: 'application/pdf' });
-
-                uploadTask.on('state_changed',
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        progressText.textContent = `Uploading: ${Math.round(progress)}%`;
-                    },
-                    (error) => {
-                        console.error('Upload failed:', error);
-                        alert('Upload failed. Please try again.');
-                        loading.classList.add('hidden');
-                        form.classList.remove('hidden');
-                    },
-                    async () => {
-                        try {
-                            progressText.textContent = 'Upload complete. Initializing processing...';
-                            const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-                            
-                            const response = await fetch('/initialize_processing', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    pdf_id: pdfId,
-                                    file_url: downloadURL,
-                                    file_size: file.size
-                                }),
-                            });
-
-                            if (response.ok) {
-                                await processPdf(pdfId);
-                            } else {
-                                throw new Error('Failed to initialize processing');
-                            }
-                        } catch (error) {
-                            console.error('Processing initialization error:', error);
-                            alert('Failed to start processing. Please try again.');
-                            loading.classList.add('hidden');
-                            form.classList.remove('hidden');
-                        }
-                    }
-                );
+                // Upload the file and get pdf_id
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+        
+                if (response.ok) {
+                    const data = await response.json();
+                    const pdfId = data.pdf_id;
+    
+                    // Start processing the PDF
+                    progressText.textContent = 'Processing your PDF...';
+                    await processPdf(pdfId);
+                } else {
+                    throw new Error('Upload failed');
+                }
             } catch (error) {
-                console.error('Submission error:', error);
-                alert('An error occurred. Please try again.');
+                console.error('Error:', error);
+                alert('An error occurred. Please try again or upload a smaller PDF file.');
                 loading.classList.add('hidden');
                 form.classList.remove('hidden');
             }
         });
-
-        // Process PDF
-        async function processPdf(pdfId) {
+        
+        async function processingLoop(pdfId) {
             try {
-                const statusResponse = await fetch(`/check_status?pdf_id=${pdfId}`);
-                if (!statusResponse.ok) throw new Error('Failed to check initial status');
-
-                const statusData = await statusResponse.json();
-                if (statusData.status === 'completed') {
-                    await checkStatus(pdfId);
+                const response = await fetch('/process_pdf', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({pdf_id: pdfId}),
+                });
+        
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'completed') {
+                        await checkStatus(pdfId);
+                    } else if (data.status === 'processing') {
+                        progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
+                        // Call process_pdf again after a short delay
+                        setTimeout(() => processingLoop(pdfId), 1000);
+                    } else {
+                        throw new Error(data.error || 'Processing failed');
+                    }
                 } else {
-                    await processingLoop(pdfId);
+                    throw new Error('Processing failed');
                 }
             } catch (error) {
-                console.error('Processing error:', error);
+                console.error('Error:', error);
                 alert('An error occurred during processing. Please try again later.');
                 loading.classList.add('hidden');
                 form.classList.remove('hidden');
             }
         }
 
-        // Processing Loop
-        async function processingLoop(pdfId) {
+        // Process PDF
+        async function processPdf(pdfId) {
             try {
-                const response = await fetch('/process_pdf', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pdf_id: pdfId }),
-                });
-
-                if (!response.ok) throw new Error('Processing failed');
-                
-                const data = await response.json();
-                switch (data.status) {
-                    case 'completed':
+                // First, check the status
+                const statusResponse = await fetch(`/check_status?pdf_id=${pdfId}`);
+                if (statusResponse.ok) {
+                    const statusData = await statusResponse.json();
+                    if (statusData.status === 'completed') {
+                        // If already completed, proceed to download
                         await checkStatus(pdfId);
-                        break;
-                    case 'processing':
-                        progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
-                        // Add a progress bar update if you want to show visual progress
-                        setTimeout(() => processingLoop(pdfId), 1000);
-                        break;
-                    default:
-                        throw new Error(data.error || 'Processing failed');
+                    } else {
+                        // Start the processing loop
+                        await processingLoop(pdfId);
+                    }
+                } else {
+                    throw new Error('Failed to check initial status.');
                 }
             } catch (error) {
-                console.error('Processing loop error:', error);
+                console.error('Error:', error);
                 alert('An error occurred during processing. Please try again later.');
                 loading.classList.add('hidden');
                 form.classList.remove('hidden');
@@ -377,176 +364,125 @@
         async function checkStatus(pdfId) {
             try {
                 const response = await fetch(`/check_status?pdf_id=${pdfId}`);
-                if (!response.ok) throw new Error('Failed to check status');
-
-                const data = await response.json();
-                switch (data.status) {
-                    case 'completed':
-                        handleCompletedStatus(data);
-                        break;
-                    case 'processing':
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'completed') {
+                        // Hide loading and show result
+                        loading.classList.add('hidden');
+                        result.classList.remove('hidden');
+                        triggerConfetti();
+    
+                        // Update UI with processing details
+                        document.getElementById('total-pages').textContent = data.total_pages;
+                        document.getElementById('processing-time').textContent = data.processing_time !== 'N/A' ? `${data.processing_time} seconds` : 'N/A';
+                    
+    
+                        // Create blob from base64 data
+                        const binaryData = atob(data.docx);
+                        const array = new Uint8Array(binaryData.length);
+                        for (let i = 0; i < binaryData.length; i++) {
+                            array[i] = binaryData.charCodeAt(i);
+                        }
+                        const blob = new Blob([array], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+                        const url = window.URL.createObjectURL(blob);
+    
+                        // Set up download button
+                        downloadButton.addEventListener('click', () => {
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = 'summary.docx';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        });
+                    } else if (data.status === 'processing') {
+                        // Update progress text
                         progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
+                        // Poll for status again
                         setTimeout(() => checkStatus(pdfId), 1000);
-                        break;
-                    default:
+                    } else {
                         throw new Error(data.error || 'Unknown status');
+                    }
+                } else {
+                    throw new Error('Failed to check status');
                 }
             } catch (error) {
-                console.error('Status check error:', error);
+                console.error('Error:', error);
                 alert('An error occurred while checking the status. Please try again later.');
                 loading.classList.add('hidden');
                 form.classList.remove('hidden');
             }
         }
 
-        // Handle Completed Status
-        function handleCompletedStatus(data) {
-            loading.classList.add('hidden');
-            result.classList.remove('hidden');
-            triggerConfetti();
+        // Particle effect
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 80, density: { enable: true, value_area: 800 } },
+                color: { value: "#ffffff" },
+                shape: { type: "circle", stroke: { width: 0, color: "#000000" }, polygon: { nb_sides: 5 } },
+                opacity: { value: 0.5, random: false, anim: { enable: false, speed: 1, opacity_min: 0.1, sync: false } },
+                size: { value: 3, random: true, anim: { enable: false, speed: 40, size_min: 0.1, sync: false } },
+                line_linked: { enable: true, distance: 150, color: "#ffffff", opacity: 0.4, width: 1 },
+                move: { enable: true, speed: 6, direction: "none", random: false, straight: false, out_mode: "out", bounce: false, attract: { enable: false, rotateX: 600, rotateY: 1200 } }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" }, resize: true },
+                modes: { grab: { distance: 400, line_linked: { opacity: 1 } }, bubble: { distance: 400, size: 40, duration: 2, opacity: 8, speed: 3 }, repulse: { distance: 200, duration: 0.4 }, push: { particles_nb: 4 }, remove: { particles_nb: 2 } }
+            },
+            retina_detect: true
+        });
 
-            // Update UI with processing details
-            document.getElementById('total-pages').textContent = data.total_pages;
-            document.getElementById('processing-time').textContent = 
-                data.processing_time !== 'N/A' ? `${data.processing_time} seconds` : 'N/A';
+        // Typewriter effect for the title
+        const titleElement = document.getElementById('title');
+        new Typewriter(titleElement, {
+            strings: ['PDF Summarizer'],
+            autoStart: true,
+            loop: true,
+            delay: 75,
+            deleteSpeed: 50,
+        });
 
-            // Create blob from base64 data
-            const binaryData = atob(data.docx);
-            const array = new Uint8Array(binaryData.length);
-            for (let i = 0; i < binaryData.length; i++) {
-                array[i] = binaryData.charCodeAt(i);
-            }
-            const blob = new Blob([array], {
-                type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-            });
-            const url = window.URL.createObjectURL(blob);
-
-            // Set up download button
-            downloadButton.addEventListener('click', () => {
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'summary.docx';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url); // Clean up the URL object
-            });
-        }
-
-        // Confetti effect
+        // Confetti effect on successful upload
         function triggerConfetti() {
-            const defaults = {
-                spread: 360,
-                ticks: 100,
-                gravity: 0,
-                decay: 0.94,
-                startVelocity: 30,
-                shapes: ['star'],
-                colors: ['FFE400', 'FFBD00', 'E89400', 'FFCA6C', 'FDFFB8']
-            };
-
-            function shoot() {
-                confetti({
-                    ...defaults,
-                    particleCount: 40,
-                    scalar: 1.2,
-                    shapes: ['star']
-                });
-
-                confetti({
-                    ...defaults,
-                    particleCount: 10,
-                    scalar: 0.75,
-                    shapes: ['circle']
-                });
-            }
-
-            setTimeout(shoot, 0);
-            setTimeout(shoot, 100);
-            setTimeout(shoot, 200);
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
         }
 
-        // Add hover effects to buttons
+        // Add smooth scrolling to all links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Parallax effect removed (we're using a fixed background image)
+
+        // Add hover effect to buttons
         const buttons = document.querySelectorAll('button, a');
         buttons.forEach(button => {
             button.addEventListener('mouseenter', () => {
-                gsap.to(button, { 
-                    scale: 1.05, 
-                    duration: 0.3,
-                    ease: "power2.out"
-                });
+                gsap.to(button, { scale: 1.05, duration: 0.3 });
             });
-            
             button.addEventListener('mouseleave', () => {
-                gsap.to(button, { 
-                    scale: 1, 
-                    duration: 0.3,
-                    ease: "power2.out"
-                });
+                gsap.to(button, { scale: 1, duration: 0.3 });
             });
         });
 
-        // Add drag and drop functionality
-        const dropZone = document.querySelector('.file-upload-label');
-
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight(e) {
-            dropZone.classList.add('bg-gray-50');
-        }
-
-        function unhighlight(e) {
-            dropZone.classList.remove('bg-gray-50');
-        }
-
-        dropZone.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const file = dt.files[0];
-            
-            if (file && validateFile(file)) {
-                fileUpload.files = dt.files;
-                fileName.textContent = file.name;
-                filePreview.classList.remove('hidden');
-                gsap.from(filePreview, {
-                    opacity: 0,
-                    y: -20,
-                    duration: 0.5
-                });
-            }
-        }
-
-        // Error handling utility
-        function handleError(error, message) {
-            console.error(error);
-            alert(message || 'An error occurred. Please try again.');
-            loading.classList.add('hidden');
-            form.classList.remove('hidden');
-        }
-
-        // Add custom error boundary
-        window.addEventListener('unhandledrejection', (event) => {
-            handleError(event.reason, 'An unexpected error occurred. Please try again.');
-        });
-
-        window.addEventListener('error', (event) => {
-            handleError(event.error, 'An unexpected error occurred. Please try again.');
+        // Add a subtle animation to the quote section
+        gsap.to('.animated-bg', {
+            backgroundPosition: '100% 50%',
+            duration: 10,
+            repeat: -1,
+            yoyo: true,
+            ease: 'power1.inOut'
         });
     </script>
 </body>
