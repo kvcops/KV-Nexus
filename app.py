@@ -157,17 +157,6 @@ def format_response(response_text):
     formatted_text = '<br>'.join(lines)
     return formatted_text
 
-@app.route('/firebase-config')
-def firebase_config():
-    config = {
-        "apiKey": os.environ.get("FIREBASE_API_KEY"),  # Add these env vars to your .env
-        "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN"),
-        "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
-        "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET"),
-        "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID"),
-        "appId": os.environ.get("FIREBASE_APP_ID")
-    }
-    return jsonify(config)
 
 @app.route('/')
 def index():
@@ -1042,49 +1031,7 @@ def upload_file():
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
 
-
-# Add this new route to your Flask application
-@app.route('/initialize_processing', methods=['POST'])
-def initialize_processing():
-    data = request.get_json()
-    pdf_id = data.get('pdf_id')
-    file_url = data.get('file_url')
-    file_size = data.get('file_size')
-
-    if not all([pdf_id, file_url, file_size]):
-        return jsonify({'error': 'Missing required parameters'}), 400
-
-    try:
-        # Initialize PDF document to get page count
-        response = requests.get(file_url)
-        pdf_content = io.BytesIO(response.content)
-        pdf_document = fitz.open(stream=pdf_content, filetype="pdf")
-        total_pages = len(pdf_document)
-        pdf_document.close()
-
-        # Initialize processing status in Firestore
-        db.collection('pdf_processes').document(pdf_id).set({
-            'status': 'processing',
-            'current_page': 0,
-            'total_pages': total_pages,
-            'summary': [],
-            'processing_start_time': time.time(),
-            'timestamp': firestore.SERVER_TIMESTAMP,
-            'file_size': file_size,
-            'file_url': file_url
-        })
-
-        return jsonify({
-            'pdf_id': pdf_id,
-            'total_pages': total_pages,
-            'file_size': file_size
-        }), 200
-
-    except Exception as e:
-        logging.error(f"Error initializing processing: {e}")
-        return jsonify({'error': str(e)}), 500
-
-# Modify your process_pdf_endpoint function
+# Update the process_pdf_endpoint function
 @app.route('/process_pdf', methods=['POST'])
 def process_pdf_endpoint():
     data = request.get_json()
@@ -1102,7 +1049,6 @@ def process_pdf_endpoint():
     result = doc.to_dict()
     current_page = result['current_page']
     total_pages = result['total_pages']
-    file_url = result.get('file_url')
 
     if current_page >= total_pages:
         logger.info(f"PDF {pdf_id} processing already completed")
@@ -1110,10 +1056,9 @@ def process_pdf_endpoint():
 
     try:
         logger.info(f"Processing PDF {pdf_id}, page {current_page + 1} of {total_pages}")
-        
-        # Download the page content from the URL
-        response = requests.get(file_url)
-        pdf_document = fitz.open(stream=io.BytesIO(response.content), filetype="pdf")
+        blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
+        pdf_bytes = blob.download_as_bytes()
+        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
 
         process_page(pdf_document, current_page, doc_ref)
         pdf_document.close()
@@ -1125,8 +1070,7 @@ def process_pdf_endpoint():
                 'status': 'completed',
                 'processing_end_time': time.time()
             })
-            # Delete the file from Firebase Storage
-            bucket.blob(f'pdfs/{pdf_id}.pdf').delete()
+            blob.delete()
             return jsonify({'status': 'completed'}), 200
         else:
             logger.info(f"PDF {pdf_id} processing in progress. Current page: {updated_doc['current_page']}")
