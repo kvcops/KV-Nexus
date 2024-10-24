@@ -287,12 +287,16 @@
                     body: formData,
                 });
         
-                if (response.ok) {
-                    const data = await response.json();
-                    const pdfId = data.pdf_id;
+               if (response.ok) {
+                            const data = await response.json();
+                            const pdfId = data.pdf_id;
+                            
+                            // Update progress text with estimated time
+                            if (data.estimated_minutes) {
+                                progressText.textContent = `Processing your PDF... (Estimated time: ${data.estimated_minutes} minutes)`;
+                            }
     
-                    // Start processing the PDF
-                    progressText.textContent = 'Processing your PDF...';
+                   
                     await processPdf(pdfId);
                 } else {
                     throw new Error('Upload failed');
