@@ -12,91 +12,15 @@
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <style>
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background-image: url('https://images.stockcake.com/public/4/e/f/4ef87898-2e97-4e79-8da4-9a82a2288fed/enchanted-nighttime-reading-stockcake.jpg'); 
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-        }
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-        }
-        .animate-fade-in {
-            opacity: 0;
-            animation: fadeIn 0.5s ease-in forwards;
-        }
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
-            }
-        }
-        .loader {
-            border-top-color: #3498db;
-            animation: spinner 1s linear infinite;
-        }
-        @keyframes spinner {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-        .animated-bg {
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-        }
-        @keyframes gradientBG {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-        .hover-effect {
-            transition: all 0.3s ease;
-        }
-        .hover-effect:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-        @media (max-width: 768px) {
-            .flex-container {
-                flex-direction: column;
-            }
-            .quote-container {
-                width: 100%;
-                margin-bottom: 2rem;
-            }
-            .main-content {
-                width: 100%;
-                padding-left: 0;
-            }
-            #title {
-                font-size: 3rem;
-            }
-            .file-upload-label {
-                height: 12rem;
-            }
-        }
-    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-storage-compat.js"></script>
+
 </head>
 <body class="min-h-screen flex items-center justify-center p-4"> 
     <div id="particles-js" class="absolute inset-0"></div>
-    <div class="bg-white bg-opacity-50 rounded-2xl shadow-2xl w-full max-w-6xl p-4 sm:p-8 animate-fade-in flex flex-container glass-effect relative z-10">
+    <div class="container mx-auto">
         <!-- Quote of the Day -->
-        <div class="quote-container w-full sm:w-1/3 p-6 rounded-2xl text-white flex flex-col items-center justify-center animated-bg mb-4 sm:mb-0" data-aos="fade-right">
-            <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="font-family: 'Kaushan Script', cursive;">Quote of the Day</h2>
-            <p id="quote" class="text-xl sm:text-2xl text-center"></p>
-        </div>
+
         <!-- Main Content -->
         <div class="main-content w-full sm:w-2/3 sm:pl-8">
             <!-- Header -->
@@ -121,7 +45,7 @@
                                 or drag and drop
                             </p>
                             <p class="text-sm text-gray-500">
-                                PDF files only (Max 5MB)
+                                PDF files only (Max 10MB)
                             </p>
                         </div>
                         <input id="file" name="file" type="file" class="absolute inset-0 opacity-0 cursor-pointer" accept=".pdf"/>
@@ -193,68 +117,28 @@
         const loading = document.getElementById('loading');
         const result = document.getElementById('result');
         const downloadButton = document.getElementById('download-button');
-        const quoteElement = document.getElementById('quote');
         const progressText = document.getElementById('progress-text');
+        let firebaseConfig;
 
-        // Random Fonts and Colors
-        const fonts = [
-            'Dancing Script',
-            'Kaushan Script',
-            'Montserrat',
-            'Roboto',
-            'Courier New',
-            'Georgia',
-            'Times New Roman',
-        ];
-        const colors = [
-            '#ff6b6b',
-            '#feca57',
-            '#48dbfb',
-            '#1dd1a1',
-            '#5f27cd',
-            '#222f3e',
-            '#ee5253',
-            '#0abde3',
-            '#10ac84',
-            '#341f97',
-        ];
-
-        // Apply Random Font and Color to Quote
-        function styleQuote() {
-            const randomFont =
-                fonts[Math.floor(Math.random() * fonts.length)];
-            const randomColor =
-                colors[Math.floor(Math.random() * colors.length)];
-            quoteElement.style.fontFamily = randomFont;
-            quoteElement.style.color = randomColor;
-            gsap.from(quoteElement, {
-                opacity: 0,
-                y: -20,
-                duration: 1,
-                ease: "bounce.out",
+        // Fetch Firebase config from server
+        fetch('/firebase-config')
+            .then(response => response.json())
+            .then(config => {
+                firebaseConfig = config;
+                initFirebase();
+            })
+            .catch(error => {
+                console.error('Error fetching Firebase config:', error);
+                alert('Failed to initialize Firebase. Please check server configuration.');
             });
+
+
+        // Initialize Firebase (only call once)
+        function initFirebase() {
+             firebase.initializeApp(firebaseConfig);
+            const storage = firebase.storage();
         }
 
-        // Fetch Quote from Server
-        async function fetchQuote() {
-            try {
-                const response = await fetch('/quote');
-                if (response.ok) {
-                    const data = await response.json();
-                    quoteElement.textContent = `${data.quote}`;
-                    styleQuote();
-                } else {
-                    quoteElement.textContent =
-                        'Error fetching quote. Please try again later.';
-                }
-            } catch (error) {
-                quoteElement.textContent =
-                    'Error fetching quote. Please try again later.';
-            }
-        }
-
-        // Load Quote on Page Load
-        window.addEventListener('load', fetchQuote);
 
         // File Upload Preview
         fileUpload.addEventListener('change', (e) => {
@@ -271,37 +155,111 @@
         });
 
         // Form Submission
-        // Modify your form submission handler
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const file = fileUpload.files[0];
-    
-    if (!file) return;
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = fileUpload.files[0];
+            if (!file) return;
 
-    try {
-        loading.classList.remove('hidden');
-        form.classList.add('hidden');
-        
-        if (file.size > 1024 * 1024) { // If larger than 1MB
-            await uploadLargeFile(file);
-        } else {
-            const formData = new FormData(form);
-            await fetch('/upload', {
-                method: 'POST',
-                body: formData
+            // Show loading
+            form.classList.add('hidden');
+            loading.classList.remove('hidden');
+            progressText.textContent = 'Preparing file for upload...';
+
+            try {
+                const pdfId = generateUUID();
+                const metadata = {
+                    contentType: 'application/pdf',
+                };
+
+                // Create a storage reference
+                const storageRef = storage.ref(`pdfs/${pdfId}.pdf`);
+                
+                // Create upload task
+                const uploadTask = storageRef.put(file, metadata);
+
+                // Monitor upload progress
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        progressText.textContent = `Uploading: ${Math.round(progress)}%`;
+                    },
+                    (error) => {
+                        console.error('Upload failed:', error);
+                        alert('Upload failed. Please try again.');
+                        loading.classList.add('hidden');
+                        form.classList.remove('hidden');
+                    },
+                    async () => {
+                        progressText.textContent = 'Upload complete. Initializing processing...';
+                        
+                        // Get download URL
+                        const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                        
+                        // Initialize processing
+                        const response = await fetch('/initialize_processing', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                pdf_id: pdfId,
+                                file_url: downloadURL,
+                                file_size: file.size
+                            }),
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            await processPdf(pdfId);
+                        } else {
+                            throw new Error('Failed to initialize processing');
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+                loading.classList.add('hidden');
+                form.classList.remove('hidden');
+            }
+        });
+
+
+        //Helper function to generate UUID
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0,
+                    v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
             });
         }
-        
-        // Continue with your existing code...
-        
-    } catch (error) {
-        console.error('Upload error:', error);
-        alert('Upload failed. Please try again.');
-        loading.classList.add('hidden');
-        form.classList.remove('hidden');
-    }
-});
-        
+
+
+        // Process PDF
+        async function processPdf(pdfId) {
+            try {
+                // First, check the status
+                const statusResponse = await fetch(`/check_status?pdf_id=${pdfId}`);
+                if (statusResponse.ok) {
+                    const statusData = await statusResponse.json();
+                    if (statusData.status === 'completed') {
+                        // If already completed, proceed to download
+                        await checkStatus(pdfId);
+                    } else {
+                        // Start the processing loop
+                        await processingLoop(pdfId);
+                    }
+                } else {
+                    throw new Error('Failed to check initial status.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred during processing. Please try again later.');
+                loading.classList.add('hidden');
+                form.classList.remove('hidden');
+            }
+        }
+
         async function processingLoop(pdfId) {
             try {
                 const response = await fetch('/process_pdf', {
@@ -323,31 +281,6 @@ form.addEventListener('submit', async (e) => {
                     }
                 } else {
                     throw new Error('Processing failed');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred during processing. Please try again later.');
-                loading.classList.add('hidden');
-                form.classList.remove('hidden');
-            }
-        }
-
-        // Process PDF
-        async function processPdf(pdfId) {
-            try {
-                // First, check the status
-                const statusResponse = await fetch(`/check_status?pdf_id=${pdfId}`);
-                if (statusResponse.ok) {
-                    const statusData = await statusResponse.json();
-                    if (statusData.status === 'completed') {
-                        // If already completed, proceed to download
-                        await checkStatus(pdfId);
-                    } else {
-                        // Start the processing loop
-                        await processingLoop(pdfId);
-                    }
-                } else {
-                    throw new Error('Failed to check initial status.');
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -411,73 +344,9 @@ form.addEventListener('submit', async (e) => {
             }
         }
 
+
         // Particle effect
-        particlesJS("particles-js", {
-            particles: {
-                number: { value: 80, density: { enable: true, value_area: 800 } },
-                color: { value: "#ffffff" },
-                shape: { type: "circle", stroke: { width: 0, color: "#000000" }, polygon: { nb_sides: 5 } },
-                opacity: { value: 0.5, random: false, anim: { enable: false, speed: 1, opacity_min: 0.1, sync: false } },
-                size: { value: 3, random: true, anim: { enable: false, speed: 40, size_min: 0.1, sync: false } },
-                line_linked: { enable: true, distance: 150, color: "#ffffff", opacity: 0.4, width: 1 },
-                move: { enable: true, speed: 6, direction: "none", random: false, straight: false, out_mode: "out", bounce: false, attract: { enable: false, rotateX: 600, rotateY: 1200 } }
-            },
-            interactivity: {
-                detect_on: "canvas",
-                events: { onhover: { enable: true, mode: "repulse" }, onclick: { enable: true, mode: "push" }, resize: true },
-                modes: { grab: { distance: 400, line_linked: { opacity: 1 } }, bubble: { distance: 400, size: 40, duration: 2, opacity: 8, speed: 3 }, repulse: { distance: 200, duration: 0.4 }, push: { particles_nb: 4 }, remove: { particles_nb: 2 } }
-            },
-            retina_detect: true
-        });
-
-        // Typewriter effect for the title
-        const titleElement = document.getElementById('title');
-        new Typewriter(titleElement, {
-            strings: ['PDF Summarizer'],
-            autoStart: true,
-            loop: true,
-            delay: 75,
-            deleteSpeed: 50,
-        });
-
-        // Add this to your existing JavaScript
-function uploadLargeFile(file) {
-    const chunkSize = 1024 * 1024; // 1MB chunks
-    const chunks = Math.ceil(file.size / chunkSize);
-    let currentChunk = 0;
-
-    async function uploadChunk() {
-        const start = currentChunk * chunkSize;
-        const end = Math.min(start + chunkSize, file.size);
-        const chunk = file.slice(start, end);
-
-        const formData = new FormData();
-        formData.append('file', chunk, file.name);
-        formData.append('chunk', currentChunk);
-        formData.append('chunks', chunks);
-
-        try {
-            const response = await fetch('/upload', {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (response.ok) {
-                currentChunk++;
-                if (currentChunk < chunks) {
-                    await uploadChunk();
-                }
-            } else {
-                throw new Error('Upload failed');
-            }
-        } catch (error) {
-            console.error('Error uploading chunk:', error);
-            throw error;
-        }
-    }
-
-    return uploadChunk();
-}
+      
 
         // Confetti effect on successful upload
         function triggerConfetti() {
@@ -499,7 +368,6 @@ function uploadLargeFile(file) {
             });
         });
 
-        // Parallax effect removed (we're using a fixed background image)
 
         // Add hover effect to buttons
         const buttons = document.querySelectorAll('button, a');
@@ -512,14 +380,6 @@ function uploadLargeFile(file) {
             });
         });
 
-        // Add a subtle animation to the quote section
-        gsap.to('.animated-bg', {
-            backgroundPosition: '100% 50%',
-            duration: 10,
-            repeat: -1,
-            yoyo: true,
-            ease: 'power1.inOut'
-        });
     </script>
 </body>
 </html>
