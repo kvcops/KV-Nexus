@@ -271,43 +271,36 @@
         });
 
         // Form Submission
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-        
-            // Show loading
-            form.classList.add('hidden');
-            loading.classList.remove('hidden');
-            progressText.textContent = 'Uploading file...';
-        
-            try {
-                // Upload the file and get pdf_id
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-        
-               if (response.ok) {
-                            const data = await response.json();
-                            const pdfId = data.pdf_id;
-                            
-                            // Update progress text with estimated time
-                            if (data.estimated_minutes) {
-                                progressText.textContent = `Processing your PDF... (Estimated time: ${data.estimated_minutes} minutes)`;
-                            }
+        // Modify your form submission handler
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const file = fileUpload.files[0];
     
-                   
-                    await processPdf(pdfId);
-                } else {
-                    throw new Error('Upload failed');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again or upload a smaller PDF file.');
-                loading.classList.add('hidden');
-                form.classList.remove('hidden');
-            }
-        });
+    if (!file) return;
+
+    try {
+        loading.classList.remove('hidden');
+        form.classList.add('hidden');
+        
+        if (file.size > 1024 * 1024) { // If larger than 1MB
+            await uploadLargeFile(file);
+        } else {
+            const formData = new FormData(form);
+            await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+        }
+        
+        // Continue with your existing code...
+        
+    } catch (error) {
+        console.error('Upload error:', error);
+        alert('Upload failed. Please try again.');
+        loading.classList.add('hidden');
+        form.classList.remove('hidden');
+    }
+});
         
         async function processingLoop(pdfId) {
             try {
@@ -446,6 +439,45 @@
             delay: 75,
             deleteSpeed: 50,
         });
+
+        // Add this to your existing JavaScript
+function uploadLargeFile(file) {
+    const chunkSize = 1024 * 1024; // 1MB chunks
+    const chunks = Math.ceil(file.size / chunkSize);
+    let currentChunk = 0;
+
+    async function uploadChunk() {
+        const start = currentChunk * chunkSize;
+        const end = Math.min(start + chunkSize, file.size);
+        const chunk = file.slice(start, end);
+
+        const formData = new FormData();
+        formData.append('file', chunk, file.name);
+        formData.append('chunk', currentChunk);
+        formData.append('chunks', chunks);
+
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                currentChunk++;
+                if (currentChunk < chunks) {
+                    await uploadChunk();
+                }
+            } else {
+                throw new Error('Upload failed');
+            }
+        } catch (error) {
+            console.error('Error uploading chunk:', error);
+            throw error;
+        }
+    }
+
+    return uploadChunk();
+}
 
         // Confetti effect on successful upload
         function triggerConfetti() {
