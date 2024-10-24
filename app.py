@@ -157,6 +157,17 @@ def format_response(response_text):
     formatted_text = '<br>'.join(lines)
     return formatted_text
 
+@app.route('/firebase-config')
+def firebase_config():
+    config = {
+        "apiKey": os.environ.get("FIREBASE_API_KEY"),  # Add these env vars to your .env
+        "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN"),
+        "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
+        "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET"),
+        "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID"),
+        "appId": os.environ.get("FIREBASE_APP_ID")
+    }
+    return jsonify(config)
 
 @app.route('/')
 def index():
