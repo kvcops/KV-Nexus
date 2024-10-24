@@ -114,7 +114,7 @@ db = firestore.client()
 bucket = storage.bucket()
 
 
-app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
+app.config['MAX_CONTENT_LENGTH'] = 30 * 1024 * 1024  # 10MB
 # Generation configurations
 generation_config = GenerationConfig(
     temperature=0.9,
