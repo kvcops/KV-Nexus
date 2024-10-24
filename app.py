@@ -60,6 +60,9 @@ from threading import Lock
 from functools import wraps
 import tenacity
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
+CHUNK_SIZE = 1024 * 1024  # 1MB chunks
+MAX_WORKERS = 4  # Maximum concurrent workers
 # Load environment variables
 load_dotenv()
 mail_API_KEY = os.environ.get("mail_API_KEY")  # Replace with your Mailjet API key
@@ -441,7 +444,6 @@ import base64
 from PIL import Image
 from io import BytesIO
 
-
 @app.route('/analyze', methods=['GET', 'POST'])
 def analyze():
     if request.method == 'POST':
@@ -645,27 +647,71 @@ def send_email():
 
 
 #docuement summarize 
+from flask import Flask, render_template, request, jsonify, send_file
+import io
+import base64
+from PyPDF2 import PdfReader
+from pdf2image import convert_from_bytes
+import threading
+from queue import Queue
+import tempfile
+import os
+import time
+from functools import wraps
+import math
+
+# Add these imports to existing ones
+from werkzeug.utils import secure_filename
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
 
 import time
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 import google.api_core.exceptions
 import threading
-from PIL import Image
-import io
-import base64
-import time
-from concurrent.futures import ThreadPoolExecutor
-import math
+
 # Token bucket for rate limiting
 # Rate limiting parameters
 REQUEST_LIMIT = 15
 TIME_WINDOW = 60
-# Modified file size and processing constants
-MAX_FILE_SIZE = 30 * 1024 * 1024  # 30MB
-BATCH_SIZE = 5  # Number of pages to process in parallel
-MAX_TOKENS_PER_MINUTE = 1000000
-ESTIMATED_TOKENS_PER_PAGE = 1000
-PAGES_PER_MINUTE = MAX_TOKENS_PER_MINUTE // ESTIMATED_TOKENS_PER_PAGE
+# Rate limiting configuration
+RATE_LIMIT = {
+    'requests_per_minute': 15,
+    'tokens_per_minute': 1000000,
+    'request_window': 60,  # seconds
+    'token_window': 60,    # seconds
+}
+class RateLimiter:
+    def __init__(self):
+        self.requests = []
+        self.tokens = []
+        self.lock = threading.Lock()
+
+    def check_rate_limit(self, token_count=0):
+        current_time = time.time()
+        
+        with self.lock:
+            # Clean old requests
+            self.requests = [t for t in self.requests if current_time - t < RATE_LIMIT['request_window']]
+            self.tokens = [t for t in self.tokens if current_time - t['time'] < RATE_LIMIT['token_window']]
+            
+            # Check request limit
+            if len(self.requests) >= RATE_LIMIT['requests_per_minute']:
+                return False, "Rate limit exceeded. Please try again later."
+            
+            # Check token limit
+            current_tokens = sum(t['count'] for t in self.tokens)
+            if current_tokens + token_count > RATE_LIMIT['tokens_per_minute']:
+                return False, "Token limit exceeded. Please try again later."
+            
+            # Add new request and tokens
+            self.requests.append(current_time)
+            if token_count > 0:
+                self.tokens.append({'time': current_time, 'count': token_count})
+            
+            return True, None
+
+rate_limiter = RateLimiter()
 
 class TokenBucket:
     def __init__(self, tokens, fill_rate):
@@ -711,47 +757,135 @@ import io
 from PIL import Image
 import base64
 
-def process_page(pdf_document, page_num, doc_ref, retry_count=3):
-    for attempt in range(retry_count):
-        try:
-            logger.info(f"Processing page {page_num + 1}, attempt {attempt + 1}")
-            page = pdf_document[page_num]
-            
-            # Reduce image resolution for very large pages
-            matrix = fitz.Matrix(1.5, 1.5)  # Reduced from 2.0 to 1.5
-            pix = page.get_pixmap(matrix=matrix)
-            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            
-            # Compress image if too large
-            if pix.width * pix.height > 4000000:  # If image is very large
-                img.thumbnail((2000, 2000), Image.Resampling.LANCZOS)
-            
-            buffered = io.BytesIO()
-            img.save(buffered, format="JPEG", quality=85)  # Using JPEG with compression
-            img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+def process_page(pdf_document, page_num, doc_ref):
+    logger.info(f"Processing page {page_num + 1}")
+    page = pdf_document[page_num]
+    
+    # Convert page to image
+    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # Increase resolution
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    
+    # Convert image to base64
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-            # Apply rate limiting
-            rate_limit_check()
+    try:
+        page_summary = generate_summary(img_base64)
+        if page_summary:
+            logger.info(f"Summary generated for page {page_num + 1}")
+            doc_ref.update({
+                'current_page': page_num + 1,
+                'summary': firestore.ArrayUnion([page_summary])
+            })
+        else:
+            logger.warning(f"Failed to generate summary for page {page_num + 1}")
+            doc_ref.update({
+                'current_page': page_num + 1,
+                'summary': firestore.ArrayUnion([f"(Summary not available for page {page_num + 1})"])
+            })
+    except Exception as e:
+        logger.error(f"Error processing page {page_num + 1}: {e}")
+        doc_ref.update({
+            'current_page': page_num + 1,
+            'summary': firestore.ArrayUnion([f"(Error processing page {page_num + 1})"])
+        })
+
+
+def chunk_pdf(file_content, chunk_size=CHUNK_SIZE):
+    """Split PDF into smaller chunks for processing."""
+    pdf = PdfReader(io.BytesIO(file_content))
+    chunks = []
+    current_chunk = io.BytesIO()
+    current_size = 0
+    
+    for page in range(len(pdf.pages)):
+        page_content = pdf.pages[page]
+        # Approximate page size
+        page_size = len(str(page_content.extract_text()))
+        
+        if current_size + page_size > chunk_size:
+            chunks.append(current_chunk.getvalue())
+            current_chunk = io.BytesIO()
+            current_size = 0
             
-            page_summary = generate_summary(img_base64)
-            if page_summary:
-                doc_ref.update({
-                    'current_page': page_num + 1,
-                    'summary': firestore.ArrayUnion([page_summary])
-                })
-                return True
+        current_chunk.write(page_content.extract_text().encode())
+        current_size += page_size
+    
+    if current_size > 0:
+        chunks.append(current_chunk.getvalue())
+    
+    return chunks
+
+class PDFProcessor:
+    def __init__(self, max_workers=MAX_WORKERS):
+        self.executor = ThreadPoolExecutor(max_workers=max_workers)
+        self.processing_queue = Queue()
+        self._start_processing_thread()
+
+    def _start_processing_thread(self):
+        def process_queue():
+            while True:
+                task = self.processing_queue.get()
+                if task is None:
+                    break
+                try:
+                    self._process_chunk(*task)
+                except Exception as e:
+                    logger.error(f"Error processing chunk: {e}")
+                finally:
+                    self.processing_queue.task_done()
+
+        self.processing_thread = threading.Thread(target=process_queue)
+        self.processing_thread.start()
+
+    def _process_chunk(self, chunk, pdf_id, start_page, end_page):
+        try:
+            # Check rate limit before processing
+            is_allowed, message = rate_limiter.check_rate_limit(token_count=len(chunk))
+            if not is_allowed:
+                logger.warning(f"Rate limit exceeded: {message}")
+                return
+
+            # Process the chunk with Gemini
+            summary = generate_summary(chunk)
             
-            time.sleep(1)  # Wait before retry
+            # Update Firestore
+            doc_ref = db.collection('pdf_processes').document(pdf_id)
+            doc_ref.update({
+                'processed_pages': firestore.ArrayUnion([{'start': start_page, 'end': end_page}]),
+                'summaries': firestore.ArrayUnion([summary])
+            })
+            
         except Exception as e:
-            logger.error(f"Error processing page {page_num + 1}, attempt {attempt + 1}: {e}")
-            if attempt == retry_count - 1:
-                doc_ref.update({
-                    'current_page': page_num + 1,
-                    'summary': firestore.ArrayUnion([f"(Error processing page {page_num + 1})"])
-                })
-                return False
-            time.sleep(2 ** attempt)  # Exponential backoff
-    return False
+            logger.error(f"Error in _process_chunk: {e}")
+            doc_ref.update({
+                'errors': firestore.ArrayUnion([str(e)])
+            })
+
+    def process_pdf(self, file_content, pdf_id):
+        chunks = chunk_pdf(file_content)
+        total_pages = len(PdfReader(io.BytesIO(file_content)).pages)
+        pages_per_chunk = math.ceil(total_pages / len(chunks))
+        
+        # Initialize processing status
+        doc_ref = db.collection('pdf_processes').document(pdf_id)
+        doc_ref.set({
+            'status': 'processing',
+            'total_pages': total_pages,
+            'processed_pages': [],
+            'summaries': [],
+            'errors': [],
+            'start_time': time.time()
+        })
+        
+        # Queue chunks for processing
+        for i, chunk in enumerate(chunks):
+            start_page = i * pages_per_chunk
+            end_page = min((i + 1) * pages_per_chunk, total_pages)
+            self.processing_queue.put((chunk, pdf_id, start_page, end_page))
+# Initialize PDF processor
+pdf_processor = PDFProcessor()
 
 
 @app.route('/document_summarizer', methods=['GET', 'POST'])
@@ -999,61 +1133,49 @@ def add_table_to_document_from_html(doc, table_element):
                 shading_elm.set(qn('w:fill'), 'D9E1F2')  # Light blue background
                 row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
 
-# Modified upload route to handle larger files
 @app.route('/upload', methods=['POST'])
-@rate_limited
-def upload_file():
+async def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
+    
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
     if file and file.filename.lower().endswith('.pdf'):
         try:
-            file_content = file.read()
-            file_size = len(file_content)
+            # Read file in chunks
+            file_content = b''
+            chunk = file.read(CHUNK_SIZE)
+            while chunk:
+                file_content += chunk
+                chunk = file.read(CHUNK_SIZE)
 
-            # Updated file size check
-            if file_size > MAX_FILE_SIZE:
-                return jsonify({'error': f'File size exceeds {MAX_FILE_SIZE // (1024*1024)}MB limit'}), 400
-
+            # Generate PDF ID and save to Firebase
             pdf_id = str(uuid.uuid4())
-            blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
-            blob.upload_from_string(file_content, content_type='application/pdf')
-
-            # Get total pages
-            pdf_document = fitz.open(stream=file_content, filetype="pdf")
-            total_pages = len(pdf_document)
-            pdf_document.close()
-
-            # Calculate estimated processing time
-            estimated_minutes = math.ceil(total_pages / PAGES_PER_MINUTE)
             
-            # Initialize in Firestore with batching information
-            db.collection('pdf_processes').document(pdf_id).set({
-                'status': 'processing',
-                'current_page': 0,
-                'total_pages': total_pages,
-                'summary': [],
-                'processing_start_time': time.time(),
-                'timestamp': firestore.SERVER_TIMESTAMP,
-                'file_size': file_size,
-                'batch_size': BATCH_SIZE,
-                'estimated_minutes': estimated_minutes
-            })
+            # Use temporary file for large PDFs
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                tmp.write(file_content)
+                tmp.flush()
+                
+                # Upload to Firebase in chunks
+                blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
+                blob.upload_from_filename(tmp.name, chunk_size=CHUNK_SIZE)
 
+            # Start processing in background
+            pdf_processor.process_pdf(file_content, pdf_id)
+            
             return jsonify({
                 'pdf_id': pdf_id,
-                'total_pages': total_pages,
-                'file_size': file_size,
-                'estimated_minutes': estimated_minutes
-            }), 200
+                'status': 'processing'
+            }), 202
+
         except Exception as e:
-            logging.error(f"Error uploading file: {e}")
-            return jsonify({'error': f'Error uploading file: {str(e)}'}), 500
-    else:
-        return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
+            logger.error(f"Error uploading file: {e}")
+            return jsonify({'error': str(e)}), 500
+            
+    return jsonify({'error': 'Invalid file type'}), 400
 
 # Update the process_pdf_endpoint function
 @app.route('/process_pdf', methods=['POST'])
@@ -1061,40 +1183,35 @@ def process_pdf_endpoint():
     data = request.get_json()
     pdf_id = data.get('pdf_id')
     if not pdf_id:
+        logger.error("No PDF ID provided")
         return jsonify({'error': 'No PDF ID provided.'}), 400
 
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
     if not doc.exists:
+        logger.error(f"Invalid PDF ID: {pdf_id}")
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     
     result = doc.to_dict()
     current_page = result['current_page']
     total_pages = result['total_pages']
-    batch_size = result.get('batch_size', BATCH_SIZE)
 
     if current_page >= total_pages:
+        logger.info(f"PDF {pdf_id} processing already completed")
         return jsonify({'status': 'completed'}), 200
 
     try:
+        logger.info(f"Processing PDF {pdf_id}, page {current_page + 1} of {total_pages}")
         blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
         pdf_bytes = blob.download_as_bytes()
         pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
 
-        # Process a batch of pages in parallel
-        with ThreadPoolExecutor(max_workers=batch_size) as executor:
-            start_page = current_page
-            end_page = min(current_page + batch_size, total_pages)
-            futures = [
-                executor.submit(process_page, pdf_document, page_num, doc_ref)
-                for page_num in range(start_page, end_page)
-            ]
-
+        process_page(pdf_document, current_page, doc_ref)
         pdf_document.close()
 
-        # Check if processing is complete
         updated_doc = doc_ref.get().to_dict()
         if updated_doc['current_page'] >= total_pages:
+            logger.info(f"PDF {pdf_id} processing completed")
             doc_ref.update({
                 'status': 'completed',
                 'processing_end_time': time.time()
@@ -1102,6 +1219,7 @@ def process_pdf_endpoint():
             blob.delete()
             return jsonify({'status': 'completed'}), 200
         else:
+            logger.info(f"PDF {pdf_id} processing in progress. Current page: {updated_doc['current_page']}")
             return jsonify({
                 'status': 'processing',
                 'current_page': updated_doc['current_page'],
@@ -1111,45 +1229,50 @@ def process_pdf_endpoint():
     except Exception as e:
         logger.error(f"Error processing PDF {pdf_id}: {e}")
         return jsonify({'error': str(e)}), 500
-        
+
 @app.route('/check_status', methods=['GET'])
-def check_status():
+async def check_status():
     pdf_id = request.args.get('pdf_id')
     if not pdf_id:
-        logger.error("No PDF ID provided for status check")
-        return jsonify({'error': 'No PDF ID provided.'}), 400
+        return jsonify({'error': 'No PDF ID provided'}), 400
 
     doc_ref = db.collection('pdf_processes').document(pdf_id)
     doc = doc_ref.get()
-    if not doc.exists:
-        logger.error(f"Invalid PDF ID for status check: {pdf_id}")
-        return jsonify({'error': 'Invalid PDF ID.'}), 400
     
+    if not doc.exists:
+        return jsonify({'error': 'Invalid PDF ID'}), 404
+
     result = doc.to_dict()
-    status = result.get('status', 'processing')
+    
+    if result.get('errors'):
+        return jsonify({
+            'status': 'error',
+            'errors': result['errors']
+        }), 500
 
-    if status == 'completed':
-        logger.info(f"Status check: PDF {pdf_id} processing completed")
-        summary = '\n\n'.join(result['summary'])
-        docx_buffer = create_word_document(summary)
-        docx_base64 = base64.b64encode(docx_buffer.getvalue()).decode('utf-8')
-
-        processing_time = 'N/A'
-        if result.get('processing_start_time') and result.get('processing_end_time'):
-            processing_time = int(result['processing_end_time'] - result['processing_start_time'])
-
+    processed_pages = len(result.get('processed_pages', []))
+    total_pages = result.get('total_pages', 0)
+    
+    if processed_pages >= total_pages:
+        # Combine summaries and create Word document
+        combined_summary = '\n\n'.join(result.get('summaries', []))
+        docx_buffer = create_word_document(combined_summary)
+        
+        # Clean up the temporary PDF file
+        blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
+        blob.delete()
+        
         return jsonify({
             'status': 'completed',
-            'docx': docx_base64,
-            'total_pages': result.get('total_pages', 0),
-            'processing_time': processing_time
+            'docx': base64.b64encode(docx_buffer.getvalue()).decode('utf-8'),
+            'total_pages': total_pages,
+            'processing_time': int(time.time() - result['start_time'])
         }), 200
-    else:
-        logger.info(f"Status check: PDF {pdf_id} processing in progress. Current page: {result.get('current_page', 0)}")
-        return jsonify({
-            'status': 'processing',
-            'current_page': result.get('current_page', 0),
-            'total_pages': result.get('total_pages', 0)
-        }), 200
+    
+    return jsonify({
+        'status': 'processing',
+        'progress': (processed_pages / total_pages) * 100 if total_pages > 0 else 0
+    }), 200
+    
 if __name__ == '__main__':
     app.run(debug=True)
