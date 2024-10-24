@@ -1,4 +1,4 @@
-Flask==3.0.3
+Flask[async]==3.0.3
 google-generativeai==0.7.2
 python-dotenv==1.0.1
 gunicorn==23.0.0
