@@ -375,17 +375,6 @@
             }
         }
              /* Updated CSS for the Contact Form */
-
-             .hidden {
-                display: none;
-            }
-            .error-message {
-                color: red;
-                font-size: 0.9em;
-                margin-top: 5px;
-            }
-
-
              .contact-form {
                 background-color: rgba(255, 255, 255, 0.05);
                 padding: 4rem 2rem;
@@ -760,18 +749,10 @@
                 <center>
                 <h2>Contact Us</h2>
                 <form id="contactForm">
-                    <p>Have questions or suggest changes? Reach out to our team, and we'll be happy to assist you.</p>
-                    
-                    <label for="name" class="visually-hidden">Your Name</label>
+                    <p>Have questions or Suggest changes? Reach out to our team, and we'll be happy to assist you.</p>
                     <input type="text" id="name" name="name" placeholder="Your Name" required>
-                    
-                    <label for="email" class="visually-hidden">Your Email</label>
                     <input type="email" id="email" name="email" placeholder="Your Email" required>
-                    <div id="emailError" class="error-message hidden">Please use an email from a trusted provider.eg: Gmail, Outlook, Yahoo, Icloud, Hotmail.</div>
-                    
-                    <label for="message" class="visually-hidden">Your Message</label>
                     <textarea id="message" name="message" placeholder="Your Message" required></textarea>
-                    
                     <button type="submit">Send</button>
                 </form>
                 <div id="confirmationMessage" class="hidden">
@@ -918,24 +899,6 @@
             });
         });
         //for contact us 
-
-        document.getElementById("contactForm").addEventListener("submit", function(event) {
-        const emailInput = document.getElementById("email");
-        const emailError = document.getElementById("emailError");
-        const trustedDomains = ["gmail.com", "outlook.com", "icloud.com", "yahoo.com", "hotmail.com"];
-        
-        // Extract the domain from the email
-        const emailDomain = emailInput.value.split("@")[1];
-        
-        // Check if the domain is in the trusted list
-        if (!trustedDomains.includes(emailDomain)) {
-            emailError.classList.remove("hidden");
-            emailInput.focus();
-            event.preventDefault(); // Prevent form submission
-        } else {
-            emailError.classList.add("hidden");
-        }
-    });
             document.getElementById('contactForm').addEventListener('submit', async function(event) {
             event.preventDefault();
     
