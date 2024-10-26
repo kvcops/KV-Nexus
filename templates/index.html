@@ -518,7 +518,27 @@
                 transform: translateY(-15px);
             }
         }
+        .star-rating-container {
+        text-align: center;
+        margin: 98px 0;
+    }
 
+
+    .star {
+        font-size: 4em; 
+        color: #333; 
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .star.active {
+        color: #00B4D8; 
+    }
+
+    .star:hover,
+    .star.hover {
+        color: #F72585; 
+    }
 
         .team-member {
             position: relative;
@@ -741,6 +761,14 @@
             </div>
         </section>
 
+        <div class="star-rating-container">
+            <h2>Rate Your Experience</h2>
+            <span class="star" data-value="1">&#9733;</span>
+            <span class="star" data-value="2">&#9733;</span>
+            <span class="star" data-value="3">&#9733;</span>
+            <span class="star" data-value="4">&#9733;</span>
+            <span class="star" data-value="5">&#9733;</span>
+        </div>
         <section id="contact-us">
             <div class="contact-form">
                 <center>
@@ -902,7 +930,8 @@
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const message = document.getElementById('message').value;
-    
+            
+
             const response = await fetch('/send-email', {
                 method: 'POST',
                 headers: {
@@ -932,6 +961,38 @@
                 alert('Failed to send your message.');
             }
         });
+
+        const stars = document.querySelectorAll('.star');
+    let currentRating = 0; 
+    
+    function updateStars(rating) {
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+    }
+
+   
+    stars.forEach((star, index) => {
+        star.addEventListener('click', () => {
+            currentRating = index + 1;
+            updateStars(currentRating);
+            console.log('User rating:', currentRating); 
+        });
+
+       
+        star.addEventListener('mouseover', () => {
+            updateStars(index + 1);
+        });
+
+        star.addEventListener('mouseout', () => {
+            updateStars(currentRating);
+        });
+    });
     </script>
 </body>
 </html>
+
