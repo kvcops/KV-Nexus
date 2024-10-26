@@ -620,6 +620,93 @@
             position: relative;
         }
     
+        .faq-section {
+    padding: 40px 20px;
+    background-color: #111111;
+    color: #e0e0e0;
+    max-width: 900px; /* Set max width to reduce FAQ width */
+    margin: 0 auto; /* Center the section */
+}
+
+.faq-section h2 {
+    text-align: center;
+    color: #00d2ff;
+    margin-bottom: 20px;
+    font-size: 2em;
+}
+
+.faq-item {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #222; /* Outer box color similar to first image */
+    border-radius: 8px;
+    position: relative; /* Allow positioning for the gradient effect */
+    transition: background-color 0.1s;
+    cursor: pointer;
+    overflow: hidden; /* Prevent gradient overflow */
+}
+
+.faq-item:hover {
+    background-color: #333;
+}
+
+.faq-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 8px; /* Match the border radius */
+    border: 5px solid transparent; /* Create a border */
+    border: 2px solid transparent;
+    background: transparent; /* Background will be transparent */
+    animation: borderColorMove 4s linear infinite; /* Animation for border movement */
+    z-index: 0; /* Behind the content */
+}
+
+@keyframes borderColorMove {
+    0% {
+        border-color: #D12EFF; /* Start color */
+    }
+    3% {
+        border-color: #827DFF; /* Midpoint color */
+    }
+    6% {
+        border-color: #0EF1FF; /* Next color */
+    }
+    100% {
+        border-color: #D12EFF; /* Reset color */
+    }
+}
+
+.faq-question {
+    font-size: 1.3em;
+    color: #00d2ff;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    position: relative; /* Ensure this is on top of the gradient */
+    z-index: 1; /* Higher than the gradient background */
+}
+
+.faq-answer {
+    display: none;
+    font-size: 1.1em;
+    margin-top: 10px;
+    position: relative; /* Ensure this is on top of the gradient */
+    z-index: 1; /* Higher than the gradient background */
+}
+
+.icon {
+    margin-right: 10px;
+    transition: transform 0.3s;
+    color: #00d2ff; /* Arrow color to match theme */
+}
+
+.faq-item.active .icon {
+    transform: rotate(90deg); /* Rotate icon when active */
+}
 
         
     </style>
@@ -634,6 +721,7 @@
                 <a href="#about">About</a>
                 <a href="#contact-us">Contact</a>
                 <a href="#team">Team</a>
+                <a href="#faq">FAQ</a>
             </div>
             <div class="nav-toggle" onclick="toggleNavigation()">
                 <i class="fas fa-bars"></i> </div>
@@ -759,6 +847,74 @@
             </div>
         </section>
 
+        <section id="faq" class="faq-section">
+            <h2>Frequently Asked Questions</h2>
+          
+            <div class="faq-item">
+              <h3 class="faq-question">
+                <span class="icon">➤</span> What is Kv Nexus?
+              </h3>
+              <p class="faq-answer">Kv Nexus is a versatile AI-powered web application providing various features from real-time weather to psychological insights, story generation, and more.</p>
+            </div>
+          
+            <div class="faq-item">
+              <h3 class="faq-question">
+                <span class="icon">➤</span> What is the purpose of the Health Analyzer?
+              </h3>
+              <p class="faq-answer">The Health Analyzer helps users assess their symptoms and provides insights based on the input data, including gender, symptoms, affected body parts, and layers affected.</p>
+            </div>
+          
+            <div class="faq-item">
+              <h3 class="faq-question">
+                <span class="icon">➤</span> How can I interact with the Conversational AI chatbot?
+              </h3>
+              <p class="faq-answer"> You can interact with our Conversational AI chatbot by typing your questions or comments in the chat window. The chatbot is designed to understand natural language, so feel free to ask anything related to its features, services, or general inquiries. Simply press "Enter" to send your message, and the chatbot will respond promptly.</p>
+            </div>
+          
+            <div class="faq-item">
+              <h3 class="faq-question">
+                <span class="icon">➤</span> How do I use the NeuraChart feature?
+              </h3>
+              <p class="faq-answer">NeuraChart generates flowcharts from JSON data, making it easy to visualize complex algorithms and processes.</p>
+            </div>
+          
+          
+          <div class="faq-item">
+            <h3 class="faq-question">
+                <span class="icon">➤</span> How can I find a recipe using Chef's Culinary Magic?
+            </h3>
+            <p class="faq-answer">You can discover a recipe by entering the ingredients you have in the "Magical Ingredients" field or by uploading a photo of the food item. If you opt to enter ingredients, list them clearly (e.g., tomatoes, onions, garlic) and click the "Get Recipe" button. For uploading an image, click the "Upload Food Image" button, select your image file, and then hit "Get Recipe." The system will analyze your input and provide a delicious recipe tailored to your ingredients!</p>
+        </div>
+        
+        <div class="faq-item">
+            <h3 class="faq-question">
+                <span class="icon">➤</span> What types of pyschological insights can I expect from my profile?
+            </h3>
+            <p class="faq-answer">You can expect insights into your personality traits, behavioral tendencies, strengths, and areas for improvement. The profile may also provide suggestions on how these traits can influence your relationships, work style, and personal growth.</p>
+        </div>
+        
+        <div class="faq-item">
+            <h3 class="faq-question">
+                <span class="icon">➤</span> How do I create a story using the Story Weaver?
+            </h3>
+            <p class="faq-answer">To create a story with the Story Weaver, start by entering your random keywords in the "Random Keywords" field. Include phrases like "ancient relic," "time travel," or "unexpected ally." Next, select the genre for your story from options such as Fantasy, Sci-Fi, Mystery, and more. Once you've filled in both fields, click the "Forge Your Tale" button. The Story Weaver will generate a unique story based on your inputs, letting your imagination soar!</p>
+        </div>
+        
+        <div class="faq-item">
+            <h3 class="faq-question">
+                <span class="icon">➤</span> What benefits do I gain from using Quantum Speed and AI Synergy?
+            </h3>
+            <p class="faq-answer">Quantum Speed enables you to generate algorithms rapidly, enhancing your productivity and efficiency. AI Synergy harnesses the power of next-gen AI to optimize your algorithms, ensuring they perform at their best across various applications.</p>
+        </div>
+
+
+
+    </section>
+       
+
+        
+        
+          
         <section id="team">
             <div class="container">
                 <h2>Our Team</h2>
@@ -932,6 +1088,18 @@
                 alert('Failed to send your message.');
             }
         });
+
+        document.querySelectorAll(".faq-item").forEach(item => {
+  item.addEventListener("click", () => {
+    const answer = item.querySelector(".faq-answer");
+    answer.style.display = answer.style.display === "block" ? "none" : "block";
+    
+    // Toggle the active class to rotate the arrow
+    item.classList.toggle("active");
+  });
+});
+
+
     </script>
 </body>
 </html>
