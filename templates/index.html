@@ -626,6 +626,7 @@
     color: #e0e0e0;
     max-width: 900px; /* Set max width to reduce FAQ width */
     margin: 0 auto; /* Center the section */
+    
 }
 
 .faq-section h2 {
@@ -641,13 +642,14 @@
     background-color: #222; /* Outer box color similar to first image */
     border-radius: 8px;
     position: relative; /* Allow positioning for the gradient effect */
-    transition: background-color 0.1s;
+    transition: background-color 0.3s,transform 0.3s ease;;
     cursor: pointer;
     overflow: hidden; /* Prevent gradient overflow */
 }
 
 .faq-item:hover {
-    background-color: #333;
+    background-color: #f0f3f5;
+    transform: scale(1.05);
 }
 
 .faq-item::before {
@@ -658,31 +660,43 @@
     right: 0;
     bottom: 0;
     border-radius: 8px; /* Match the border radius */
-    border: 5px solid transparent; /* Create a border */
-    border: 2px solid transparent;
+    border: 2px solid transparent; /* Create a border */
     background: transparent; /* Background will be transparent */
-    animation: borderColorMove 4s linear infinite; /* Animation for border movement */
+    animation: borderColorMove 1s linear infinite, slideIn 0.5s forwards; /* Combined animations */
     z-index: 0; /* Behind the content */
+    opacity: 0; /* Ensure border is visible */
 }
 
+/* Animation for border color movement */
 @keyframes borderColorMove {
     0% {
         border-color: #D12EFF; /* Start color */
     }
-    3% {
+    50% {
         border-color: #827DFF; /* Midpoint color */
-    }
-    6% {
-        border-color: #0EF1FF; /* Next color */
     }
     100% {
         border-color: #D12EFF; /* Reset color */
     }
 }
 
+/* Animation for sliding in effect */
+@keyframes slideIn {
+    0% {
+        opacity: 0; /* Start hidden */
+        transform: translateX(-100px); /* Start position off-screen to the left */
+    }
+    100% {
+        opacity: 1; /* Fully visible */
+        transform: translateX(0); /* Move to original position */
+    }
+}
+
+
+
 .faq-question {
     font-size: 1.3em;
-    color: #00d2ff;
+    color: #d892f4;
     margin: 0;
     display: flex;
     align-items: center;
@@ -696,18 +710,26 @@
     margin-top: 10px;
     position: relative; /* Ensure this is on top of the gradient */
     z-index: 1; /* Higher than the gradient background */
+    font-family: 'Oswald'; /* Change font style */
+    color:#00d2ff ; 
+    
 }
+
 
 .icon {
     margin-right: 10px;
     transition: transform 0.3s;
-    color: #00d2ff; /* Arrow color to match theme */
+    color: #EF10FF; /* Arrow color to match theme */
 }
 
 .faq-item.active .icon {
     transform: rotate(90deg); /* Rotate icon when active */
 }
 
+.faq-item:active { /* Scale effect on hover and active (click) state */
+    background-color: #f17df0; /* Change background color on hover */
+    transform: scale(1.05); /* Slightly enlarge */
+}
         
     </style>
 </head>
@@ -1089,15 +1111,34 @@
             }
         });
 
-        document.querySelectorAll(".faq-item").forEach(item => {
-  item.addEventListener("click", () => {
-    const answer = item.querySelector(".faq-answer");
-    answer.style.display = answer.style.display === "block" ? "none" : "block";
-    
-    // Toggle the active class to rotate the arrow
-    item.classList.toggle("active");
-  });
+        document.querySelectorAll('.faq-item').forEach(item => {
+    item.addEventListener('click', () => {
+        // Close all other FAQ items
+        document.querySelectorAll('.faq-item').forEach(innerItem => {
+            if (innerItem !== item) {
+                innerItem.classList.remove('active'); // Close other items
+                innerItem.querySelector('.faq-answer').style.display = 'none'; // Hide answer
+                innerItem.querySelector('.icon').style.transform = 'rotate(0deg)'; // Reset icon
+            }
+        });
+
+        // Toggle the clicked FAQ item
+        const answer = item.querySelector('.faq-answer');
+        const icon = item.querySelector('.icon');
+
+        // Toggle display of the answer
+        if (item.classList.contains('active')) {
+            item.classList.remove('active');
+            answer.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)'; // Reset icon
+        } else {
+            item.classList.add('active');
+            answer.style.display = 'block'; // Show answer
+            icon.style.transform = 'rotate(90deg)'; // Rotate icon
+        }
+    });
 });
+
 
 
     </script>
