@@ -6,9 +6,87 @@
     <title>Futuristic Chat Interface</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="static/css/style.css">
+    <style>
+        /* Enhance Background */
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            color: #fff;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+        }
+        /* Chatbox styling */
+        .chatbox {
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        /* Input styling */
+        .input-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+        }
+        #user_input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+        }
+        #send_button {
+            border: none;
+            background: #4caf50;
+            border-radius: 50%;
+            padding: 8px;
+            color: #fff;
+            cursor: pointer;
+        }
+        #send_button svg {
+            fill: #fff;
+        }
+        /* Theme Toggle */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .theme-toggle input {
+            display: none;
+        }
+        .switch-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .sun, .moon {
+            font-size: 1.2em;
+            transition: opacity 0.5s ease;
+        }
+    </style>
 </head>
 <body>
-    <div class="background-animation"></div>
     <div class="container">
         <div class="chat-header">
             <h1>Quantum Chat</h1>
@@ -21,10 +99,13 @@
             </div>
         </div>
         <div class="chatbox">
-            <div id="messages" class="messages"></div>
+            <div id="messages" class="messages">
+                <!-- Welcome Message -->
+                <div class="message bot-message">Hello! Welcome to Quantum Chat. How can I assist you today?</div>
+            </div>
             <div class="input-container">
-                <input type="text" id="user_input" placeholder="Enter your message...">
-                <button id="send_button">
+                <input type="text" id="user_input" placeholder="Enter your message..." aria-label="Type your message here">
+                <button id="send_button" aria-label="Send message">
                     <svg viewBox="0 0 24 24" width="24" height="24">
                         <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
                     </svg>
@@ -32,11 +113,19 @@
             </div>
         </div>
     </div>
-    <script src="static/js/script.js"></script>
-</script>
-<div class="gtranslate_wrapper"></div>
-<script>window.gtranslateSettings = {"default_language":"en","detect_browser_language":true,"wrapper_selector":".gtranslate_wrapper"}</script>
-<script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
 
+    <!-- Translation and Theme Toggle Scripts -->
+    <script src="static/js/script.js"></script>
+    <div class="gtranslate_wrapper"></div>
+    <script>window.gtranslateSettings = {"default_language":"en","detect_browser_language":true,"wrapper_selector":".gtranslate_wrapper"};</script>
+    <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
+    <script>
+        // JavaScript for theme toggle
+        document.getElementById('theme-switch').addEventListener('change', (e) => {
+            document.body.classList.toggle('dark-mode', e.target.checked);
+            document.querySelector('.sun').style.opacity = e.target.checked ? 0 : 1;
+            document.querySelector('.moon').style.opacity = e.target.checked ? 1 : 0;
+        });
+    </script>
 </body>
 </html>
