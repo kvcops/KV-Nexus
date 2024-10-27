@@ -6,43 +6,158 @@
   <title>Health Insight Analyzer</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-  <link rel="stylesheet" href="/static/health_styles.css">
+  <style>
+    :root {
+      --primary-color: #4a90e2;
+      --secondary-color: #f39c12;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      line-height: 1.6;
+      padding-bottom: 80px; /* Add padding to prevent overlap with translation widget */
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      color: var(--primary-color);
+      margin-bottom: 10px;
+    }
+
+    .input-section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    button:hover {
+      background-color: #357abd;
+    }
+
+    .preview-section {
+      margin: 20px 0;
+    }
+
+    #image-preview {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .result-section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Loading Animation Styles */
+    .loader-container {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .loader {
+      width: 100px;
+      height: 100px;
+      border: 5px solid var(--primary-color);
+      border-top: 5px solid var(--secondary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .loader-text {
+      margin-top: 20px;
+      font-size: 18px;
+      color: var(--primary-color);
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Translation widget positioning */
+    .gtranslate_wrapper {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 999;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+      }
+
+      .input-section,
+      .result-section {
+        padding: 15px;
+      }
+
+      button {
+        margin-bottom: 40px; /* Increase bottom margin on mobile */
+      }
+    }
+  </style>
 </head>
-<style>
-  /* Loading Animation Styles */
-  .loader-container {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.8);
-    z-index: 9999;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .loader {
-    width: 100px;
-    height: 100px;
-    border: 5px solid var(--primary-color);
-    border-top: 5px solid var(--secondary-color);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  .loader-text {
-    margin-top: 20px;
-    font-size: 18px;
-    color: var(--primary-color);
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-</style>
 <body>
   <div class="loader-container" id="loader-container">
     <div class="loader"></div>
@@ -96,6 +211,7 @@
     <section class="result-section" id="result-section">
       <h2><i class="fas fa-clipboard-list"></i> Analysis Results</h2>
       <div id="response"></div>
+
     </script>
     
     
@@ -106,5 +222,51 @@
   <div class="gtranslate_wrapper"></div>
     <script>window.gtranslateSettings = {"default_language":"en","detect_browser_language":true,"wrapper_selector":".gtranslate_wrapper"}</script>
     <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
+
+    </section>
+  </div>
+  <div class="gtranslate_wrapper"></div>
+  <script>
+    // Set default language settings
+    window.gtranslateSettings = {
+      "default_language": "en",
+      "detect_browser_language": false, // Disable browser language detection
+      "wrapper_selector": ".gtranslate_wrapper"
+    };
+
+    // Function to ensure English is set as default language
+    function setDefaultLanguage() {
+      if (typeof window.gt === 'object' && window.gt.setLanguage) {
+        window.gt.setLanguage('en');
+      }
+    }
+
+    // Set English as default on page load
+    window.addEventListener('load', setDefaultLanguage);
+    
+    // Set English as default after translation widget loads
+    window.addEventListener('gtranslate_loaded', setDefaultLanguage);
+
+    // Handle image upload preview
+    function handleImageUpload() {
+      const input = document.getElementById('image');
+      const preview = document.getElementById('image-preview');
+      const previewSection = document.getElementById('preview-section');
+      
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          previewSection.style.display = 'block';
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+  </script>
+   <script src="/static/script.js"></script>
+  <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
+
 </body>
 </html>
