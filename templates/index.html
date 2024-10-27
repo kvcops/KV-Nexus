@@ -82,6 +82,27 @@
             align-items: center;
         }
 
+        #scrollToTopBtn {
+            display: none; /* Initially hidden */
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary-color); /* Use your primary color */
+            color: var(--bg-color); /* Use your background color for contrast */
+            border: none;
+            border-radius: 50%;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1.2rem; /* Adjust size as needed */
+            opacity: 0.8; /* slightly transparent by default*/
+            transition: opacity 0.3s ease; /*smooth opacity change*/
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* subtle shadow */
+        }
+        
+        #scrollToTopBtn:hover {
+            opacity: 1; /* fully opaque on hover */
+        }
+
         .logo {
             font-family: 'Orbitron', sans-serif;
             font-size: 2rem;
@@ -997,4 +1018,3 @@
     </script>
 </body>
 </html>
-
