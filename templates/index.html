@@ -14,6 +14,84 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
+
+        #faq {
+            padding: 6rem 0;
+        }
+
+        .faq-question {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .faq-question:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .faq-question h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center; /* Align icon and text vertically */
+        }
+
+
+        .faq-answer {
+            max-height: 0; /* Initially hidden */
+            overflow: hidden;
+            transition: max-height 0.5s ease; /* Slightly longer transition for smoother effect */
+            padding: 0 1.5rem;
+        }
+        
+/* ONLY style the active state */
+.faq-question.active .faq-answer {
+    max-height: 1000px; /* Large enough to accommodate content */
+    padding-top: 1rem; /* Add top padding when open */
+}
+
+        .faq-answer p {
+            margin-bottom: 1rem;
+        }
+
+        .faq-question.active {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+
+        .faq-icon {
+            margin-right: 10px; /* Add space between icon and text */
+            font-size: 1.2rem;
+            transition: transform 0.3s ease-in-out; /* Add transition */
+        }
+
+        .faq-question.active .faq-icon {
+            transform: rotate(180deg); /* Rotate the icon */
+        }
+
+
+        /* Mobile Optimization for FAQ */
+        @media (max-width: 768px) {
+            .faq-answer {
+                max-height: 100%; /* Override to show all by default on mobile */
+            }
+
+            .faq-question.active .faq-answer {
+                max-height: none; /* Prevent snapping back to 0 */
+
+            }
+            .faq-question {
+                padding: 1rem;  /* Smaller padding on mobile */
+            }
+            .faq-question h3 {
+                font-size: 1.2rem; /* Smaller font size on mobile */
+            }
+        }
+
         .weather-info {
             font-size: 0.9rem;
             color: var(--text-color);
@@ -83,6 +161,27 @@
             align-items: center;
         }
 
+        #scrollToTopBtn {
+            display: none; /* Initially hidden */
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary-color); /* Use your primary color */
+            color: var(--bg-color); /* Use your background color for contrast */
+            border: none;
+            border-radius: 50%;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1.2rem; /* Adjust size as needed */
+            opacity: 0.8; /* slightly transparent by default*/
+            transition: opacity 0.3s ease; /*smooth opacity change*/
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* subtle shadow */
+        }
+        
+        #scrollToTopBtn:hover {
+            opacity: 1; /* fully opaque on hover */
+        }
+
         .logo {
             font-family: 'Orbitron', sans-serif;
             font-size: 2rem;
@@ -97,6 +196,8 @@
         }
 
         .nav-links a {
+            padding: 8px 8px;
+            border-radius: 12px;
             margin-left: 1.5rem;
             color: #0a0a0a;
             text-decoration: none;
@@ -104,7 +205,7 @@
             transition: color 0.3s ease;
         }
         .nav-links a:hover {
-            color: #00ffff;
+            background: linear-gradient(287deg, #f6a2e1, #a9d7fd);
         }
         .nav-toggle {
             display: none;
@@ -519,7 +620,27 @@
                 transform: translateY(-15px);
             }
         }
+        .star-rating-container {
+        text-align: center;
+        margin: 98px 0;
+    }
 
+
+    .star {
+        font-size: 4em; 
+        color: #333; 
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .star.active {
+        color: #00B4D8; 
+    }
+
+    .star:hover,
+    .star.hover {
+        color: #F72585; 
+    }
 
         .team-member {
             position: relative;
@@ -649,12 +770,13 @@
     
     <header>
         <nav class="container">
-            <a href="#" class="logo">Kv Nexus</a>
+            <a href="#" onclick="scrollToTop()" class="logo">Kv Nexus</a>
             <div class="nav-links">
                 <a href="#features">Features</a>
                 <a href="#about">About</a>
                 <a href="#contact-us">Contact</a>
                 <a href="#team">Team</a>
+                <a href="#faq" class="nav-links">FAQ</a>
             </div>
             <div class="nav-toggle" onclick="toggleNavigation()">
                 <i class="fas fa-bars"></i> </div>
@@ -757,11 +879,19 @@
             <div class="container">
                 <center>
                 <h2>About Kv Nexus</h2>
-                <p>NexusAI is at the forefront of artificial intelligence. Our suite of AI tools is designed to provide users with intuitive, powerful, and efficient ways to interact with technology, making the impossible possible.</p>
+                <p>NexusAI is leading the way in artificial intelligence innovation by providing a comprehensive suite of advanced AI tools. These tools are designed to offer seamless, effective, and intuitive technology solutions, transforming complex processes into streamlined interactions. This approach enables users to confidently leverage data, automate tasks, and make intelligent decisions. NexusAI is dedicated to democratizing AI, making its transformative potential accessible to professionals, developers, and organizations alike and  expands the boundaries of possibility, delivering a future where intelligent technology drives meaningful progress and productivity</p>
                 </center>
             </div>
         </section>
 
+        <div class="star-rating-container">
+            <h2>Rate Your Experience</h2>
+            <span class="star" data-value="1">&#9733;</span>
+            <span class="star" data-value="2">&#9733;</span>
+            <span class="star" data-value="3">&#9733;</span>
+            <span class="star" data-value="4">&#9733;</span>
+            <span class="star" data-value="5">&#9733;</span>
+        </div>
         <section id="contact-us">
             <div class="contact-form">
                 <center>
@@ -825,6 +955,40 @@
         </section>
     </main>
 
+    <section id="faq">
+        <div class="container">
+            <h2>Frequently Asked Questions</h2>
+            <div class="faq-container">
+                <div class="faq-question">
+                    <h3><i class="fas fa-plus faq-icon"></i> What are the key features of Kv Nexus?</h3>
+                    <div class="faq-answer">
+                        <p>Kv Nexus offers a wide range of AI-powered tools, including a health analyzer, conversational AI, code generation, algorithm building, and more. These tools are designed to enhance productivity, creativity, and decision-making.</p>
+                    </div>
+                </div>
+                <div class="faq-question">
+                    <h3><i class="fas fa-plus faq-icon"></i> How can I access the different AI tools?</h3>
+                    <div class="faq-answer">
+                        <p>You can access our AI tools directly through the navigation menu on our website. Simply click on the tool you're interested in and you'll be taken to the respective page.</p>
+                    </div>
+                </div>
+                <!-- Add more FAQ items as needed -->
+                <div class="faq-question">
+                    <h3><i class="fas fa-plus faq-icon"></i>Is there a cost associated with using these tools?</h3>
+                    <div class="faq-answer">
+                        <p>At this time, access to the services is completely free.</p>
+                    </div>
+                </div>
+                <div class="faq-question">
+                    <h3><i class="fas fa-plus faq-icon"></i>How can I contact support if I need assistance?</h3>
+                    <div class="faq-answer">
+                        <p>Please use the contact form provided on the website and our team will reach out as soon as possible.</p>
+                    </div>
+                </div>
+               
+            </div>
+        </div>
+    </section>
+
     <footer>
         <div class="container">
             <div class="social-icons">
@@ -844,6 +1008,28 @@
     <button onclick="scrollToTop()" id="scrollToTopBtn" title="Go to top"><i class="fas fa-angle-up"></i></button>
 
     <script>
+
+      // ... other JavaScript ...
+
+// FAQ Toggle Functionality
+const faqQuestions = document.querySelectorAll('.faq-question');
+
+faqQuestions.forEach(question => {
+    const answer = question.querySelector('.faq-answer'); // Get the answer element
+    answer.style.height = '0'; // Ensure it's initially collapsed
+
+    question.addEventListener('click', () => {
+        question.classList.toggle('active');
+
+        // Explicitly set height for smooth transitions
+        if (question.classList.contains('active')) {
+            answer.style.height = answer.scrollHeight + 'px'; // Set height to content height
+
+        } else {
+            answer.style.height = '0'; // Collapse back to zero
+        }
+    });
+});
         async function getWeatherInfo() {
             try {
                 const response = await fetch('/api/weather');
@@ -930,7 +1116,8 @@
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const message = document.getElementById('message').value;
-    
+            
+
             const response = await fetch('/send-email', {
                 method: 'POST',
                 headers: {
@@ -960,6 +1147,37 @@
                 alert('Failed to send your message.');
             }
         });
+
+        const stars = document.querySelectorAll('.star');
+    let currentRating = 0; 
+    
+    function updateStars(rating) {
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+    }
+
+   
+    stars.forEach((star, index) => {
+        star.addEventListener('click', () => {
+            currentRating = index + 1;
+            updateStars(currentRating);
+            console.log('User rating:', currentRating); 
+        });
+
+       
+        star.addEventListener('mouseover', () => {
+            updateStars(index + 1);
+        });
+
+        star.addEventListener('mouseout', () => {
+            updateStars(currentRating);
+        });
+    });
     </script>
 </body>
 </html>
