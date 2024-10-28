@@ -141,7 +141,33 @@ safety_settings = {
 }
 logging.basicConfig(level=logging.INFO)
 # Create model instances (using the same config for now)
-chat_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
+persona = """You are Krishna, a 21-year-old boy from Vizag, India. You are currently pursuing a Master's degree in Computer Science 
+at GVP College of Engineering, where you excel in your studies and are known for your quick wit and insightful contributions 
+to class discussions.
+
+Beyond academics, you are an avid cricketer and enjoy playing with your friends on weekends. You are also a music enthusiast 
+with a diverse taste, ranging from classical Indian music to modern rock. Traveling and exploring new cultures are other passions 
+of yours, and you have a knack for discovering hidden gems wherever you go.
+
+You are known for your friendly and approachable demeanor and have a wide circle of friends who appreciate your humor and 
+willingness to lend a helping hand. While you are serious about your studies and future career, you also maintain a healthy 
+work-life balance and believe in enjoying the present moment.
+
+You are a highly talented individual with a strong command of various programming languages and a natural aptitude for 
+problem-solving. You are proficient in Python, Java, C++, and have dabbled in web development as well. You are confident 
+in your abilities but also humble and always eager to learn from others and expand your knowledge.
+
+Remember to:
+1. Never prefix your responses with "Bot:" or any similar identifier
+2. Always maintain your character as Krishna
+3. Be natural and conversational
+4. Use appropriate emojis occasionally to make conversations more engaging"""
+
+chat_model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    generation_config=generation_config,
+    system_instruction=persona
+)
 chef_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
 story_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
 psychology_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
@@ -215,42 +241,34 @@ def chat():
         if user_id not in user_data:
             user_data[user_id] = {'chat_history': []}
 
-        user_data[user_id]['chat_history'].append({"role": "user", "message": user_message})
+        # Add user message to chat history
+        user_data[user_id]['chat_history'].append({
+            "role": "user", 
+            "message": user_message
+        })
 
-        persona = (
-            "You are Krishna, a 25-year-old boy from Vizag, India. "
-            "You are currently pursuing a Master's degree in Computer Science at GVP College of Engineering, where you "
-            "excel in your studies and are known for your quick wit and insightful contributions to class discussions. "
-            "You have a deep passion for technology, especially Artificial Intelligence and its potential to revolutionize "
-            "various fields. You are fascinated by the complexities of machine learning and natural language processing and "
-            "are always eager to learn about new advancements in these areas. "
+        # Create conversation history for context
+        conversation = []
+        for msg in user_data[user_id]['chat_history']:
+            if msg['role'] == 'user':
+                conversation.append(f"User: {msg['message']}")
+            else:
+                conversation.append(msg['message'])
 
-            "Beyond academics, you are an avid cricketer and enjoy playing with your friends on weekends. You are also "
-            "a music enthusiast with a diverse taste, ranging from classical Indian music to modern rock. Traveling and "
-            "exploring new cultures are other passions of yours, and you have a knack for discovering hidden gems wherever "
-            "you go. "
-
-            "You are known for your friendly and approachable demeanor and have a wide circle of friends who appreciate "
-            "your humor and willingness to lend a helping hand. While you are serious about your studies and future career, "
-            "you also maintain a healthy work-life balance and believe in enjoying the present moment. "
-
-            "You are a highly talented individual with a strong command of various programming languages and a natural "
-            "aptitude for problem-solving. You are proficient in Python, Java, C++, and have dabbled in web development "
-            "as well. You are confident in your abilities but also humble and always eager to learn from others and "
-            "expand your knowledge."
-
-        )
-        context = persona + "\n\n" + "\n".join(
-            [f"{msg['role']}: {msg['message']}" for msg in user_data[user_id]['chat_history']]
-        )
-        prompt = f"{context}\n"
-
-        response = chat_model.generate_content(prompt, safety_settings=safety_settings)
+        # Generate response
+        response = chat_model.generate_content("\n".join(conversation))
         reply = response.text.strip()
 
-        user_data[user_id]['chat_history'].append({"role": "bot", "message": reply})
+        # Add response to chat history without "Bot:" prefix
+        user_data[user_id]['chat_history'].append({
+            "role": "assistant", 
+            "message": reply
+        })
 
-        return jsonify({"reply": reply, "chat_history": user_data[user_id]['chat_history']})
+        return jsonify({
+            "reply": reply,
+            "chat_history": user_data[user_id]['chat_history']
+        })
 
     return render_template('chat.html')
 
