@@ -471,32 +471,32 @@ def analyze():
 
             prompt = f"""As an AI medical assistant, analyze the following information about a patient:
 
-            Gender: {gender}
-            Symptoms: {symptoms}
-            Affected Body Part: {body_part}
-            Layer Affected: {layer}
+Gender: {gender}
+Symptoms: {symptoms}
+Affected Body Part: {body_part}
+Layer Affected: {layer}
 
-            Based on this information, provide a detailed analysis considering the following:
+Based on this information, provide a detailed analysis considering the following:
 
-            1. Possible conditions: List and briefly describe potential conditions that match the symptoms and affected area.
-            2. Risk factors: Discuss any risk factors associated with the gender or affected body part.
-            3. Recommended next steps: Suggest appropriate medical tests or examinations that could help diagnose the condition.
-            4. General advice: Offer some general health advice related to the symptoms or affected area.
+1. Possible conditions: List and briefly describe potential conditions that match the symptoms and affected area.
+2. Risk factors: Discuss any risk factors associated with the gender or affected body part.
+3. Recommended next steps: Suggest appropriate medical tests or examinations that could help diagnose the condition.
+4. General advice: Offer some general health advice related to the symptoms or affected area.
 
-            Important: This is not a diagnosis. Advise the patient to consult with a healthcare professional for an accurate diagnosis and treatment plan.
+Important: This is not a diagnosis. Advise the patient to consult with a healthcare professional for an accurate diagnosis and treatment plan.
 
-            Format the response using the following structure:
-            <section>
-            <h2>Section Title</h2>
-            <p>Paragraph text</p>
-            <ul>
-            <li>List item 1</li>
-            <li>List item 2</li>
-            </ul>
-            </section>
+Format the response using the following structure:
+<section>
+<h2>Section Title</h2>
+<p>Paragraph text</p>
+<ul>
+<li>List item 1</li>
+<li>List item 2</li>
+</ul>
+</section>
 
-            Use <strong> for emphasis on important points.
-            """
+Use <strong> for emphasis on important points.
+"""
 
             if image:
                 img = Image.open(BytesIO(image.read()))
@@ -506,18 +506,18 @@ def analyze():
                 image_base64 = base64.b64encode(img_byte_arr).decode('utf-8')
 
                 prompt += f"""
-                <section>
-                <h2>Image Analysis</h2>
-                <p>Analyze the provided image in relation to the patient's symptoms and affected body part. Consider:</p>
-                <ul>
-                <li>Any visible symptoms or abnormalities</li>
-                <li>Correlation between the image and the reported symptoms</li>
-                <li>Additional insights the image might provide about the patient's condition</li>
-                </ul>
-                </section>
+<section>
+<h2>Image Analysis</h2>
+<p>Analyze the provided image in relation to the patient's symptoms and affected body part. Consider:</p>
+<ul>
+<li>Any visible symptoms or abnormalities</li>
+<li>Correlation between the image and the reported symptoms</li>
+<li>Additional insights the image might provide about the patient's condition</li>
+</ul>
+</section>
 
-                Image data: data:image/png;base64,{image_base64}
-                """
+Image data: data:image/png;base64,{image_base64}
+"""
 
                 response = model_vision.generate_content([prompt, Image.open(BytesIO(base64.b64decode(image_base64)))], safety_settings=safety_settings)
             else:
