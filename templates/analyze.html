@@ -4,12 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Health Insight Analyzer</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
   <style>
     :root {
-      --primary-color: #4a90e2;
-      --secondary-color: #f39c12;
+      --primary-color: #007bff;
+      --secondary-color: #6c757d;
+      --accent-color: #17a2b8;
+      --background-color: #f8f9fa;
     }
 
     * {
@@ -21,82 +23,113 @@
     body {
       font-family: 'Poppins', sans-serif;
       line-height: 1.6;
-      padding-bottom: 80px; /* Add padding to prevent overlap with translation widget */
+      background-color: var(--background-color);
+      padding-bottom: 80px;
     }
 
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 60px 20px;
     }
 
     header {
+      margin-bottom: 40px;
       text-align: center;
-      margin-bottom: 30px;
+      animation: fadeInDown 0.5s ease;
     }
 
     h1 {
       color: var(--primary-color);
+      font-size: 48px;
+      font-weight: 700;
       margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: var(--secondary-color);
+      font-size: 18px;
     }
 
     .input-section {
       background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      margin-bottom: 20px;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      margin-bottom: 40px;
+      animation: fadeInUp 0.5s ease;
     }
 
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 30px;
     }
 
     label {
       display: block;
-      margin-bottom: 5px;
-      color: #333;
+      margin-bottom: 10px;
+      color: var(--secondary-color);
+      font-weight: 500;
     }
 
     input, select {
       width: 100%;
-      padding: 10px;
+      padding: 14px 20px;
       border: 1px solid #ddd;
-      border-radius: 4px;
+      border-radius: 8px;
       font-size: 16px;
+      background-color: #f8f8f8;
+      transition: border-color 0.3s ease;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary-color);
     }
 
     button {
       background-color: var(--primary-color);
       color: white;
-      padding: 12px 24px;
+      padding: 16px 32px;
       border: none;
-      border-radius: 4px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 18px;
+      font-weight: 500;
       width: 100%;
-      margin-bottom: 20px;
+      margin-bottom: 30px;
+      transition: background-color 0.3s ease;
+      animation: fadeInUp 0.5s ease;
     }
 
     button:hover {
-      background-color: #357abd;
+      background-color: #0056b3;
     }
 
     .preview-section {
-      margin: 20px 0;
+      margin: 40px 0;
+      animation: fadeInUp 0.5s ease;
     }
 
     #image-preview {
       max-width: 100%;
       height: auto;
-      border-radius: 8px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     }
 
     .result-section {
       background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      animation: fadeInUp 0.5s ease;
+    }
+
+    .result-section h2 {
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      font-size: 28px;
+      font-weight: 600;
     }
 
     /* Loading Animation Styles */
@@ -111,13 +144,14 @@
       z-index: 9999;
       justify-content: center;
       align-items: center;
+      animation: fadeIn 0.5s ease;
     }
 
     .loader {
       width: 100px;
       height: 100px;
-      border: 5px solid var(--primary-color);
-      border-top: 5px solid var(--secondary-color);
+      border: 6px solid var(--primary-color);
+      border-top: 6px solid var(--accent-color);
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
@@ -133,6 +167,21 @@
       100% { transform: rotate(360deg); }
     }
 
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes fadeInDown {
+      0% { transform: translateY(-20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes fadeInUp {
+      0% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
     /* Translation widget positioning */
     .gtranslate_wrapper {
       position: fixed;
@@ -144,16 +193,20 @@
     /* Responsive design */
     @media (max-width: 768px) {
       .container {
-        padding: 10px;
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 36px;
       }
 
       .input-section,
       .result-section {
-        padding: 15px;
+        padding: 30px;
       }
 
       button {
-        margin-bottom: 40px; /* Increase bottom margin on mobile */
+        margin-bottom: 60px;
       }
     }
   </style>
@@ -166,6 +219,7 @@
   <div class="container">
     <header>
       <h1><i class="fas fa-heartbeat"></i> Health Insight Analyzer</h1>
+      <div class="subtitle">Get personalized insights into your health</div>
     </header>
     <main>
       <section class="input-section">
@@ -211,18 +265,6 @@
     <section class="result-section" id="result-section">
       <h2><i class="fas fa-clipboard-list"></i> Analysis Results</h2>
       <div id="response"></div>
-
-    </script>
-    
-    
-      </div>
-    
-  </div>
-  <script src="/static/script.js"></script>
-  <div class="gtranslate_wrapper"></div>
-    <script>window.gtranslateSettings = {"default_language":"en","detect_browser_language":true,"wrapper_selector":".gtranslate_wrapper"}</script>
-    <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
-
     </section>
   </div>
   <div class="gtranslate_wrapper"></div>
@@ -230,7 +272,7 @@
     // Set default language settings
     window.gtranslateSettings = {
       "default_language": "en",
-      "detect_browser_language": false, // Disable browser language detection
+      "detect_browser_language": false,
       "wrapper_selector": ".gtranslate_wrapper"
     };
 
@@ -265,8 +307,7 @@
       }
     }
   </script>
-   <script src="/static/script.js"></script>
+  <script src="/static/script.js"></script>
   <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
-
 </body>
 </html>
