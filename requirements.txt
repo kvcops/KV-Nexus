@@ -16,3 +16,4 @@ beautifulsoup4==4.12.2
 google-api-core==2.11.1
 tenacity==9.0.0
 Flask-Cors==5.0.0
+gevent==23.10.0
