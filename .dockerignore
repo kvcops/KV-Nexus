@@ -9,3 +9,5 @@ venv/
 *.log
 .git
 .gitignore
+.python-version
+runtime.txt
