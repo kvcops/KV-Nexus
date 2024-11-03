@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script src="https://unpkg.com/typewriter-effect@latest/dist/core.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script> <style>
     <style>
         body {
             font-family: 'Montserrat', sans-serif;
@@ -87,6 +88,27 @@
                 height: 12rem;
             }
         }
+
+         #summary {
+            white-space: pre-wrap;
+        }
+        #progress-container { /* Style for the container */
+            width: 100%;
+            background-color: #ddd;
+            border-radius: 5px;
+            overflow: hidden; /* Keep the progress bar inside */
+            margin-top: 10px; /* Add some spacing */
+        }
+        #progress-bar {  /* Style for the actual progress bar */
+            height: 20px;
+            background-color: #4CAF50;
+            width: 0%; /* Initial width */
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            border-radius: 5px; /* Rounded corners for the bar */
+            transition: width 0.5s ease-in-out; /* Smooth transition */
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4"> 
@@ -110,72 +132,29 @@
             </div>
 
             <!-- Upload Form -->
-            <form id="upload-form" class="space-y-6" enctype="multipart/form-data">
-                <!-- File Upload -->
-                <div class="flex items-center justify-center w-full" data-aos="fade-up">
-                    <label for="file" class="file-upload-label relative flex flex-col items-center justify-center w-full h-48 sm:h-64 border-4 border-dashed rounded-2xl cursor-pointer bg-white hover:bg-gray-50 transition duration-500 ease-in-out transform hover:scale-105 glass-effect">
-                        <div class="flex flex-col items-center justify-center">
-                            <i class="fas fa-cloud-upload-alt text-5xl sm:text-7xl text-blue-500 mb-4 animate-bounce"></i>
-                            <p class="mb-2 text-base sm:text-lg text-gray-700 text-center">
-                                <span class="font-semibold">Click to upload</span>
-                                or drag and drop
-                            </p>
-                            <p class="text-sm text-gray-500">
-                                PDF files only (Max 5MB)
-                            </p>
-                        </div>
-                        <input id="file" name="file" type="file" class="absolute inset-0 opacity-0 cursor-pointer" accept=".pdf"/>
-                    </label>
-                </div>
+            <form id="upload-form" class="space-y-6">
+                <input type="file" id="pdf-file" accept=".pdf">
 
-                <!-- File Preview -->
-                <div id="file-preview" class="hidden bg-gray-50 p-4 rounded-lg border border-gray-200 glass-effect" data-aos="fade-up">
-                    <h3 class="font-semibold text-gray-700 mb-2">
-                        Selected File:
-                    </h3>
-                    <div class="flex items-center">
-                        <i class="far fa-file-pdf text-red-500 text-2xl mr-2"></i>
-                        <span id="file-name" class="text-gray-800"></span>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <button type="submit" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 px-6 rounded-xl font-bold shadow-lg hover:from-purple-600 hover:to-pink-600 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-200 hover-effect" data-aos="zoom-in-up">
-                    Summarize PDF
-                </button>
+                <div id="progress-container" class="hidden">  </div>
+                <div id="progress-bar" style="width: 0%;"></div> </div>
+                <div id="progress-text"></div>
+                <button type="submit" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 ...">Summarize PDF</button>
             </form>
 
             <!-- Loading Indicator -->
             <div id="loading" class="hidden mt-8 flex flex-col items-center" data-aos="fade-up">
-                <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16 mb-4"></div>
-                <p class="text-lg font-medium text-gray-700 mb-2">
-                    Processing your PDF, please wait...
-                </p>
-                <p class="text-sm text-gray-600">
-                    Processing large PDFs may take several minutes
-                </p>
-                <p id="progress-text" class="text-sm text-gray-600 mt-2"></p>
-            </div>
+                <div class="loader ..."></div>
+                <p id="loading-text" class="text-lg ..."></p> <p class="text-sm ..."></p> </div>
 
             <!-- Result Section -->
-            <div id="result" class="hidden mt-8 animate-fade-in" data-aos="fade-up">
-                <h2 class="text-3xl font-semibold mb-4 text-gray-800">
-                    Your Summary is Ready!
-                </h2>
-                <div class="mb-4">
-                    <p class="text-lg text-gray-700">
-                        Total pages processed: <span id="total-pages" class="font-semibold">0</span>
-                    </p>
-                    <p class="text-lg text-gray-700">
-                        Processing time: <span id="processing-time" class="font-semibold">0</span> seconds
-                    </p>
-                </div>
-                <button id="download-button" class="inline-flex items-center bg-green-500 text-white py-3 px-6 rounded-xl font-semibold shadow-lg hover:bg-green-600 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-200 hover-effect">
-                    <i class="fas fa-download mr-2"></i> Download Summary
-                </button>
+           <div id="result" class="hidden mt-8 animate-fade-in" data-aos="fade-up">
+                <h2 class="text-3xl ...">Your Summary is Ready!</h2>
+                <div id="summary"></div>
+
             </div>
         </div>
     </div>
+
     <!-- AOS JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
     <!-- Initialize AOS -->
@@ -186,15 +165,13 @@
         });
     </script>
     <script>
-        const form = document.getElementById('upload-form');
-        const fileUpload = document.getElementById('file');
-        const filePreview = document.getElementById('file-preview');
-        const fileName = document.getElementById('file-name');
-        const loading = document.getElementById('loading');
-        const result = document.getElementById('result');
-        const downloadButton = document.getElementById('download-button');
-        const quoteElement = document.getElementById('quote');
-        const progressText = document.getElementById('progress-text');
+      const form = document.getElementById('upload-form');
+const pdfFile = document.getElementById('pdf-file');
+const summaryDiv = document.getElementById('summary');
+const progressBar = document.getElementById('progress-bar');
+const progressContainer = document.getElementById('progress-container');
+const progressText = document.getElementById('progress-text');
+const loading = document.getElementById('loading');
 
         // Random Fonts and Colors
         const fonts = [
@@ -271,39 +248,91 @@
         });
 
         // Form Submission
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-        
-            // Show loading
-            form.classList.add('hidden');
-            loading.classList.remove('hidden');
-            progressText.textContent = 'Uploading file...';
-        
-            try {
-                // Upload the file and get pdf_id
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-        
-                if (response.ok) {
-                    const data = await response.json();
-                    const pdfId = data.pdf_id;
-    
-                    // Start processing the PDF
-                    progressText.textContent = 'Processing your PDF...';
-                    await processPdf(pdfId);
-                } else {
-                    throw new Error('Upload failed');
+       form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const file = pdfFile.files[0];
+    if (!file) {
+        alert("Please select a PDF file.");
+        return;
+    }
+
+    // Reset display
+    summaryDiv.innerHTML = "";
+    form.classList.add('hidden');
+    loading.classList.remove('hidden');
+    document.getElementById('loading-text').textContent = "Loading and processing PDF...";
+
+
+    try {
+        const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+        let fullSummary = "";
+        progressContainer.classList.remove('hidden');
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            const extractedText = textContent.items.map(item => item.str).join(' ');
+
+            const serverResponse = await fetch('/summarize_text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: extractedText })
+            });
+
+            if (!serverResponse.ok) {
+                let errorMessage = `Server error (Page ${pageNum}): ${serverResponse.status}`;
+                try {
+                    const errorData = await serverResponse.json();
+                    if (errorData && errorData.error) {
+                        errorMessage += ` - ${errorData.error}`;
+                    }
+                } catch (jsonError) {
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again or upload a smaller PDF file.');
-                loading.classList.add('hidden');
-                form.classList.remove('hidden');
+                throw new Error(errorMessage);
             }
-        });
+
+
+            const pageSummary = await serverResponse.text();
+            fullSummary += `# Page ${pageNum}\n${pageSummary}\n\n`;
+
+            const percentComplete = Math.round((pageNum / pdf.numPages) * 100);
+            progressBar.style.width = percentComplete + '%';
+            progressText.textContent = `Processing page ${pageNum} of ${pdf.numPages}... (${percentComplete}%)`;
+
+
+        }
+        summaryDiv.innerHTML = `<pre>${fullSummary}</pre>`;
+        progressText.textContent = "Processing Complete";
+
+        // Add download link
+        const downloadLink = document.createElement('a');
+        const blob = new Blob([fullSummary], { type: 'text/plain' }); // Or application/vnd.openxmlformats-officedocument.wordprocessingml.document for .docx
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = 'summary.txt'; // Or summary.docx
+        downloadLink.textContent = 'Download Summary';
+        summaryDiv.appendChild(downloadLink);
+
+
+        // Show result section
+        loading.classList.add('hidden');
+        result.classList.remove('hidden');
+
+        triggerConfetti(); // Trigger confetti after successful summary
+
+
+
+
+    } catch (error) {
+        console.error("Error:", error);
+        summaryDiv.innerHTML = `An error occurred during processing: ${error.message}`;
+        progressText.textContent = "Error!";
+
+        // Hide loading and show the form again
+        loading.classList.add('hidden');
+        form.classList.remove('hidden');
+    }
+});
         
         async function processingLoop(pdfId) {
             try {
