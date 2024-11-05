@@ -1,38 +1,37 @@
 from flask import Flask, render_template, request, jsonify, send_file
-import google.generativeai as genai
-from dotenv import load_dotenv
 import os
 from werkzeug.utils import secure_filename
 from PIL import Image
-import PIL
 import io
-from io import BytesIO
 import logging
-from langdetect import detect
 import requests
-from requests import get
-from google.generativeai.types import GenerationConfig 
-from markdown import markdown
+from dotenv import load_dotenv
+import google.generativeai as genai
 from google.generativeai.types import GenerationConfig, HarmCategory, HarmBlockThreshold
-import re
-import json
+from markdown import markdown
 from mailjet_rest import Client
 from pdf2image import convert_from_bytes
 from docx import Document
-from docx.shared import Inches
-import tempfile
-import PyPDF2
-import base64
-from docx import Document
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from docx.enum.style import WD_STYLE_TYPE
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import RGBColor
 import fitz  # PyMuPDF
-import markdown
 from bs4 import BeautifulSoup, NavigableString
+import firebase_admin
+from firebase_admin import credentials, firestore, storage
+import PyPDF2
+import base64
+import tempfile
+from threading import Lock
+from functools import wraps
+import tenacity
+import re
+import json
+import uuid
+import time
 
 # Firebase imports
 import firebase_admin
@@ -271,7 +270,7 @@ def chat():
         })
 
     return render_template('chat.html')
-
+import PIL
 
 @app.route('/chef', methods=['GET', 'POST'])
 def chef():
@@ -455,8 +454,7 @@ def algorithm_generation():
     return render_template('algorithm_generation.html')
 
 
-import base64
-from PIL import Image
+
 from io import BytesIO
 
 @app.route('/analyze', methods=['GET', 'POST'])
@@ -663,9 +661,6 @@ def send_email():
 
 #docuement summarize 
 
-import time
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-import google.api_core.exceptions
 import threading
 
 # Token bucket for rate limiting
