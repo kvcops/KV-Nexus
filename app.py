@@ -22,12 +22,12 @@ import fitz  # PyMuPDF
 from bs4 import BeautifulSoup, NavigableString
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
-import PyPDF2
+
 import base64
 import tempfile
 from threading import Lock
 from functools import wraps
-import tenacity
+
 import re
 import json
 import uuid
@@ -57,7 +57,7 @@ import uuid
 import base64
 from threading import Lock
 from functools import wraps
-import tenacity
+
 app = Flask(__name__)
 # Load environment variables
 load_dotenv()
