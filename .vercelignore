@@ -1,0 +1,12 @@
+# Exclude all files
+*
+
+# Include essential files and directories
+!app.py
+!requirements.txt
+!templates/
+!static/
+!*.html
+!*.css
+!*.js
+!.env
