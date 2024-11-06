@@ -15,51 +15,34 @@ function handleImageUpload() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  const messagesContainer = document.getElementById('messages-container');
-  const userInput = document.getElementById('user-input');
-  const sendButton = document.getElementById('send-button');
-  const themeToggleButton = document.getElementById('theme-toggle-button');
-
-  // Consolidated function to append messages
-  function appendMessage(content, sender) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message', sender);
-    messageElement.textContent = content;
-    messagesContainer.appendChild(messageElement);
-    smoothScrollToBottom();
-  }
-
-  // Smooth scrolling function
-  function smoothScrollToBottom() {
-    messagesContainer.scrollTo({
-      top: messagesContainer.scrollHeight,
-      behavior: 'smooth'
-    });
-  }
-
-  // Event handler for sending a message
-  function handleSendMessage() {
-    const message = userInput.value.trim();
-    if (message) {
-      appendMessage(message, 'user');
-      userInput.value = ''; // Clear input after sending
-      // Logic for bot response goes here, e.g., appendMessage("Hello, I'm a bot!", 'bot');
+document.getElementById('health-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  const loaderContainer = document.getElementById('loader-container');
+  
+  // Show loading animation
+  loaderContainer.style.display = 'flex';
+  
+  fetch('/analyze', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.error) {
+      document.getElementById('response').innerHTML = `<p class="error">${data.error}</p>`;
+    } else {
+      document.getElementById('response').innerHTML = data.analysis;
     }
-  }
-
-  // Event listener for send button
-  sendButton.addEventListener('click', handleSendMessage);
-
-  // Event listener for Enter key to send message
-  userInput.addEventListener('keypress', function(event) {
-    if (event.key === 'Enter') {
-      handleSendMessage();
-    }
-  });
-
-  // Theme toggle functionality
-  themeToggleButton.addEventListener('click', function() {
-    document.body.classList.toggle('dark-theme');
+    document.getElementById('result-section').style.display = 'block';
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    document.getElementById('response').innerHTML = '<p class="error">An error occurred. Please try again.</p>';
+  })
+  .finally(() => {
+    // Hide loading animation
+    loaderContainer.style.display = 'none';
   });
 });
