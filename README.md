@@ -46,13 +46,9 @@ Getting started with GGSOC EXT 2024 is easy! Follow these steps to jump right in
  4.**Start Contributing**<br>
 
 ## 🛠 Installation and Usage
-To set up the project locally, follow these steps:
-	@@ -80,15 +76,9 @@ npm run dev
-Once both the frontend and backend are set up, the project will be accessible on the defined local port.
+To set up the project locally, follow our guide [Project-Guide.md](Project-Guide.md).
 
-
-
-
+It guides you to setup the project and run it locally.
 
 ## 🔄 Submitting a Pull Request
 
