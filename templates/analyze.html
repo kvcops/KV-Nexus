@@ -8,12 +8,10 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
   <style>
     :root {
-      --primary-color: #ff007f; /* Gradient accent color */
-      --secondary-color: #f2f2f2;
-      --background-gradient: linear-gradient(135deg, #6a11cb, #2575fc); /* Purple to Blue gradient */
-      --highlight-gradient: linear-gradient(135deg, #ff007f, #ff007f);
-      --shadow-color: rgba(0, 0, 0, 0.15);
-      --input-hover-bg: #d0eaff; /* Soft blue hover for inputs */
+      --primary-color: #007bff;
+      --secondary-color: #6c757d;
+      --accent-color: #17a2b8;
+      --background-color: #f8f9fa;
     }
 
     * {
@@ -25,75 +23,51 @@
     body {
       font-family: 'Poppins', sans-serif;
       line-height: 1.6;
-      background: var(--background-gradient);
+      background-color: var(--background-color);
       padding-bottom: 80px;
-      color: #fff;
     }
 
     .container {
-      max-width: 1000px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 60px 20px;
     }
 
     header {
+      margin-bottom: 40px;
       text-align: center;
-      margin-bottom: 60px;
-      animation: fadeInDown 1s ease;
+      animation: fadeInDown 0.5s ease;
     }
 
     h1 {
-      color: white;
-      font-size: 100px;
+      color: var(--primary-color);
+      font-size: 48px;
       font-weight: 700;
       margin-bottom: 10px;
-      overflow: hidden;
-      white-space: nowrap;
-      display: inline-block;
-      width: 0;
-      animation: typing 6s steps(50) 1s infinite, blink 0.75s step-end infinite;
     }
 
     .subtitle {
       color: var(--secondary-color);
-      font-size: 20px;
-      margin-bottom: 30px;
-      opacity: 0;
-      animation: fadeInUp 2s ease-out forwards;
-    }
-
-    .typing-effect {
-      display: inline-block;
-      font-size: 60px;
-      color: var(--primary-color);
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      border-right: 7px solid var(--primary-color);
-      width: 0;
-      animation: typing 4s steps(40) 1s forwards, blink 0.75s step-end infinite;
+      font-size: 18px;
     }
 
     .input-section {
-      background: #ffffff;
+      background: #fff;
       padding: 40px;
       border-radius: 12px;
-      box-shadow: 0 4px 30px var(--shadow-color);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
       margin-bottom: 40px;
-      animation: fadeInUp 1s ease-out;
-      position: relative;
-      z-index: 1;
+      animation: fadeInUp 0.5s ease;
     }
 
     .form-group {
       margin-bottom: 30px;
-      transition: all 0.3s ease;
     }
 
     label {
       display: block;
       margin-bottom: 10px;
-      color: var(--primary-color);
+      color: var(--secondary-color);
       font-weight: 500;
     }
 
@@ -104,13 +78,12 @@
       border-radius: 8px;
       font-size: 16px;
       background-color: #f8f8f8;
-      transition: background-color 0.3s ease, border-color 0.3s ease;
+      transition: border-color 0.3s ease;
     }
 
     input:focus, select:focus {
       outline: none;
       border-color: var(--primary-color);
-      background-color: var(--input-hover-bg);
     }
 
     button {
@@ -121,21 +94,20 @@
       border-radius: 8px;
       cursor: pointer;
       font-size: 18px;
-      font-weight: 600;
+      font-weight: 500;
       width: 100%;
-      transition: all 0.3s ease;
-      animation: fadeInUp 0.5s ease-in-out;
+      margin-bottom: 30px;
+      transition: background-color 0.3s ease;
+      animation: fadeInUp 0.5s ease;
     }
 
     button:hover {
-      background-color: #e60064;
-      transform: scale(1.05);
+      background-color: #0056b3;
     }
 
     .preview-section {
       margin: 40px 0;
-      opacity: 0;
-      animation: fadeInUp 1.5s ease-out forwards;
+      animation: fadeInUp 0.5s ease;
     }
 
     #image-preview {
@@ -163,6 +135,7 @@
       font-weight: 600;
     }
 
+    /* Loading Animation Styles */
     .loader-container {
       display: none;
       position: fixed;
@@ -181,7 +154,7 @@
       width: 100px;
       height: 100px;
       border: 6px solid var(--primary-color);
-      border-top: 6px solid #ff8000;
+      border-top: 6px solid var(--accent-color);
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
@@ -210,15 +183,6 @@
     @keyframes fadeInUp {
       0% { transform: translateY(20px); opacity: 0; }
       100% { transform: translateY(0); opacity: 1; }
-    }
-
-    @keyframes typing {
-      0% { width: 0; }
-      100% { width: 100%; }
-    }
-
-    @keyframes blink {
-      50% { border-color: transparent; }
     }
 
     /* Translation widget positioning */
@@ -257,7 +221,7 @@
   </div>
   <div class="container">
     <header>
-      <h1 class="typing-effect"><i class="fas fa-heartbeat"></i> Health Insight Analyzer</h1>
+      <h1><i class="fas fa-heartbeat"></i> Health Insight Analyzer</h1>
       <div class="subtitle">Get personalized insights into your health</div>
     </header>
     <main>
@@ -274,10 +238,10 @@
           </div>
           <div class="form-group">
             <label for="symptoms"><i class="fas fa-thermometer"></i> Symptoms</label>
-            <input type="text" id="symptoms" name="symptoms" placeholder="Describe your symptoms" required>
+            <input type="text" id="symptoms" name="symptoms" placeholder="E.g., headache, fever, fatigue" required>
           </div>
           <div class="form-group">
-            <label for="body-part"><i class="fas fa-user-md"></i> Body Part Affected</label>
+            <label for="body-part"><i class="fas fa-child"></i> Affected Body Part</label>
             <input type="text" id="body-part" name="body-part" placeholder="E.g., head, chest, arm" required>
           </div>
           <div class="form-group">
@@ -355,31 +319,30 @@
     if (typeof window.gt === 'object' && window.gt.setLanguage) {
       window.gt.setLanguage('en');
     }
-  }
 
-  // Set English as default on page load
-  window.addEventListener('load', setDefaultLanguage);
-  
-  // Set English as default after translation widget loads
-  window.addEventListener('gtranslate_loaded', setDefaultLanguage);
-
-  // Handle image upload preview
-  function handleImageUpload() {
-    const input = document.getElementById('image');
-    const preview = document.getElementById('image-preview');
-    const previewSection = document.getElementById('preview-section');
+    // Set English as default on page load
+    window.addEventListener('load', setDefaultLanguage);
     
-    if (input.files && input.files[0]) {
-      const reader = new FileReader();
+    // Set English as default after translation widget loads
+    window.addEventListener('gtranslate_loaded', setDefaultLanguage);
+
+    // Handle image upload preview
+    function handleImageUpload() {
+      const input = document.getElementById('image');
+      const preview = document.getElementById('image-preview');
+      const previewSection = document.getElementById('preview-section');
       
-      reader.onload = function(e) {
-        preview.src = e.target.result;
-        previewSection.style.display = 'block';
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          previewSection.style.display = 'block';
+        }
+        
+        reader.readAsDataURL(input.files[0]);
       }
-      
-      reader.readAsDataURL(input.files[0]);
     }
-  }
   </script>
   <script src="/static/script.js"></script>
   <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
