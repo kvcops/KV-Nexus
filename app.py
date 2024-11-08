@@ -48,6 +48,7 @@ import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 import google.api_core.exceptions
+import markdown
 
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
