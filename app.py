@@ -57,7 +57,7 @@ import uuid
 import base64
 from threading import Lock
 from functools import wraps
-
+from markdown import markdown
 app = Flask(__name__)
 # Load environment variables
 load_dotenv()
