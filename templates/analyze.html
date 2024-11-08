@@ -121,11 +121,8 @@
       background: #fff;
       padding: 40px;
       border-radius: 12px;
-      box-shadow: 0 4px 30px var(--shadow-color);
-      animation: fadeInUp 1s ease-out;
-      opacity: 0;
-      animation-delay: 1.5s;
-      color: black;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      animation: fadeInUp 0.5s ease;
     }
 
     .result-section h2 {
@@ -272,52 +269,18 @@
   </div>
   <div class="gtranslate_wrapper"></div>
   <script>
-    document.getElementById('health-form').addEventListener('submit', function(event) {
-    event.preventDefault(); // Prevents traditional form submission
+    // Set default language settings
+    window.gtranslateSettings = {
+      "default_language": "en",
+      "detect_browser_language": false,
+      "wrapper_selector": ".gtranslate_wrapper"
+    };
 
-    // Show the loader while processing
-    const loader = document.getElementById('loader-container');
-    loader.style.display = 'flex';
-
-    // Collect form data
-    const gender = document.getElementById('gender').value;
-    const symptoms = document.getElementById('symptoms').value;
-    const bodyPart = document.getElementById('body-part').value;
-    const layer = document.getElementById('layer').value;
-
-    // Simulate analysis process with a timeout
-    setTimeout(() => {
-      loader.style.display = 'none'; // Hide the loader once "processing" is done
-
-      // Generate a sample result (for testing purposes)
-      const result = `
-        <p><strong>Gender:</strong> ${gender}</p>
-        <p><strong>Symptoms:</strong> ${symptoms}</p>
-        <p><strong>Body Part Affected:</strong> ${bodyPart}</p>
-        <p><strong>Layer Affected:</strong> ${layer}</p>
-        <p><strong>Analysis:</strong> Based on the symptoms and affected area, consult a healthcare provider for further insights.</p>
-      `;
-
-      // Display the result section
-      const resultSection = document.getElementById('result-section');
-      resultSection.style.opacity = '1';
-      resultSection.style.display = 'block'; // Ensure display is set to block
-
-      // Populate the response with the generated result
-      document.getElementById('response').innerHTML = result;
-    }, 2000); // Adjust timing as needed
-  });
-  // Set default language settings
-  window.gtranslateSettings = {
-    "default_language": "en",
-    "detect_browser_language": false,
-    "wrapper_selector": ".gtranslate_wrapper"
-  };
-
-  // Function to ensure English is set as default language
-  function setDefaultLanguage() {
-    if (typeof window.gt === 'object' && window.gt.setLanguage) {
-      window.gt.setLanguage('en');
+    // Function to ensure English is set as default language
+    function setDefaultLanguage() {
+      if (typeof window.gt === 'object' && window.gt.setLanguage) {
+        window.gt.setLanguage('en');
+      }
     }
 
     // Set English as default on page load
