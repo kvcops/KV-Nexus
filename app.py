@@ -8,7 +8,7 @@ import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig, HarmCategory, HarmBlockThreshold
-from markdown import markdown
+
 from mailjet_rest import Client
 from pdf2image import convert_from_bytes
 from docx import Document
@@ -58,7 +58,7 @@ import uuid
 import base64
 from threading import Lock
 from functools import wraps
-from markdown import markdown
+
 app = Flask(__name__)
 # Load environment variables
 load_dotenv()
