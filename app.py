@@ -188,8 +188,8 @@ def format_response(response_text):
 def index():
     return render_template('index.html')
 
-@app.route('/contributors')
-def index():
+@app.route('/contributors',methods=['GET', 'POST'])
+def contributions ():
     return render_template('contributors.html')
 
 
