@@ -188,6 +188,10 @@ def format_response(response_text):
 def index():
     return render_template('index.html')
 
+@app.route('/')
+def index():
+    return render_template('contributors.html')
+
 
 @app.route('/api/weather')
 def get_weather():
