@@ -188,6 +188,11 @@ def format_response(response_text):
 def index():
     return render_template('index.html')
 
+"""Adding 404 error handler page """
+@app.errorhandler(404)
+def error404(e):
+    return render_template("error_404.html")
+
 
 @app.route('/api/weather')
 def get_weather():
