@@ -1396,5 +1396,75 @@ faqQuestions.forEach(question => {
         }
     });
     </script>
+     <script>
+        document.getElementById('contactForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const message = document.getElementById('message').value.trim();
+        const confirmationMessage = document.getElementById("confirmationMessage");
+        const form = document.getElementById("contactForm");
+        const emailError = document.getElementById("emailError");
+
+        // Email Validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            emailError.textContent = 'Please enter a valid email address.';
+            emailError.classList.add('show');
+            return;
+        } else {
+            emailError.textContent = '';
+            emailError.classList.remove('show');
+        }
+
+        try {
+            const response = await fetch('/send-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, email, message }),
+            });
+
+            if (response.ok) {
+                // Hide the form and show the confirmation message with animation
+                form.style.transition = "opacity 0.5s ease";
+                form.style.opacity = 0;
+
+                setTimeout(function() {
+                    form.classList.add("hidden");
+                    confirmationMessage.classList.remove("hidden");
+                    confirmationMessage.classList.add("fadeIn");
+
+                    setTimeout(function() {
+                        confirmationMessage.classList.add("bounce");
+                    }, 500); // Start bounce animation after fadeIn
+                }, 500); // Wait for fade-out to complete
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || 'Failed to send your message. Please try again later.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while sending your message.');
+        }
+    });
+
+    // Real-Time Email Validation
+    document.getElementById('email').addEventListener('input', function() {
+        const email = this.value.trim();
+        const emailError = document.getElementById("emailError");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)) {
+            emailError.textContent = 'Please enter a valid email address.';
+            emailError.classList.add('show');
+        } else {
+            emailError.textContent = '';
+            emailError.classList.remove('show');
+        }
+    });
+    </script>
 </body>
 </html>
