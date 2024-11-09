@@ -188,7 +188,7 @@ def format_response(response_text):
 def index():
     return render_template('index.html')
 
-@app.route('/')
+@app.route('/contributors')
 def index():
     return render_template('contributors.html')
 
