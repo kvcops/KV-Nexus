@@ -3,113 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kv Nexus</title>
-    <link rel="icon" href="{{ url_for('static', filename='circle-nodes-solid(2).ico') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
+    <title>Next-Gen Code Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Fira+Code&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.21/vanta.net.min.js"></script>
-    <!-- Add Font Awesome for the menu icon -->
-    <!-- <link rel="icon" href="main_logo.png"> -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
     <style>
-
-        #faq {
-            padding: 6rem 0;
-        }
-
-        .faq-question {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .faq-question:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .faq-question h3 {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center; /* Align icon and text vertically */
-        }
-
-
-        .faq-answer {
-            max-height: 0; /* Initially hidden */
-            overflow: hidden;
-            transition: max-height 0.5s ease; /* Slightly longer transition for smoother effect */
-            padding: 0 1.5rem;
-        }
-        
-/* ONLY style the active state */
-.faq-question.active .faq-answer {
-    max-height: 1000px; /* Large enough to accommodate content */
-    padding-top: 1rem; /* Add top padding when open */
-}
-
-        .faq-answer p {
-            margin-bottom: 1rem;
-        }
-
-        .faq-question.active {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-
-        .faq-icon {
-            margin-right: 10px; /* Add space between icon and text */
-            font-size: 1.2rem;
-            transition: transform 0.3s ease-in-out; /* Add transition */
-        }
-
-        .faq-question.active .faq-icon {
-            transform: rotate(180deg); /* Rotate the icon */
-        }
-
-
-        /* Mobile Optimization for FAQ */
-        @media (max-width: 768px) {
-            .faq-answer {
-                max-height: 100%; /* Override to show all by default on mobile */
-            }
-
-            .faq-question.active .faq-answer {
-                max-height: none; /* Prevent snapping back to 0 */
-
-            }
-            .faq-question {
-                padding: 1rem;  /* Smaller padding on mobile */
-            }
-            .faq-question h3 {
-                font-size: 1.2rem; /* Smaller font size on mobile */
-            }
-        }
-
-        .weather-info {
-            font-size: 0.9rem;
-            color: var(--text-color);
-            display: flex;
-            align-items: center;
-        }
-        
-        .weather-info img {
-            width: 30px;
-            height: 30px;
-            margin-right: 5px;
-        }
         :root {
-            --primary-color: #00ffff;
-            --secondary-color: #ff00ff;
-            --bg-color: #0a0a0a;
-            --text-color: #ffffff;
+            --primary-color: #6C63FF;
+            --secondary-color: #4CAF50;
+            --background-color: #1A1A2E;
+            --text-color: #FFFFFF;
+            --card-bg-color: rgba(255, 255, 255, 0.1);
         }
 
         * {
@@ -120,1119 +25,196 @@
 
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: var(--bg-color);
+            background-color: var(--background-color);
             color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             overflow-x: hidden;
         }
 
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
+            width: 90%;
+            max-width: 800px;
+            padding: 2rem;
+            background-color: var(--card-bg-color);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transform: translateY(50px);
+            opacity: 0;
+            transition: all 0.5s ease;
         }
 
-        header {
-            position: fixed;
-            width: 100%;
-            z-index: 1000;
-            padding: 1rem 0;
-            background: linear-gradient(to right, #00ffff, #ff00ff);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-
-        header nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-        
-
-        .nav-links {
-            display: flex;
-            align-items: center;
-        }
-
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #scrollToTopBtn {
-            display: none; /* Initially hidden */
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: var(--primary-color); /* Use your primary color */
-            color: var(--bg-color); /* Use your background color for contrast */
-            border: none;
-            border-radius: 50%;
-            padding: 10px 15px;
-            cursor: pointer;
-            font-size: 1.2rem; /* Adjust size as needed */
-            opacity: 0.8; /* slightly transparent by default*/
-            transition: opacity 0.3s ease; /*smooth opacity change*/
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* subtle shadow */
-        }
-        
-        #scrollToTopBtn:hover {
-            opacity: 1; /* fully opaque on hover */
-        }
-
-        .logo {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2rem;
-            color: #0a0a0a;
-            text-decoration: none;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-            transition: text-shadow 0.3s ease;
-        }
-        
-        .logo:hover {
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
-        }
-
-        .nav-links a {
-            padding: 8px 8px;
-            border-radius: 12px;
-            margin-left: 1.5rem;
-            color: #0a0a0a;
-            text-decoration: none;
-            font-weight: 700;
-            transition: color 0.3s ease;
-        }
-        .nav-links a:hover {
-            background: linear-gradient(287deg, #f6a2e1, #a9d7fd);
-        }
-        .nav-toggle {
-            display: none;
-            cursor: pointer;
-            color: #0a0a0a;
-            font-size: 1.5rem;
-        }
-        
-
-        #hero {
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            position: relative;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 1;
+        .container:hover {
+            box-shadow: 0 16px 64px 0 rgba(31, 38, 135, 0.6);
         }
 
         h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            opacity: 0;
-        }
-
-        .hero-content p {
-            font-size: 1.2rem;
-            max-width: 600px;
-            margin: 0 auto 2rem;
-            opacity: 0;
-        }
-
-        .cta-btn {
-            display: inline-block;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            color: var(--bg-color);
-            padding: 1rem 2rem;
-            text-decoration: none;
-            font-weight: 700;
-            border-radius: 50px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            opacity: 0;
-        }
-
-        .cta-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-        }
-
-        #features {
-            padding: 6rem 0;
-        }
-
-        h2 {
-            font-family: 'Orbitron', sans-serif;
-            text-align: center;
-            font-size: 3rem;
-            margin-bottom: 3rem;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .feature-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 2rem;
-            text-align: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: conic-gradient(from 0deg, transparent, var(--primary-color), transparent 30%);
-            animation: rotate 4s linear infinite;
-        }
-
-        .feature-card::after {
-            content: '';
-            position: absolute;
-            inset: 3px;
-            background: var(--bg-color);
-            border-radius: 15px;
-            z-index: 1;
-        }
-
-        .feature-content {
-            position: relative;
-            z-index: 2;
-        }
-
-        @keyframes rotate {
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .feature-card h3 {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        footer {
-            background-color: rgba(255, 255, 255, 0.05);
-            text-align: center;
-            padding: 2rem 0;
-        }
-
-        /* CSS for the team section */
-        #team {
-            padding: 6rem 0;
-        }
-
-        .team-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-        }
-
-        .team-member {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 2rem;
-            text-align: center;
-        }
-
-        .team-member h3 {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-        }
-
-        .team-member p {
-            font-size: 0.9rem;
-        }
-
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-                flex-direction: column;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                width: 100%;
-                background-color: rgba(10, 10, 10, 0.9);
-                text-align: center;
-                padding: 1rem 0;
-                z-index: 999;
-            }
-        
-            .nav-links a {
-                margin: 0.5rem 0;
-                display: block;
-                color: var(--text-color);
-                text-decoration: none;
-                padding: 0.5rem 0;
-                transition: color 0.3s ease;
-            }
-        
-            .nav-links a:hover {
-                color: var(--primary-color);
-            }
-        
-            .nav-links.show {
-                display: flex;
-            }
-        
-            .nav-toggle {
-                display: block;
-                position: absolute;
-                top: 15px;
-                right: 20px;
-                z-index: 1000;
-            }
-        }
-        footer {
-            background-color: #0a0a0a;
-            color: var(--text-color);
-            padding: 2rem 0;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        footer::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            opacity: 0.1;
-            z-index: 0;
-        }
-        
-        footer .container {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        footer p {
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
-        }
-        
-        footer a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 700;
-            transition: color 0.3s ease;
-        }
-        
-        footer a:hover {
-            color: var(--secondary-color);
-        }
-        
-        footer .about-link {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 700;
-            transition: color 0.3s ease;
-            display: inline-block;
-        }
-        
-        footer .about-link:hover {
-            color: var(--secondary-color);
-        }
-        
-        @media (max-width: 768px) {
-            footer .container {
-                padding: 0 1rem;
-            }
-        }
-             /* Updated CSS for the Contact Form */
-             .contact-form {
-                background-color: rgba(255, 255, 255, 0.05);
-                padding: 4rem 2rem;
-                border-radius: 15px;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-                max-width: 800px;
-                margin: 3rem auto;
-                transition: max-width 0.5s ease; /* Added transition for smooth resizing */
-            }
-            .contact-form.submitted {
-                max-width: 500px; /* Adjust as needed */
-            }
-        .contact-form h2 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2.5rem;
             text-align: center;
             margin-bottom: 2rem;
+            font-size: 2.5rem;
             background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
-        .contact-form form {
+        form {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
 
-        .contact-form input[type="text"],
-        .contact-form input[type="email"],
-        .contact-form textarea {
-            background-color: #0a0a0a;
-            border: 2px solid var(--primary-color);
-            color: var(--text-color);
+        .input-group {
+            position: relative;
+        }
+
+        label {
+            position: absolute;
+            top: 0;
+            left: 1rem;
+            transform: translateY(-50%);
+            background-color: var(--background-color);
+            padding: 0 0.5rem;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        input[type="text"], select {
+            width: 100%;
             padding: 1rem;
+            background-color: var(--background-color);
+            border: 2px solid transparent;
             border-radius: 10px;
+            color: var(--text-color);
             font-size: 1rem;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            transition: all 0.3s ease;
         }
 
-        .contact-form input[type="text"]:focus,
-        .contact-form input[type="email"]:focus,
-        .contact-form textarea:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+        input[type="text"]:focus, select:focus {
             outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
         }
 
-        .contact-form textarea {
-            resize: vertical;
-            min-height: 150px;
+        input[type="text"]:focus + label,
+        select:focus + label {
+            color: var(--secondary-color);
+            top: -0.8rem;
+            font-size: 0.8rem;
+            transform: translateY(0);
         }
 
-        .contact-form button[type="submit"] {
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            color: var(--bg-color);
+        input[type="text"]:not(:placeholder-shown) + label,
+        select:not([value=""]) + label {
+            top: -0.8rem;
+            font-size: 0.8rem;
+            transform: translateY(0);
+        }
+
+        input[type="submit"] {
             padding: 1rem 2rem;
-            font-size: 1.2rem;
-            font-weight: 700;
+            background-color: var(--primary-color);
+            color: var(--text-color);
             border: none;
-            border-radius: 50px;
+            border-radius: 10px;
             cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .contact-form button[type="submit"]:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        input[type="submit"]:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(46, 204, 113, 0.2);
         }
 
-        @media (max-width: 768px) {
-            .contact-form {
-                padding: 3rem 1.5rem;
+        .loader {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--primary-color);
+            border-top: 5px solid var(--secondary-color);
+            border-radius: 50%;
+            margin: 2rem auto;
+            animation: spin 1s linear infinite;
+        }
+
+        #output {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                width: 95%;
+                padding: 1.5rem;
             }
 
-            .contact-form h2 {
+            h1 {
                 font-size: 2rem;
             }
 
-            .contact-form button[type="submit"] {
-                font-size: 1rem;
-                padding: 0.75rem 1.5rem;
+            input[type="text"], select, input[type="submit"] {
+                font-size: 0.9rem;
             }
         }
-        /* Confirmation Message Styles */
-        #confirmationMessage {
-            margin-top: 1rem;
-            text-align: center;
-            font-size: 1.5rem;
-            font-family: 'Orbitron', sans-serif;
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: fadeInScale 1s ease forwards;
-            opacity: 0;
-            transform: scale(0.8);
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        /* Animation for the Confirmation Message */
-        @keyframes fadeInScale {
-            0% {
-                opacity: 0;
-                transform: scale(0.8);
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-        .hidden {
-            display: none;
-        }
-
-        #confirmationMessage {
-            opacity: 0;
-            font-size: 1.2rem;
-            text-align: center;
-            color: #fff;
-            margin-top: 20px;
-            transition: opacity 0.5s ease;
-        }
-
-        .fadeIn {
-            opacity: 1;
-            transition: opacity 0.5s ease;
-        }
-
-        .bounce {
-            animation: bounce 1s ease infinite;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-30px);
-            }
-            60% {
-                transform: translateY(-15px);
-            }
-        }
-        .star-rating-container {
-        text-align: center;
-        margin: 98px 0;
-    }
-
-
-    .star {
-        font-size: 4em; 
-        color: #333; 
-        cursor: pointer;
-        transition: color 0.2s;
-    }
-
-    .star.active {
-        color: #00B4D8; 
-    }
-
-    .star:hover,
-    .star.hover {
-        color: #F72585; 
-    }
-
-        .team-member {
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-    
-        .team-member:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
-        }
-    
-        .linkedin-icon {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-    
-        .team-member:hover .linkedin-icon {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    
-        .linkedin-link {
-            color: #0077B5;
-            text-decoration: none;
-            font-size: 24px;
-            transition: transform 0.3s ease, color 0.3s ease;
-        }
-    
-        .linkedin-link:hover {
-            color: var(--primary-color);
-            transform: scale(1.2);
-        }
-    
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-    
-        .team-member:hover .linkedin-link {
-            animation: pulse 1s infinite;
-        }
-
-
-        .error {
-            color: #ff0000;
-            font-size: 0.8rem;
-            margin-top: 0.2rem;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-    
-        .error.show {
-            opacity: 1;
-        }
-    
-        .contact-form input.invalid {
-            border-color: #ff0000;
-            animation: shake 0.5s ease-in-out;
-        }
-    
-        @keyframes shake {
-            0%, 100% {
-                transform: translateX(0);
-            }
-            25% {
-                transform: translateX(-10px);
-            }
-            75% {
-                transform: translateX(10px);
-            }
-        }
-    
-        .validation-icon {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-    
-        .validation-icon.show {
-            opacity: 1;
-        }
-    
-        .input-container {
-            position: relative;
-        }
-        .social-icons a {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    background-color: transparent;
-    border: 0.2rem solid #0998b4;
-    font-size: 1.5rem;
-    border-radius: 50%;
-    margin: 3rem 1.5rem 3rem 0;
-    transition: 0.3s ease;
-    color: #0998b4;
-}
-
-.social-icons a:hover {
-    color: black;
-    transform: scale(1.3) translateY(-5px);
-    background-color: #0998b4;
-    box-shadow: 0 0 25px #0998b4;
-}
-
-        
     </style>
 </head>
 <body>
-    
-    <header>
-        <nav class="container">
-            <a href="#" onclick="scrollToTop()" class="logo">Kv Nexus</a>
-            <div class="nav-links">
-                <a href="#features">Features</a>
-                <a href="#about">About</a>
-                <a href="#contact-us">Contact</a>
-                <a href="#team">Team</a>
-                <a href="#faq" class="nav-links">FAQ</a>
+    <div id="vanta-background"></div>
+    <div class="container">
+        <h1>Next-Gen Code Generator</h1>
+        <form id="codeForm">
+            <div class="input-group">
+                <input type="text" id="codeType" name="codeType" required>
+                <label for="codeType">Enter code type</label>
             </div>
-            <div class="nav-toggle" onclick="toggleNavigation()">
-                <i class="fas fa-bars"></i> </div>
-            <div class="weather-info" id="weatherInfo"></div>
-        </nav>
-    </header>
-
-    <main>
-        
-        <section id="hero">
-            <div class="hero-content">
-                <h1>The Future of AI is Here</h1>
-                <p>Experience the next generation of artificial intelligence, powering innovations beyond imagination.</p>
-                <a href="#features" class="cta-btn">Explore Our AI Suite</a>
+            <div class="input-group">
+                <select id="language" name="language" required>
+                    <option value="" disabled selected>Select language</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="c">C</option>
+                    <option value="c++">C++</option>
+                    <option value="html">HTML</option>
+                    <option value="ruby">Ruby</option>
+                </select>
+                <label for="language">Programming language</label>
             </div>
-        </section>
-
-        <section id="features">
-            <div class="container">
-                <h2>Cutting-Edge AI Tools</h2>
-                <div class="feature-grid">
-                    <div class="feature-card">
-                        <div class="feature-content">
-                            <div class="feature-icon">🧠</div>
-                            <h3>Health Analyzer</h3>
-                            <p>Diagnose potential health concerns with AI-powered analysis.</p>
-                            <a href="/analyze" class="cta-btn">Analyze</a>
-                        </div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-content">
-                            <div class="feature-icon">💬</div>
-                            <h3>Conversational AI</h3>
-                            <p>Engage in natural language conversations with our intelligent chatbot.</p>
-                            <a href="/chat" class="cta-btn">Chat</a>
-                        </div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-content">
-                            <div class="feature-icon">🔗</div>
-                            <h3>NeuraChart</h3>
-                            <p>Unleash Your Creativity with AI-Powered Flowchart Wizardry!.</p>
-                            <a href="/flowchart" class="cta-btn">Generate Flowchart</a>
-                        </div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-content">
-                            <div class="feature-icon">🍳</div>
-                            <h3>Creative Chef</h3>
-                            <p>Discover culinary inspiration and generate delicious recipes with ease.</p>
-                            <a href="/chef" class="cta-btn">Generate Recipe</a>
-                        </div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-content">
-                            <div class="feature-icon">📖</div>
-                            <h3>Story Weaver</h3>
-                            <p>Craft captivating tales and unlock your creative potential with AI assistance.</p>
-                            <a href="/story_generator" class="cta-btn">Generate Story</a>
-                        </div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-content">
-                            <div class="feature-icon">🔍</div>
-                            <h3>Psychology Insights</h3>
-                            <p>Gain valuable insights into human behavior and personality traits with AI-driven predictions.</p>
-                            <a href="/psychology_prediction" class="cta-btn">Predict</a>
-                        </div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-content">
-                            <div class="feature-icon">💻</div>
-                            <h3>Code Architect</h3>
-                            <p>Generate code in multiple languages to automate tasks and bring your ideas to life.</p>
-                            <a href="/code_generation" class="cta-btn">Generate Code</a>
-                        </div>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-content">
-                            <div class="feature-icon">🤖</div>
-                            <h3>Algorithm Builder</h3>
-                            <p>Create algorithms and implement them in Python for various applications.</p>
-                            <a href="/algorithm_generation" class="cta-btn">Generate Algorithm</a>
-                        </div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-content">
-                            <div class="feature-icon">📚</div>
-                            <h3>Document Summarizer</h3>
-                            <p>Turn long documents into concise summaries.</p>
-                            <a href="/document_summarizer" class="cta-btn">Summarize Now</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="about">
-            <div class="container">
-                <center>
-                <h2>About Kv Nexus</h2>
-                <p>NexusAI is leading the way in artificial intelligence innovation by providing a comprehensive suite of advanced AI tools. These tools are designed to offer seamless, effective, and intuitive technology solutions, transforming complex processes into streamlined interactions. This approach enables users to confidently leverage data, automate tasks, and make intelligent decisions. NexusAI is dedicated to democratizing AI, making its transformative potential accessible to professionals, developers, and organizations alike and  expands the boundaries of possibility, delivering a future where intelligent technology drives meaningful progress and productivity</p>
-                </center>
-            </div>
-        </section>
-
-        <div class="star-rating-container">
-            <h2>Rate Your Experience</h2>
-            <span class="star" data-value="1">&#9733;</span>
-            <span class="star" data-value="2">&#9733;</span>
-            <span class="star" data-value="3">&#9733;</span>
-            <span class="star" data-value="4">&#9733;</span>
-            <span class="star" data-value="5">&#9733;</span>
-        </div>
-        <section id="contact-us">
-            <div class="contact-form">
-                <center>
-                <h2>Contact Us</h2>
-                <form id="contactForm">
-                    <p>Have questions or Suggest changes? Reach out to our team, and we'll be happy to assist you.</p>
-                    <input type="text" id="name" name="name" placeholder="Your Name" required>
-                    <input type="email" id="email" name="email" placeholder="Your Email" required>
-                    <textarea id="message" name="message" placeholder="Your Message" required></textarea>
-                    <button type="submit">Send</button>
-                </form>
-                <div id="confirmationMessage" class="hidden">
-                    <h3>Message has been sent!</h3>
-                </div>
-            </center>
-            </div>
-        </section>
-
-        <section id="team">
-            <div class="container">
-                <h2>Our Team</h2>
-                <div class="team-grid">
-                    <div class="team-member">
-                        <div class="linkedin-icon">
-                            <a href="https://www.linkedin.com/in/karri-vamsi-krishna-966537251/" target="_blank" class="linkedin-link">
-                                <i class="fab fa-linkedin"></i>
-                            </a>
-                        </div>
-                        <h3>K. Vamsi Krishna</h3>
-                        <p>Project Founder & Lead Developer</p>
-                    </div>
-                    <div class="team-member">
-                        <div class="linkedin-icon">
-                            <a href="https://www.linkedin.com/in/jason-girish-b92078253/" target="_blank" class="linkedin-link">
-                                <i class="fab fa-linkedin"></i>
-                            </a>
-                        </div>
-                        <h3>M. Girish</h3>
-                        <p>UI/UX Designer</p>
-                    </div>
-                    <div class="team-member">
-                        <div class="linkedin-icon">
-                            <a href="https://www.linkedin.com/in/manohara-sai-subba-raju-golla-734a81281/" target="_blank" class="linkedin-link">
-                                <i class="fab fa-linkedin"></i>
-                            </a>
-                        </div>
-                        <h3>G. Manohar</h3>
-                        <p>AI/ML Research & Development Contributor</p>
-                    </div>
-                    <div class="team-member">
-                        <div class="linkedin-icon">
-                            <a href="https://www.linkedin.com/in/jarapala-manikanta-naik-3a37a52a6/" target="_blank" class="linkedin-link">
-                                <i class="fab fa-linkedin"></i>
-                            </a>
-                        </div>
-                        <h3>J. Manikanta Naik</h3>
-                        <p>Quality Assurance Specialist</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <section id="faq">
-        <div class="container">
-            <h2>Frequently Asked Questions</h2>
-            <div class="faq-container">
-                <div class="faq-question">
-                    <h3><i class="fas fa-plus faq-icon"></i> What are the key features of Kv Nexus?</h3>
-                    <div class="faq-answer">
-                        <p>Kv Nexus offers a wide range of AI-powered tools, including a health analyzer, conversational AI, code generation, algorithm building, and more. These tools are designed to enhance productivity, creativity, and decision-making.</p>
-                    </div>
-                </div>
-                <div class="faq-question">
-                    <h3><i class="fas fa-plus faq-icon"></i> How can I access the different AI tools?</h3>
-                    <div class="faq-answer">
-                        <p>You can access our AI tools directly through the navigation menu on our website. Simply click on the tool you're interested in and you'll be taken to the respective page.</p>
-                    </div>
-                </div>
-                <!-- Add more FAQ items as needed -->
-                <div class="faq-question">
-                    <h3><i class="fas fa-plus faq-icon"></i>Is there a cost associated with using these tools?</h3>
-                    <div class="faq-answer">
-                        <p>At this time, access to the services is completely free.</p>
-                    </div>
-                </div>
-                <div class="faq-question">
-                    <h3><i class="fas fa-plus faq-icon"></i>How can I contact support if I need assistance?</h3>
-                    <div class="faq-answer">
-                        <p>Please use the contact form provided on the website and our team will reach out as soon as possible.</p>
-                    </div>
-                </div>
-               
-            </div>
-        </div>
-    </section>
-
-    <footer>
-        <div class="container">
-           <div class="social-icons">
-                <a href="https://www.linkedin.com/in/karri-vamsi-krishna-966537251/" target="_blank"> <i class="fa-brands fa-linkedin"></i></a>
-                <a href="https://github.com/kvcops" target="_blank"><i class="fa-brands fa-github"></i></a>
-                <a href="https://x.com/Manoharassrg7?t=-UCp9QDrByYRvgRfRYODKg&s=09" target="_blank"><i class="fa-brands fa-x-twitter"></i></a>
-                <a href="https://www.instagram.com/manohara_7289/profilecard/?igsh=Yzg3dzFqbmJxZHhx" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-
-            <p>© KV. Modernize the thinking. <a href="https://vamsikrishna28.vercel.app/" target="_blank" class="about-link">About Me</a></p>
-        </div>
-    </footer>
-
-    <div class="weather-info" id="weatherInfo"></div>
-
-    <!-- Scroll to Top Button -->
-    <button id="scrollToTopBtn" class="scroll-top" aria-label="Scroll to top">
-        <div class="scroll-top-icon">
-            <i class="fa-solid fa-arrow-up"></i>
-        </div>
-        <svg class="progress-ring" width="60" height="60">
-            <circle class="progress-ring__circle" stroke="#ffffff" stroke-width="4" fill="transparent" r="28" cx="30"
-                cy="30"></circle>
-        </svg>
-    </button>
-    <style>
-        .scroll-top {
-            position: fixed;
-            right: 1.6%;
-            background: linear-gradient(100deg, #1ca6f0, #3c7aff, #05deff);
-            color: white;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 5px 15px rgba(255, 69, 159, 0.4);
-            overflow: visible;
-            z-index: 10;
-            /* Ensure button is on top */
-        }
-  
-        .scroll-top.show {
-            opacity: 1;
-            visibility: visible;
-        }
-  
-        .scroll-top:hover {
-            transform: scale(1.1);
-            /* Subtle scaling instead of expanding */
-            box-shadow: 0 8px 20px rgba(255, 69, 159, 0.6);
-            /* Slightly larger shadow */
-        }
-  
-        .scroll-top:active {
-            transform: scale(1.05);
-            /* Minor scale reduction on click */
-        }
-  
-        .scroll-top-icon {
-            position: relative;
-            z-index: 2;
-            transition: transform 0.3s ease;
-        }
-  
-        .scroll-top:hover .scroll-top-icon {
-            transform: translateY(-3px);
-        }
-  
-        /* Progress Ring Styling */
-        .progress-ring {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            transform: rotate(-90deg);
-            /* To start from the top */
-        }
-  
-        .progress-ring__circle {
-            transition: stroke-dashoffset 0.35s;
-            transform-origin: 50% 50%;
-        }
-  
-        /* Pulse Animation */
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 5px 15px rgba(255, 69, 159, 0.4);
-            }
-  
-            50% {
-                box-shadow: 0 5px 15px rgba(255, 69, 159, 0.7);
-            }
-  
-            100% {
-                box-shadow: 0 5px 15px rgba(255, 69, 159, 0.4);
-            }
-        }
-  
-        .scroll-top:hover {
-            animation: pulse 1.5s infinite;
-        }
-  
-        .scroll-top.show {
-            animation: none;
-            /* No animation when showing the button */
-        }
-  
-        .scroll-top.show:hover {
-            animation: pulse 1.5s infinite;
-            /* Pulse on hover */
-        }
-    </style>
-    <script>
-        // Get the button
-        const scrollToTopBtn = document.getElementById("scrollToTopBtn");
-        const progressCircle = document.querySelector(".progress-ring__circle");
-        const radius = progressCircle.r.baseVal.value;
-        const circumference = 2 * Math.PI * radius;
-  
-        // Set the circle progress properties
-        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
-        progressCircle.style.strokeDashoffset = circumference;
-  
-        // Function to show or hide the button based on scroll position
-        function toggleScrollButton() {
-            if (window.scrollY > 100) {
-                scrollToTopBtn.classList.add("show");
-            } else {
-                scrollToTopBtn.classList.remove("show");
-            }
-        }
-  
-        // Function to set the scroll progress on the button ring
-        function setProgress(percent) {
-            const offset = circumference - (percent / 100) * circumference;
-            progressCircle.style.strokeDashoffset = offset;
-        }
-  
-        // Listen for scroll events to update button visibility and progress
-        window.addEventListener("scroll", () => {
-            toggleScrollButton();
-            const scrollPercent = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
-            setProgress(scrollPercent);
-        });
-  
-        // Smooth scroll to top when the button is clicked
-        scrollToTopBtn.addEventListener("click", () => {
-            window.scrollTo({
-                top: 0,
-                behavior: "smooth"
-            });
-        });
-  
-    </script>
+            <input type="submit" value="Generate Code">
+        </form>
+        <div class="loader" id="loader"></div>
+        <div id="output"></div>
+    </div>
 
     <script>
-
-      // ... other JavaScript ...
-
-// FAQ Toggle Functionality
-const faqQuestions = document.querySelectorAll('.faq-question');
-
-faqQuestions.forEach(question => {
-    const answer = question.querySelector('.faq-answer'); // Get the answer element
-    answer.style.height = '0'; // Ensure it's initially collapsed
-
-    question.addEventListener('click', () => {
-        question.classList.toggle('active');
-
-        // Explicitly set height for smooth transitions
-        if (question.classList.contains('active')) {
-            answer.style.height = answer.scrollHeight + 'px'; // Set height to content height
-
-        } else {
-            answer.style.height = '0'; // Collapse back to zero
-        }
-    });
-});
-        async function getWeatherInfo() {
-            try {
-                const response = await fetch('/api/weather');
-                const data = await response.json();
-        
-                if (data.error) {
-                    document.getElementById('weatherInfo').innerHTML = 'Weather information not available';
-                    return;
-                }
-        
-                const weatherHtml = `
-                    <img src="${data.icon}" alt="${data.description}">
-                    <span>${data.city}: ${data.description}, ${data.temperature.toFixed(1)}°C</span>
-                `;
-        
-                document.getElementById('weatherInfo').innerHTML = weatherHtml;
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('weatherInfo').innerHTML = 'Weather information not available';
-            }
-        }
-        
-        getWeatherInfo();
-        // Scroll to top functionality
-        function scrollToTop() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        window.onscroll = function() {
-            const scrollToTopBtn = document.getElementById('scrollToTopBtn');
-            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-                scrollToTopBtn.style.display = 'block';
-            } else {
-                scrollToTopBtn.style.display = 'none';
-            }
-        };
-
-        // GSAP animations
-        document.addEventListener('DOMContentLoaded', () => {
-            gsap.fromTo("header", { y: -100 }, { y: 0, duration: 0.5, ease: "power4.out" });
-            gsap.fromTo(".hero-content h1", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1, ease: "power4.out", delay: 0.5 });
-            gsap.fromTo(".hero-content p", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1, ease: "power4.out", delay: 1 });
-            gsap.fromTo(".cta-btn", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1, ease: "power4.out", delay: 1.5 });
-
-            ScrollTrigger.create({
-                trigger: "#features",
-                start: "top center",
-                onEnter: () => {
-                    gsap.fromTo(".feature-card", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1, stagger: 0.2, ease: "power4.out" });
-                }
-            });
-        });
-
-        // Vanta.js background
         VANTA.NET({
-            el: "#hero",
+            el: "#vanta-background",
             mouseControls: true,
             touchControls: true,
             gyroControls: false,
@@ -1240,91 +222,76 @@ faqQuestions.forEach(question => {
             minWidth: 200.00,
             scale: 1.00,
             scaleMobile: 1.00,
-            color: 0x00ffff,
-            backgroundColor: 0x0a0a0a
+            color: 0x6C63FF,
+            backgroundColor: 0x1A1A2E,
+            points: 10,
+            maxDistance: 20.00,
+            spacing: 20.00
         });
-        function toggleNavigation() {
-            const navLinks = document.querySelector('.nav-links');
-            navLinks.classList.toggle('show');
-        }
-        // Add this code after the existing script
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
+
+        gsap.to('.container', {
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            ease: 'power3.out'
+        });
+
+        gsap.from('#vanta-background', {
+            opacity: 0,
+            duration: 1.5,
+            ease: 'power2.out'
+        });
+
+        const form = document.getElementById('codeForm');
+        const loader = document.getElementById('loader');
+        const output = document.getElementById('output');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const codeType = document.getElementById('codeType').value;
+            const language = document.getElementById('language').value;
+
+            gsap.to(form, { opacity: 0.5, pointerEvents: 'none', duration: 0.3 });
+            loader.style.display = 'block';
+            output.style.display = 'none';
+
+            try {
+                const response = await fetch('/code_generation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `codeType=${codeType}&language=${language}`
                 });
-            });
-        });
-        //for contact us 
-            document.getElementById('contactForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-    
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const message = document.getElementById('message').value;
-            
-
-            const response = await fetch('/send-email', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name, email, message }),
-            });
-    
-            if (response.ok) {
-                // Hide the form and show the confirmation message with animation
-                const form = document.getElementById("contactForm");
-                const confirmationMessage = document.getElementById("confirmationMessage");
-    
-                form.style.transition = "opacity 0.5s ease";
-                form.style.opacity = 0;
-    
-                setTimeout(function() {
-                    form.classList.add("hidden");
-                    confirmationMessage.classList.remove("hidden");
-                    confirmationMessage.classList.add("fadeIn");
-    
-                    setTimeout(function() {
-                        confirmationMessage.classList.add("bounce");
-                    }, 500); // Start bounce animation after fadeIn
-                }, 500); // Wait for fade-out to complete
-            } else {
-                alert('Failed to send your message.');
+                const data = await response.json();
+                output.textContent = data.response;
+                
+                gsap.to(output, {
+                    display: 'block',
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.5,
+                    ease: 'power2.out'
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                output.textContent = 'Error generating code. Please try again.';
+            } finally {
+                loader.style.display = 'none';
+                gsap.to(form, { opacity: 1, pointerEvents: 'auto', duration: 0.3 });
             }
         });
 
-        const stars = document.querySelectorAll('.star');
-    let currentRating = 0; 
-    
-    function updateStars(rating) {
-        stars.forEach((star, index) => {
-            if (index < rating) {
-                star.classList.add('active');
-            } else {
-                star.classList.remove('active');
-            }
+        // Floating label animation
+        const inputs = document.querySelectorAll('input[type="text"], select');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.previousElementSibling.style.color = '#4CAF50';
+            });
+            input.addEventListener('blur', () => {
+                if (input.value === "") {
+                    input.previousElementSibling.style.color = '#6C63FF';
+                }
+            });
         });
-    }
-
-   
-    stars.forEach((star, index) => {
-        star.addEventListener('click', () => {
-            currentRating = index + 1;
-            updateStars(currentRating);
-            console.log('User rating:', currentRating); 
-        });
-
-       
-        star.addEventListener('mouseover', () => {
-            updateStars(index + 1);
-        });
-
-        star.addEventListener('mouseout', () => {
-            updateStars(currentRating);
-        });
-    });
     </script>
 </body>
 </html>
