@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,9 +10,9 @@
   <style>
     :root {
       --primary-color: #007bff;
-      --secondary-color: #6c757d;
+      --secondary-color: #323538;
       --accent-color: #17a2b8;
-      --background-color: #f8f9fa;
+      --background-color: #afd4f9;
     }
 
     * {
@@ -40,16 +41,58 @@
     }
 
     h1 {
-      color: var(--primary-color);
+      color: #0056b3;
       font-size: 48px;
       font-weight: 700;
       margin-bottom: 10px;
+      animation: fadeInGlow 1s ease-in-out, textGlow 2s ease-in-out infinite alternate;
+      text-shadow: 0 0 5px rgba(0, 86, 179, 0.6);
+    }
+
+    h1:hover {
+      cursor: pointer;
+    }
+
+    @keyframes fadeInGlow {
+      0% {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      70% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes textGlow {
+      0% {
+        text-shadow: 0 0 5px rgba(0, 86, 179, 0.6), 0 0 10px rgba(0, 86, 179, 0.4), 0 0 20px rgba(23, 162, 184, 0.3);
+      }
+
+      70% {
+        text-shadow: 0 0 10px rgba(0, 86, 179, 0.8), 0 0 20px rgba(0, 123, 255, 0.6), 0 0 30px rgba(23, 162, 184, 0.5);
+      }
     }
 
     .subtitle {
       color: var(--secondary-color);
       font-size: 18px;
+      opacity: 0;
+      animation: fadeInSubtitle 1s ease forwards;
+      transition: color 0.3s ease;
     }
+
+    .subtitle:hover {
+      color: darkblue;
+    }
+
+    @keyframes fadeInSubtitle {
+      to {
+        opacity: 1;
+      }
+    }
+
 
     .input-section {
       background: #fff;
@@ -58,7 +101,36 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
       margin-bottom: 40px;
       animation: fadeInUp 0.5s ease;
+      transition: box-shadow 0.3s ease, transform 0.3s ease, border 0.3s ease;
+      position: relative;
     }
+
+    .input-section::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      border-radius: 14px;
+
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: -1;
+    }
+
+    .input-section:hover::before {
+      opacity: 1;
+      filter: blur(8px);
+      /* Creates a soft glow effect */
+    }
+
+    .input-section:hover {
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2), 0 0 20px rgba(23, 162, 184, 0.3);
+      transform: translateY(-5px);
+      background: #f9f9ff;
+    }
+
 
     .form-group {
       margin-bottom: 30px;
@@ -71,7 +143,8 @@
       font-weight: 500;
     }
 
-    input, select {
+    input,
+    select {
       width: 100%;
       padding: 14px 20px;
       border: 1px solid #ddd;
@@ -81,7 +154,8 @@
       transition: border-color 0.3s ease;
     }
 
-    input:focus, select:focus {
+    input:focus,
+    select:focus {
       outline: none;
       border-color: var(--primary-color);
     }
@@ -163,23 +237,47 @@
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     @keyframes fadeIn {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
+      0% {
+        opacity: 0;
+      }
+
+      100% {
+        opacity: 1;
+      }
     }
 
     @keyframes fadeInDown {
-      0% { transform: translateY(-20px); opacity: 0; }
-      100% { transform: translateY(0); opacity: 1; }
+      0% {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
 
     @keyframes fadeInUp {
-      0% { transform: translateY(20px); opacity: 0; }
-      100% { transform: translateY(0); opacity: 1; }
+      0% {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
 
     /* Translation widget positioning */
@@ -285,7 +383,7 @@
 
     // Set English as default on page load
     window.addEventListener('load', setDefaultLanguage);
-    
+
     // Set English as default after translation widget loads
     window.addEventListener('gtranslate_loaded', setDefaultLanguage);
 
@@ -294,15 +392,15 @@
       const input = document.getElementById('image');
       const preview = document.getElementById('image-preview');
       const previewSection = document.getElementById('preview-section');
-      
+
       if (input.files && input.files[0]) {
         const reader = new FileReader();
-        
-        reader.onload = function(e) {
+
+        reader.onload = function (e) {
           preview.src = e.target.result;
           previewSection.style.display = 'block';
         }
-        
+
         reader.readAsDataURL(input.files[0]);
       }
     }
