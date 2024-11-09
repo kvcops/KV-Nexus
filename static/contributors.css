@@ -1,0 +1,133 @@
+/* Reset and Fonts */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Helvetica Neue', sans-serif;
+    background-color: #b7e9ff;
+    color: #333;
+  }
+  
+  /* Contributors Section */
+  .contributors-section {
+    text-align: center;
+    padding: 50px 20px;
+  }
+  
+  .contributors-section h1 {
+    font-size: 3em;
+    margin-bottom: 50px;
+  }
+  
+  /* Contributors Grid */
+  .contributors-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 40px;
+  }
+  
+  /* Contributor Card */
+  .contributor-card {
+    width: 300px;
+    height: 400px;
+    perspective: 1000px;
+  }
+  
+  .contributor-card .card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.8s;
+  }
+  
+  @media (hover: hover) and (pointer: fine) {
+    .contributor-card:hover .card-inner {
+      transform: rotateY(180deg);
+    }
+  }
+  
+  .contributor-card.is-flipped .card-inner {
+    transform: rotateY(180deg);
+  }
+  
+  .contributor-card .card-front,
+  .contributor-card .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    backface-visibility: hidden;
+    overflow: hidden;
+  }
+  
+  .contributor-card .card-front {
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .contributor-card .card-front img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 20px;
+  }
+  
+  .contributor-card .card-front h2 {
+    font-size: 1.5em;
+    margin-bottom: 5px;
+  }
+  
+  .contributor-card .card-front p {
+    font-size: 1em;
+    color: #777;
+  }
+  
+  .contributor-card .card-back {
+    background: linear-gradient(135deg, #2c3e50, #2980b9);
+    color: #fff;
+    padding: 20px;
+    transform: rotateY(180deg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .contributor-card .card-back h2 {
+    margin-bottom: 15px;
+  }
+  
+  .contributor-card .card-back p {
+    font-size: 0.9em;
+    margin-bottom: 20px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  
+  .contributor-card .social-links a {
+    color: #fff;
+    font-size: 1.5em;
+    margin: 0 10px;
+    transition: color 0.3s;
+  }
+  
+  .contributor-card .social-links a:hover {
+    color: #f1c40f;
+  }
+  
+  /* Media Queries */
+  @media only screen and (max-width: 768px) {
+    .contributors-grid {
+      flex-direction: column;
+      align-items: center;
+    }
+  }
