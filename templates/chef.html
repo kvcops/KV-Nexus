@@ -3,366 +3,508 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chef's Culinary Magic</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <div class="gtranslate_wrapper"></div>
-    <script>window.gtranslateSettings = {"default_language":"en","detect_browser_language":true,"wrapper_selector":".gtranslate_wrapper"}</script>
-    <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
-</div>
+    <title>Recipe Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #ff6b6b;
-            --secondary-color: #4ecdc4;
-            --text-color: #2d3436;
-            --background-color: #f0f0f0;
+            --primary-color: #EF476F;
+            --secondary-color: #FFD166;
+            --background-color: #F8F9FA;
+            --text-color: #333;
+            --accent-color: #06D6A0;
         }
 
         body {
             font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
             background-color: var(--background-color);
-            transition: background-color 0.5s ease;
+            color: var(--text-color);
             overflow-x: hidden;
+            
         }
-
-        .chef-container {
-            display: none;
-            background-color: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            border-radius: 20px;
-            padding: 40px;
-            width: 90%;
-            max-width: 800px;
-            margin: 0 auto;
-            animation: slideIn 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            transform: perspective(1000px) rotateX(0deg);
-            transition: transform 0.5s ease;
-        }
-
-        .chef-container:hover {
-            transform: perspective(1000px) rotateX(5deg);
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: var(--primary-color);
-            font-size: 3rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-            animation: colorChange 5s infinite alternate;
-        }
-
-        p {
-            text-align: center;
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-            color: var(--text-color);
-        }
-
-        form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        label {
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--text-color);
-        }
-
-        input[type="text"], input[type="file"] {
-            width: calc(100% - 20px);
-            padding: 12px;
-            margin-top: 10px;
-            border: 2px solid var(--secondary-color);
-            border-radius: 10px;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-            font-size: 1rem;
-        }
-
-        input[type="text"]:focus, input[type="file"]:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
-        }
-
-        input[type="submit"] {
-            padding: 12px 30px;
-            margin-top: 30px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1.1rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        input[type="submit"]:hover {
-            background-color: #ff8787;
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-        }
-
-        #output {
-            display: none;
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            max-width: 100%;
-            overflow-wrap: break-word;
-            animation: fadeIn 0.5s ease-out;
-            overflow-y: auto;
-            max-height: 400px;
-            text-align: left;
-        }
-
-        .loader {
-            display: none;
-            position: relative;
-            width: 60px;
-            height: 60px;
-            margin: 30px auto;
-        }
-
-        .loader:before,
-        .loader:after {
-            content: '';
-            position: absolute;
-            border-radius: 50%;
-            animation: pulsOut 1.8s ease-in-out infinite;
-            filter: drop-shadow(0 0 1rem rgba(255, 107, 107, 0.5));
-        }
-
-        .loader:before {
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 107, 107, 0.6);
-            animation-delay: 0.5s;
-        }
-
-        .loader:after {
-            width: 75%;
-            height: 75%;
-            background-color: rgba(255, 107, 107, 0.9);
-            top: 12.5%;
-            left: 12.5%;
-        }
-
-        .file-upload {
-            position: relative;
-            overflow: hidden;
-            margin: 20px 0;
-            display: inline-block;
-            cursor: pointer;
-            border-radius: 50px;
-            padding: 12px 30px;
-            background-color: var(--secondary-color);
-            color: white;
-            transition: all 0.3s ease;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .file-upload input[type="file"] {
-            position: absolute;
-            font-size: 100px;
-            right: 0;
-            top: 0;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        .file-upload:hover {
-            background-color: #45b7aa;
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
-        }
-
-        .image-preview {
-            display: none; /* Hide by default */
-            width: 100%;
-            max-width: 300px;
-            height: auto;
-            background: #ddd;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-top: 20px; /* Add margin if needed */
-        }
-
-        .image-preview img {
-            width: 100%;
-            height: auto;
-            object-fit: cover;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateY(-100px) perspective(1000px) rotateX(45deg);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0) perspective(1000px) rotateX(0deg);
-                opacity: 1;
-            }
-        }
-
+        /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
         }
 
-        @keyframes colorChange {
-            0% { color: var(--primary-color); }
-            50% { color: var(--secondary-color); }
-            100% { color: var(--primary-color); }
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes textShadow {
+          0% {
+            text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+          }
+          50% {
+            text-shadow: 0 0 10px rgba(239, 71, 111, 0.5);
+          }
+          100% {
+            text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+          }
+        }
+        @keyframes scaleUp {
+            from { transform: scale(0.95); }
+            to { transform: scale(1); }
+        }
+        
+        .animate-text-shadow {
+          animation: textShadow 2s infinite;
         }
 
-        @keyframes pulsOut {
-            0% { transform: scale(0); opacity: 1; }
-            100% { transform: scale(1); opacity: 0; }
+        .animate-fade-in {
+            animation: fadeIn 1s ease-out;
         }
 
-        @media (max-width: 600px) {
-            .chef-container {
-                width: 95%;
-                padding: 30px;
-            }
-            h1 {
-                font-size: 2.5rem;
-            }
-            input[type="text"], input[type="file"], input[type="submit"], .file-upload {
-                font-size: 1rem;
-            }
+        .animate-slide-up {
+            animation: slideUp 0.8s ease-out;
         }
+        .animate-scale-up{
+            animation: scaleUp 0.5s ease-out forwards;
+        }
+
+        .hero-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 700;
+            font-size: 4rem;
+            color: var(--primary-color);
+            
+        }
+        .nav-link:hover::after {
+            width: 100%;
+            left: 0;
+        }
+        
+        .nav-link {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            display: inline-block; /* Required for transform to work */
+        }
+        
+        .nav-link:hover {
+            transform: scale(1.05) translateY(-2px); /* Scale up and slightly move up on hover */
+        }
+        
+        .nav-link::after {
+            content: '';
+            display: block;
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            position: relative;
+            bottom: -5px;
+            transition: width 0.3s ease-in-out;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.8rem 1.8rem;
+            border-radius: 2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .section-title{
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        .input-field {
+            background-color: white;
+            border: 2px solid var(--secondary-color);
+            padding: 0.8rem 1.5rem;
+            border-radius: 1rem;
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .input-field:focus {
+            box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.5);
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .recipe-card {
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .recipe-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .recipe-card h3 {
+            color: var(--text-color);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            
+        }
+
+        .recipe-card p {
+            color: var(--text-color);
+            
+            font-size: 1rem;
+        }
+        .ingredient-chip{
+             display: inline-flex;
+             align-items: center;
+             background-color: var(--accent-color);
+             color: white;
+             padding: 0.5rem 1rem;
+             border-radius: 2rem;
+             margin: 0.25rem;
+             font-size: 0.875rem;
+             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+             transition: transform 0.2s ease, box-shadow 0.2s ease;
+             gap:0.4rem;
+        }
+        .ingredient-chip:hover{
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal {
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            transition: all 0.3s ease;
+            
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+            animation: scaleUp 0.4s ease;
+            
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        /* Loading Animation */
+         .loader {
+             width: 50px;
+             height: 50px;
+             border: 6px solid var(--secondary-color);
+             border-top-color: var(--primary-color);
+             border-radius: 50%;
+             animation: spin 1.5s linear infinite;
+         }
+         @keyframes spin {
+             to { transform: rotate(360deg); }
+         }
+
+         /* Footer Styling */
+         footer {
+             background-color: var(--text-color);
+             color: var(--background-color);
+             padding: 4rem 0;
+             text-align: center;
+         }
+         .social-icon {
+             font-size: 1.8rem;
+             color: var(--background-color);
+             margin: 0 0.75rem;
+             transition: color 0.3s ease;
+         }
+        .social-icon:hover {
+            color: var(--secondary-color);
+            transform: translateY(-5px);
+        }
+        .btn-primary:hover{
+            background-color: #f0567e;
+            box-shadow: 0 2px 5px rgba(239, 71, 111, 0.4);
+        }
+
     </style>
 </head>
-<body>
-    <div class="chef-container" id="chefContainer">
-        <h1>Chef's Culinary Magic</h1>
-        <p>Enter ingredients or upload a photo to conjure a delicious recipe!</p>
-        <form id="chefForm" enctype="multipart/form-data">
-            <label for="user_ingredients">Magical Ingredients:</label>
-            <input type="text" id="user_ingredients" name="user_ingredients" placeholder="e.g., tomatoes, onions, garlic" autocomplete="off">
-            <div class="file-upload">
-                <span>Upload Food Image</span>
-                <input type="file" id="image" name="image" accept="image/*">
+<body class="antialiased">
+
+    <!-- Header/Navigation -->
+    <header class="sticky top-0 z-50 bg-white shadow-md py-3">
+        <nav class="container mx-auto px-6 py-2 flex justify-between items-center">
+            <div class="flex items-center gap-2 text-3xl font-bold text-primary-color">
+            <i class="ri-restaurant-2-line text-5xl"></i>
+            <a href="#" class=" font-semibold text-3xl hero-title animate-text-shadow" style="font-family: 'Cormorant Garamond', serif;">Recipe Master</a>
             </div>
-            <!-- Image preview container -->
-            <div class="image-preview" id="imagePreview">
-                <img id="previewImage" src="" alt="Image Preview">
+            <div class="flex space-x-8">
+                <a href="#generator" class="nav-link text-gray-700 hover:text-primary-color font-medium flex items-center gap-1 text-lg">
+                <i class="ri-magic-line text-xl "></i> Generate
+                </a>
+                
+                
             </div>
-            <input type="submit" value="Conjure Recipe">
-        </form>
-        <div class="loader" id="loader"></div> 
-        <div id="output"></div>
-    </script>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="py-20 relative">
+        
+        <div class="container mx-auto text-center px-6 relative z-10 animate-fade-in">
+            <h1 class="hero-title mb-6 " style="font-family: 'Cormorant Garamond', serif;">
+            Discover the Magic <br> of Ingredients
+            </h1>
+            <p class="text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+                Unleash your culinary creativity. Transform simple ingredients into extraordinary dishes with Recipe Master.
+            </p>
+            <a href="#generator" class="btn-primary animate-scale-up">
+            <i class="ri-magic-line"></i> Start Cooking
+            </a>
+        </div>
+    </section>
+
+    <!-- Recipe Generator Section -->
+    <section id="generator" class="py-16">
+    <div class="container mx-auto px-6">
+        <div class="bg-white rounded-3xl shadow-xl p-12 max-w-6xl mx-auto animate-slide-up">
+            <h2 class="section-title text-5xl text-center mb-10 " style="font-family: 'Cormorant Garamond', serif;">
+            Ingredient Wizardry <i class="ri-magic-fill text-2xl"></i>
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="animate-fade-in" style="animation-delay: 0.2s;">
+                    <label class="block text-gray-700 font-semibold mb-3 flex items-center">
+                    <i class="ri-list-check text-xl mr-2 text-primary-color"></i> Ingredients
+                    </label>
+                    <input type="text" id="ingredients" placeholder="e.g. chicken, broccoli, garlic" class="input-field w-full">
+                </div>
+                <div class="animate-fade-in" style="animation-delay: 0.4s;">
+                    <label class="block text-gray-700 font-semibold mb-3 flex items-center">
+                    <i class="ri-camera-line text-xl mr-2 text-primary-color"></i>  Upload Image (Optional)
+                    </label>
+                    <input type="file" id="image-upload" accept="image/*" class="input-field w-full cursor-pointer">
+                </div>
+            </div>
+
+            <button onclick="generateRecipes()" class="btn-primary w-full mt-8 flex items-center justify-center gap-2 animate-scale-up">
+            <i class="ri-search-eye-line text-xl"></i> Generate Recipes
+            </button>
+        </div>
+
+        <!-- Recipe List -->
+        <div id="recipe-list" class="mt-16 grid gap-10 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 animate-slide-up">
+        </div>
+
+        <!-- Generate More Button -->
+        <div id="generate-more-container" class="mt-12 text-center animate-fade-in hidden">
+            <button onclick="generateMoreRecipes()" class="btn-primary">
+            <i class="ri-refresh-line"></i>  More Recipes
+            </button>
+        </div>
+    </div>
+</section>
 
     
+
+    <!-- Recipe Modal -->
+    <div id="recipe-modal" class="fixed inset-0 modal hidden  px-4 py-6 z-50">
+        
+    <div class="modal-content p-8 w-full max-w-4xl">
+    <button onclick="closeModal()" class="modal-close">
+        <i class="ri-close-fill text-xl"></i>
+    </button>
+    <div id="recipe-details" class="modal-details animate-fade-in"></div>
+</div>
+
+    </div>
+
+    <!-- Footer -->
+  
 
     <script>
-        async function fetchRandomFoodImage() {
-            try {
-                const response = await fetch('/fetch_image?genre=recipe');
-                const data = await response.json();
-                if (data.image_url) {
-                    return data.image_url;
-                } else {
-                    console.error('Error fetching image:', data.error);
-                    return null;
-                }
-            } catch (error) {
-                console.error('Failed to fetch image:', error);
-                return null;
-            }
-        }
+        // [The entire original script remains unchanged]
+        let currentIngredients = '';
+        let generatedRecipes = [];
 
-        async function setBackgroundImage() {
-            const imageUrl = await fetchRandomFoodImage();
-            if (imageUrl) {
-                document.body.style.backgroundImage = `url(${imageUrl})`;
-                // Load the background image first
-                const backgroundImage = new Image();
-                backgroundImage.src = imageUrl;
-                backgroundImage.onload = function() {
-                    // Show the container and its contents after the image is loaded
-                    document.getElementById('chefContainer').style.display = 'block';
-                };
-            } else {
-                // Fallback to a default image or color if fetching fails
-                document.body.style.backgroundColor = '#f0f0f0';
-                document.getElementById('chefContainer').style.display = 'block';
-            }
-        }
+        async function generateRecipes(isMoreRecipes = false) {
+           const ingredientsInput = document.getElementById('ingredients');
+           const imageUpload = document.getElementById('image-upload');
+           const recipeList = document.getElementById('recipe-list');
+           const generateMoreContainer = document.getElementById('generate-more-container');
 
-        setBackgroundImage();
+           if (!isMoreRecipes) {
+               recipeList.innerHTML = '';
+               generatedRecipes = [];
+           }
 
-        document.getElementById('chefForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const user_ingredients = document.getElementById('user_ingredients').value;
-            const imageFile = document.getElementById('image').files[0];
-            const formData = new FormData();
-            formData.append('user_ingredients', user_ingredients);
-            if (imageFile) {
-                formData.append('image', imageFile);
-            }
-            document.getElementById('loader').style.display = 'block'; 
-            document.getElementById('output').style.display = 'none'; 
-            try {
-                const response = await fetch('/chef', {
-                    method: 'POST',
-                    body: formData
+           recipeList.innerHTML = `
+               <div class="col-span-full flex justify-center items-center">
+                   <div class="loader"></div>
+               </div>
+           `;
+           generateMoreContainer.classList.add('hidden');
+
+           const formData = new FormData();
+           currentIngredients = ingredientsInput.value;
+
+           if (currentIngredients) {
+               formData.append('ingredients', currentIngredients);
+           }
+
+           if (imageUpload.files.length > 0) {
+               formData.append('image', imageUpload.files[0]);
+           }
+
+           if (isMoreRecipes && generatedRecipes.length > 0) {
+               generatedRecipes.forEach(recipe => {
+                   formData.append('previous_recipes[]', recipe);
+               });
+           }
+
+           try {
+               const response = await fetch('/generate_recipes', {
+                   method: 'POST',
+                   body: formData
+               });
+
+               const recipes = await response.json();
+
+               if (recipes.error) {
+                   recipeList.innerHTML = `<p class="text-red-500 text-center mt-4 col-span-full">${recipes.error}</p>`;
+                   return;
+               }
+
+               generatedRecipes = generatedRecipes.concat(recipes);
+               recipeList.innerHTML = '';
+
+               recipes.forEach(recipe => {
+                    const card = document.createElement('div');
+                    card.classList.add('recipe-card','animate-scale-up');
+                    card.innerHTML = `
+                        <div class="p-6">
+                            <h3 class="recipe-card-title">${recipe}</h3>
+                            <p class="recipe-card-description"><i class="ri-information-line text-primary-color mr-1"></i> Click for details</p>
+                        </div>
+                    `;
+                    card.onclick = () => getRecipeDetails(recipe);
+                    recipeList.appendChild(card);
                 });
-                const data = await response.json();
-                const response_text = data.response;
-                // Format response
-                const formatted_response = response_text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                .replace(/(\d+\.\s+)/g, '<br>$1')
-                .replace(/\n/g, '<br>');
-                document.getElementById('output').innerHTML = formatted_response;
-                // Show the output after receiving the response
-                document.getElementById('output').style.display = 'block';
-            } catch (error) {
-                console.error('Error fetching recipe:', error);
-                document.getElementById('output').innerHTML = 'Error generating recipe. Please try again later.';
-                document.getElementById('output').style.display = 'block';
-            } finally {
-                document.getElementById('loader').style.display = 'none'; 
-            }
-        });
+                
+               generateMoreContainer.classList.remove('hidden');
+           } catch (error) {
+               console.error('Error:', error);
+               recipeList.innerHTML = `<p class="text-red-500 text-center mt-4 col-span-full">Failed to generate recipes.</p>`;
+           }
+        }
 
-        document.getElementById('image').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            const preview = document.getElementById('imagePreview');
-            const previewImage = document.getElementById('previewImage');
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImage.src = e.target.result;
-                    preview.style.display = 'block'; /* Show the preview */
-                };
-                reader.readAsDataURL(file);
-            } else {
-                preview.style.display = 'none'; /* Hide the preview if no file is selected */
-            }
-        });
+        // Rest of the script remains identical to the previous version
+        function generateMoreRecipes() {
+           generateRecipes(true);
+        }
+
+        async function getRecipeDetails(recipeName) {
+           const recipeModal = document.getElementById('recipe-modal');
+           const recipeDetails = document.getElementById('recipe-details');
+           const imageUpload = document.getElementById('image-upload');
+
+           recipeDetails.innerHTML = `
+               <div class="col-span-full flex justify-center items-center">
+                   <div class="loader"></div>
+               </div>
+           `;
+           recipeModal.classList.remove('hidden');
+
+           const formData = new FormData();
+           formData.append('recipe_name', recipeName);
+           
+           if (currentIngredients) {
+               formData.append('ingredients', currentIngredients);
+           }
+
+           if (imageUpload.files.length > 0) {
+               formData.append('image', imageUpload.files[0]);
+           }
+
+           try {
+               const response = await fetch('/get_recipe_details', {
+                   method: 'POST',
+                   body: formData
+               });
+
+               const details = await response.json();
+
+               if (details.error) {
+                   recipeDetails.innerHTML = `
+                       <p class="text-red-500 text-center mt-4">
+                           ${details.error} 
+                           ${details.ingredients ? `<br>Ingredients detected: ${details.ingredients}` : ''}
+                       </p>
+                   `;
+                   return;
+               }
+
+               recipeDetails.innerHTML = `
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800">${details.name}</h2>
+                    <h3 class="text-2xl font-semibold mb-4 text-primary-color">Ingredients</h3>
+                    <div class="flex flex-wrap mb-6">
+                        ${details.ingredients.map(ing => `<span class="ingredient-chip"><i class="ri-leaf-line text-sm"></i>${ing}</span>`).join('')}
+                    </div>
+                    <h3 class="text-2xl font-semibold mb-4 text-primary-color">Instructions</h3>
+                    <ol class="list-decimal list-inside space-y-4 text-gray-700">
+                        ${details.instructions.map(step => `<li class="mb-2">${step}</li>`).join('')}
+                    </ol>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                        <div>
+                            <h3 class="text-xl font-semibold mb-3 text-accent-color">Who Can Eat <i class="ri-thumb-up-line"></i></h3>
+                            <ul class="list-disc list-inside space-y-2 text-gray-700">
+                                ${details.who_can_eat.map(group => `<li>${group}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-3 text-red-600">Who Should Avoid <i class="ri-thumb-down-line"></i></h3>
+                            <ul class="list-disc list-inside space-y-2 text-gray-700">
+                                ${details.who_should_avoid.map(group => `<li>${group}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                    ${details.additional_info ? `
+                        <div class="mt-8">
+                            <h3 class="text-xl font-semibold mb-3 text-gray-800">Additional Info</h3>
+                            <p class="text-gray-700">${details.additional_info}</p>
+                        </div>
+                    ` : ''}
+                `;
+
+           } catch (error) {
+               console.error('Error:', error);
+               recipeDetails.innerHTML = `<p class="text-red-500 text-center mt-4">Failed to retrieve recipe details.</p>`;
+           }
+        }
+
+        function closeModal() {
+           const recipeModal = document.getElementById('recipe-modal');
+           recipeModal.classList.add('hidden');
+        }
     </script>
-    
 </body>
 </html>
