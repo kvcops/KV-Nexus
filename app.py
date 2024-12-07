@@ -367,7 +367,11 @@ def extract_ingredients_from_image(image):
     except Exception as e:
         print(f"Ingredient extraction error: {e}")
         return ''
-
+        
+@app.route('/chef')  # New route for chef.html
+def chef():
+    return render_template('chef.html')
+    
 @app.route('/generate_recipes', methods=['POST'])
 def generate_recipes():
     ingredients = request.form.get('ingredients', '')
