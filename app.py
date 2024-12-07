@@ -277,34 +277,140 @@ def chat():
     return render_template('chat.html')
 import PIL
 
-@app.route('/chef', methods=['GET', 'POST'])
-def chef():
-    if request.method == 'POST':
-        if 'image' in request.files:
-            image = request.files['image']
-            if image.filename != '':
-                try:
-                    img = Image.open(BytesIO(image.read()))
-                    prompt = ["Generate a recipe based on the vegetables in the image and explain the steps to cook it in a stepwise manner and formatted manner. Also explain who can eat and who shouldn't eat.", img]
-                    response = model_vision.generate_content(prompt, safety_settings=safety_settings, stream=True)
-                    response.resolve()
-                    response_text = format_response(response.text)
-                    return jsonify({'response': response_text})
+def generate_recipes_from_ingredients(ingredients, previous_recipes=None):
+    """Generate recipe names based on ingredients, avoiding previously generated recipes."""
+    try:
+        exclusion_clause = f" Do not include these recipes: {', '.join(previous_recipes)}" if previous_recipes else ""
+        
+        prompt = f"""Generate a list of 5 unique recipe names that can be made using the following ingredients: {ingredients}. 
+        Ensure the recipes are creative and different from any previously generated recipes.{exclusion_clause}
+        Respond in the following strict JSON format:
+        {{
+            "recipes": [
+                "Recipe Name 1",
+                "Recipe Name 2",
+                "Recipe Name 3",
+                "Recipe Name 4",
+                "Recipe Name 5"
+            ]
+        }}"""
+        
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.8,
+                max_output_tokens=300
+            )
+        )
+        
+        json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group(0))['recipes']
+        return []
+    except Exception as e:
+        print(f"Error generating recipes: {e}")
+        return []
 
-                except PIL.UnidentifiedImageError:
-                    return jsonify({'error': "Image format not recognized"}), 400
-                except Exception as e:
-                    logging.error(f"Error processing image: {e}")
-                    return jsonify({'error': "Image processing failed"}), 500
+def generate_recipe_details(recipe_name, ingredients):
+    """Generate detailed recipe information."""
+    try:
+        prompt = f"""Generate detailed recipe information for {recipe_name} using ingredients: {ingredients}. 
+        Provide a response in the following strict JSON format:
+        {{
+            "name": "Recipe Name",
+            "ingredients": ["Ingredient 1", "Ingredient 2"],
+            "instructions": ["Step 1", "Step 2", "Step 3"],
+            "who_can_eat": ["Vegetarians", "Vegans","No restrictions anyone can eat","or add reasons about which type of people should eat it more"],
+            "who_should_avoid": ["Gluten Intolerant", "Dairy Allergies","or add reasons to people who is suffering from a disease so that they should not eat"],
+            "additional_info": "Any extra notes about the recipe"
+        }}"""
+        
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.5,
+                max_output_tokens=1000
+            )
+        )
+        
+        json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group(0))
+        return None
+    except Exception as e:
+        print(f"Error generating recipe details: {e}")
+        return None
 
-        user_ingredients = request.form['user_ingredients']
-        prompt = f"Generate a recipe based on the following ingredients {user_ingredients} and explain the steps to cook it in a stepwise manner and formatted manner. Also explain who can eat and who shouldn't eat."
-        response = chef_model.generate_content([prompt], safety_settings=safety_settings)  # Use chef_model here
-        response_text = format_response(response.text)
-        return jsonify({'response': response_text})
+def extract_ingredients_from_image(image):
+    try:
+        prompt = """List all food ingredients in this image precisely. 
+        Return as a comma-separated list. 
+        Be very specific about what you see."""
+        
+        response = model.generate_content(
+            [prompt, image],
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.2,  # Lower temperature for more precise extraction
+                max_output_tokens=300
+            )
+        )
+        
+        # More robust ingredient parsing
+        ingredients_text = response.text.strip()
+        ingredients = [
+            ing.strip() 
+            for ing in re.split(r'[,\n]', ingredients_text) 
+            if ing.strip() and len(ing.strip()) > 1
+        ]
+        
+        return ', '.join(ingredients) if ingredients else ''
+    except Exception as e:
+        print(f"Ingredient extraction error: {e}")
+        return ''
 
-    return render_template('chef.html')
+@app.route('/generate_recipes', methods=['POST'])
+def generate_recipes():
+    ingredients = request.form.get('ingredients', '')
+    previous_recipes = request.form.getlist('previous_recipes[]')
+    image = request.files.get('image')
+    
+    if image and image.filename:
+        img = PIL.Image.open(image)
+        image_ingredients = extract_ingredients_from_image(img)
+        ingredients = image_ingredients if image_ingredients else ingredients
+    
+    if not ingredients:
+        return jsonify({"error": "No ingredients detected or provided"}), 400
+    
+    recipes = generate_recipes_from_ingredients(ingredients, previous_recipes)
+    return jsonify(recipes)
 
+@app.route('/get_recipe_details', methods=['POST'])
+def get_recipe_details():
+    recipe_name = request.form.get('recipe_name')
+    ingredients = request.form.get('ingredients')
+    image = request.files.get('image')
+    
+    # Ensure ingredients are extracted or passed
+    if image and image.filename:
+        img = PIL.Image.open(image)
+        image_ingredients = extract_ingredients_from_image(img)
+        ingredients = image_ingredients if image_ingredients else ingredients
+    
+    # Add more robust error checking
+    if not ingredients:
+        # Attempt to get ingredients from form data if not from image
+        ingredients = request.form.get('ingredients', '')
+    
+    if not recipe_name or not ingredients:
+        return jsonify({
+            "error": "No ingredients found. Please upload a clear image or enter ingredients manually.",
+            "recipe_name": recipe_name,
+            "ingredients": ingredients
+        }), 400
+    
+    recipe_details = generate_recipe_details(recipe_name, ingredients)
+    return jsonify(recipe_details)
 
 @app.route('/story_generator', methods=['GET', 'POST'])
 def story_generator():
