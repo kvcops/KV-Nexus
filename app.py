@@ -780,8 +780,6 @@ import threading
 
 # Token bucket for rate limiting
 # Rate limiting parameters
-
-# Token bucket for rate limiting
 REQUEST_LIMIT = 15
 TIME_WINDOW = 60
 
@@ -791,7 +789,7 @@ class TokenBucket:
         self.tokens = tokens
         self.fill_rate = fill_rate
         self.last_check = time.time()
-        self.lock = Lock()
+        self.lock = threading.Lock()
 
     def get_token(self):
         with self.lock:
@@ -804,11 +802,17 @@ class TokenBucket:
                 return True
             return False
 
+# Initialize the token bucket (15 tokens, refill 1 token every 4 seconds)
 token_bucket = TokenBucket(REQUEST_LIMIT, 1 / (TIME_WINDOW / REQUEST_LIMIT))
 
 def rate_limit_check():
     while not token_bucket.get_token():
         time.sleep(1)
+# Rate limiting parameters
+
+rate_limit_lock = None  # Replace with your lock mechanism
+last_reset_time = time.time()
+request_count = 0
 
 def rate_limited(func):
     @wraps(func)
@@ -818,60 +822,45 @@ def rate_limited(func):
     return wrapper
 
 
-# Retry mechanism with exponential backoff
-def retry_with_exponential_backoff(func, max_retries=3, initial_delay=1):
-    retries = 0
-    while retries < max_retries:
-        try:
-            return func()
-        except google_exceptions.ResourceExhausted as e:
-            delay = initial_delay * (2 ** retries) + random.uniform(0, 1)
-            logger.warning(f"Resource exhausted: {e}. Retrying in {delay:.2f} seconds...")
-            time.sleep(delay)
-            retries += 1
-    logger.error(f"Failed after {max_retries} retries.")
-    return None
-
-
 import fitz  # PyMuPDF
 import io
 from PIL import Image
 import base64
 
-def process_page(pdf_id, page_num, doc_ref):
-    logger.info(f"Processing page {page_num + 1} of PDF {pdf_id}")
-
-    # Get the File URI from Firestore
-    doc = doc_ref.get()
-    if not doc.exists:
-        logger.error(f"Document not found for PDF ID: {pdf_id}")
-        return
-
-    file_uri = doc.to_dict().get('file_uri')
-    if not file_uri:
-        logger.error(f"File URI not found for PDF ID: {pdf_id}")
-        return
+def process_page(pdf_document, page_num, doc_ref):
+    logger.info(f"Processing page {page_num + 1}")
+    page = pdf_document[page_num]
+    
+    # Convert page to image
+    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # Increase resolution
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    
+    # Convert image to base64
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
     try:
-        page_summary = generate_summary(file_uri)  # Pass the File URI
+        page_summary = generate_summary(img_base64)
         if page_summary:
-            logger.info(f"Summary generated for page {page_num + 1} of PDF {pdf_id}")
+            logger.info(f"Summary generated for page {page_num + 1}")
             doc_ref.update({
                 'current_page': page_num + 1,
                 'summary': firestore.ArrayUnion([page_summary])
             })
         else:
-            logger.warning(f"Failed to generate summary for page {page_num + 1} of PDF {pdf_id}")
+            logger.warning(f"Failed to generate summary for page {page_num + 1}")
             doc_ref.update({
                 'current_page': page_num + 1,
                 'summary': firestore.ArrayUnion([f"(Summary not available for page {page_num + 1})"])
             })
     except Exception as e:
-        logger.error(f"Error processing page {page_num + 1} of PDF {pdf_id}: {e}")
+        logger.error(f"Error processing page {page_num + 1}: {e}")
         doc_ref.update({
             'current_page': page_num + 1,
             'summary': firestore.ArrayUnion([f"(Error processing page {page_num + 1})"])
         })
+
 @app.route('/document_summarizer', methods=['GET', 'POST'])
 def document_summarizer():
     return render_template('document_summarizer.html')
@@ -889,12 +878,12 @@ def get_quote():
     quote = random.choice(quotes)
     return jsonify({'quote': quote})
 
-# Updated generate_summary to use File API
 @rate_limited
-def generate_summary(file_uri):
-    rate_limit_check()
-
-    prompt = """Analyze the following page from a document, and provide a concise and simplified summary. Ensure the summary is well-structured with clear headings and subheadings.
+def generate_summary(image_base64):
+    rate_limit_check()  # Wait for a token before making the API call
+    
+    prompt = [
+        """Analyze the following image, which is a page from a document, and provide a concise and simplified summary. Ensure the summary is well-structured with clear headings and subheadings.
 
 Formatting Guidelines:
 
@@ -909,29 +898,23 @@ Formatting Guidelines:
 - Focus on the main ideas and avoid unnecessary details.
 - Do not include direct error messages or irrelevant information.
 
-Here is the document page to analyze and summarize:
-"""
+Here is the image to analyze and summarize:
+""",
+        Image.open(io.BytesIO(base64.b64decode(image_base64)))
+    ]
 
     try:
-        # Get the file object from the URI
-        file_object = genai.get_file(file_uri)
-
-        # Use retry mechanism for the API call
-        def make_api_call():
-            return model_vision.generate_content([file_object, prompt], safety_settings=safety_settings)
-
-        summary_text = retry_with_exponential_backoff(make_api_call)
-        
-        if summary_text:
-            logger.info("Summary generated successfully")
-            return summary_text
-        else:
-            logger.error("Summary generation failed after retries.")
-            return None
-
+        response = model_vision.generate_content(prompt, safety_settings=safety_settings)
+        summary_text = response.text
+        logger.info("Summary generated successfully")
+        return summary_text
+    except google.api_core.exceptions.ResourceExhausted as e:
+        logger.warning(f"Resource exhausted: {e}. Retrying...")
+        raise  # This will trigger a retry
     except Exception as e:
         logger.error(f"Error in Gemini API call: {e}")
-        return None
+        return None  # Return None for non-retryable errors
+
 def create_word_document(summary):
     doc = Document()
 
@@ -1123,7 +1106,6 @@ def add_table_to_document_from_html(doc, table_element):
                 shading_elm.set(qn('w:fill'), 'D9E1F2')  # Light blue background
                 row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
 
-# Updated upload_file using File API
 @app.route('/upload', methods=['POST'])
 @rate_limited
 def upload_file():
@@ -1135,22 +1117,22 @@ def upload_file():
 
     if file and file.filename.lower().endswith('.pdf'):
         try:
-            # Read the file content directly as bytes
+            # Read the file into memory
             file_content = file.read()
             file_size = len(file_content)
+
+            # Check file size (10MB limit)
+            if file_size > 10 * 1024 * 1024:
+                return jsonify({'error': 'File size exceeds 10MB limit'}), 400
 
             # Generate a unique PDF ID
             pdf_id = str(uuid.uuid4())
 
-            # Upload the PDF to Gemini File API (Corrected)
-            uploaded_file = genai.upload_file(file_content, mime_type='application/pdf')  # Pass file_content directly
-            file_uri = uploaded_file.name  # Get the File API URI
-
-            # Optionally store a copy in Firebase Storage if needed
+            # Upload the PDF to Firebase Storage
             blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
             blob.upload_from_string(file_content, content_type='application/pdf')
 
-            # Get the total number of pages (using file_content directly)
+            # Get the total number of pages
             pdf_document = fitz.open(stream=file_content, filetype="pdf")
             total_pages = len(pdf_document)
             pdf_document.close()
@@ -1163,8 +1145,7 @@ def upload_file():
                 'summary': '',
                 'processing_start_time': time.time(),
                 'timestamp': firestore.SERVER_TIMESTAMP,
-                'file_size': file_size,
-                'file_uri': file_uri  # Store the File API URI
+                'file_size': file_size
             })
 
             return jsonify({
@@ -1179,7 +1160,6 @@ def upload_file():
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
 
 # Update the process_pdf_endpoint function
-# Updated process_pdf_endpoint
 @app.route('/process_pdf', methods=['POST'])
 def process_pdf_endpoint():
     data = request.get_json()
@@ -1193,7 +1173,7 @@ def process_pdf_endpoint():
     if not doc.exists:
         logger.error(f"Invalid PDF ID: {pdf_id}")
         return jsonify({'error': 'Invalid PDF ID.'}), 400
-
+    
     result = doc.to_dict()
     current_page = result['current_page']
     total_pages = result['total_pages']
@@ -1204,15 +1184,12 @@ def process_pdf_endpoint():
 
     try:
         logger.info(f"Processing PDF {pdf_id}, page {current_page + 1} of {total_pages}")
+        blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
+        pdf_bytes = blob.download_as_bytes()
+        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
 
-        # Use the File URI directly (no need to download from Firebase)
-        file_uri = result.get('file_uri')
-        if not file_uri:
-            logger.error(f"File URI not found for PDF ID: {pdf_id}")
-            return jsonify({'error': 'File URI not found.'}), 400
-
-        # Process the page (or multiple pages if you implement batching)
-        process_page(pdf_id, current_page, doc_ref)
+        process_page(pdf_document, current_page, doc_ref)
+        pdf_document.close()
 
         updated_doc = doc_ref.get().to_dict()
         if updated_doc['current_page'] >= total_pages:
@@ -1221,10 +1198,7 @@ def process_pdf_endpoint():
                 'status': 'completed',
                 'processing_end_time': time.time()
             })
-            # If you stored a copy in Firebase Storage, delete it now
-            if result.get('file_size') > 0:  # Check if a Firebase copy was made
-                blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
-                blob.delete()
+            blob.delete()
             return jsonify({'status': 'completed'}), 200
         else:
             logger.info(f"PDF {pdf_id} processing in progress. Current page: {updated_doc['current_page']}")
@@ -1238,7 +1212,6 @@ def process_pdf_endpoint():
         logger.error(f"Error processing PDF {pdf_id}: {e}")
         return jsonify({'error': str(e)}), 500
 
-# Updated check_status
 @app.route('/check_status', methods=['GET'])
 def check_status():
     pdf_id = request.args.get('pdf_id')
@@ -1251,7 +1224,7 @@ def check_status():
     if not doc.exists:
         logger.error(f"Invalid PDF ID for status check: {pdf_id}")
         return jsonify({'error': 'Invalid PDF ID.'}), 400
-
+    
     result = doc.to_dict()
     status = result.get('status', 'processing')
 
@@ -1278,6 +1251,5 @@ def check_status():
             'current_page': result.get('current_page', 0),
             'total_pages': result.get('total_pages', 0)
         }), 200
-
 if __name__ == '__main__':
     app.run(debug=True)
