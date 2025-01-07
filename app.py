@@ -1094,6 +1094,9 @@ def add_table_to_document_from_html(doc, table_element):
                 row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
 
 
+import google.generativeai as genai
+import io
+
 @app.route('/upload', methods=['POST'])
 @rate_limited
 def upload_file():
