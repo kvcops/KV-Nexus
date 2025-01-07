@@ -270,40 +270,71 @@
             }
         });
 
+
         // Form Submission
         form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-        
+             e.preventDefault(); // prevent the default form submission action
+
+             const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+
+             if (!file) {
+               alert('Please select a file.');
+               return;
+             }
+
             // Show loading
             form.classList.add('hidden');
             loading.classList.remove('hidden');
             progressText.textContent = 'Uploading file...';
-        
-            try {
-                // Upload the file and get pdf_id
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-        
-                if (response.ok) {
-                    const data = await response.json();
-                    const pdfId = data.pdf_id;
-    
-                    // Start processing the PDF
+         try {
+            const uploadedFile  = await uploadFile(file);
+                if (uploadedFile){
+                    const pdfId = uploadedFile.pdf_id;
+                   // Start processing the PDF
                     progressText.textContent = 'Processing your PDF...';
                     await processPdf(pdfId);
-                } else {
-                    throw new Error('Upload failed');
+
+                }else{
+                    throw new Error('File Upload to API failed')
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again or upload a smaller PDF file.');
-                loading.classList.add('hidden');
-                form.classList.remove('hidden');
-            }
+
+
+        }catch (error){
+              console.error('Error:', error);
+              alert('An error occurred during file upload. Please try again or upload a smaller PDF file.');
+             loading.classList.add('hidden');
+             form.classList.remove('hidden');
+             return;
+        }
+
         });
+
+        async function uploadFile(file){
+            try {
+                const fileContent = await file.arrayBuffer();
+                const blob = new Blob([fileContent], {type: file.type});
+                const formData = new FormData();
+                formData.append('file', blob, file.name); // Include the file name
+
+                const uploadResponse = await fetch('/upload', {
+                    method: 'POST',
+                     body: formData,
+
+                });
+
+                 if (uploadResponse.ok) {
+                    const data = await uploadResponse.json();
+                    return data;
+                } else {
+                     const errorText = await uploadResponse.text();
+                     throw new Error('Upload failed: ' + errorText);
+                 }
+             } catch (error) {
+                 console.error('Upload Error:', error);
+                throw new Error('Upload failed: ' + error.message)
+            }
+        }
         
         async function processingLoop(pdfId) {
             try {
@@ -318,7 +349,7 @@
                     if (data.status === 'completed') {
                         await checkStatus(pdfId);
                     } else if (data.status === 'processing') {
-                        progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
+                        progressText.textContent = `Analyzing document content...`; // Changed status text
                         // Call process_pdf again after a short delay
                         setTimeout(() => processingLoop(pdfId), 1000);
                     } else {
@@ -395,9 +426,9 @@
                             link.click();
                             document.body.removeChild(link);
                         });
-                    } else if (data.status === 'processing') {
+                    } else if (data.status === 'processing' || data.status === 'pending_upload_processing') {
                         // Update progress text
-                        progressText.textContent = `Processed ${data.current_page} of ${data.total_pages} pages...`;
+                       progressText.textContent = `Processing document...`; // Display generic "Processing" message
                         // Poll for status again
                         setTimeout(() => checkStatus(pdfId), 1000);
                     } else {
