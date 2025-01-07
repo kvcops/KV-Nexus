@@ -78,7 +78,6 @@ genai.configure(api_key=api_key)
 
 user_data = {}  # Dictionary to store user data
 
-
 FIREBASE_TYPE = os.environ.get("FIREBASE_TYPE")
 FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
 FIREBASE_PRIVATE_KEY_ID = os.environ.get("FIREBASE_PRIVATE_KEY_ID")
@@ -90,7 +89,6 @@ FIREBASE_TOKEN_URI = os.environ.get("FIREBASE_TOKEN_URI")
 FIREBASE_AUTH_PROVIDER_X509_CERT_URL = os.environ.get("FIREBASE_AUTH_PROVIDER_X509_CERT_URL")
 FIREBASE_CLIENT_X509_CERT_URL = os.environ.get("FIREBASE_CLIENT_X509_CERT_URL")
 FIREBASE_UNIVERSE_DOMAIN = os.environ.get("FIREBASE_UNIVERSE_DOMAIN")
-
 
 STORAGE_BUCKET_URL = os.environ.get("STORAGE_BUCKET_URL")  # Bucket URL
 
@@ -108,11 +106,9 @@ cred = credentials.Certificate({
     "universe_domain": FIREBASE_UNIVERSE_DOMAIN
 })
 
-
 firebase_admin.initialize_app(cred, {'storageBucket': STORAGE_BUCKET_URL})
 db = firestore.client()
 bucket = storage.bucket()
-
 
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
 # Generation configurations
@@ -183,7 +179,6 @@ def format_response(response_text):
     formatted_text = '<br>'.join(lines)
     return formatted_text
 
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -191,7 +186,6 @@ def index():
 @app.route('/contributors',methods=['GET', 'POST'])
 def contributions ():
     return render_template('contributors.html')
-
 
 @app.route('/api/weather')
 def get_weather():
@@ -222,7 +216,6 @@ def get_weather():
     else:
         return jsonify({'error': 'City not found or API request failed'}), 404
 
-
 @app.route('/fetch_image')
 def fetch_image():
     genre = request.args.get('genre', 'recipe')
@@ -234,7 +227,6 @@ def fetch_image():
         return jsonify({'image_url': image_url})
     else:
         return jsonify({'error': 'Failed to fetch image'}), 500
-
 
 @app.route('/chat', methods=['GET', 'POST'])
 def chat():
@@ -538,7 +530,6 @@ def code_generation():
         return jsonify({'response': response_text})
     return render_template('code_generation.html')
 
-
 @app.route('/algorithm_generation', methods=['GET', 'POST'])
 def algorithm_generation():
     if request.method == 'POST':
@@ -647,12 +638,10 @@ Image data: data:image/png;base64,{image_base64}
             return jsonify({'error': "Internal Server Error"}), 500
     return render_template('analyze.html')
 
-
 # Flowchart Generation Routes
 @app.route('/flowchart', methods=['GET', 'POST'])
 def flowchart():
     return render_template('flowchart.html')
-
 
 def generate_flowchart(topic):
     prompt = f"""
@@ -726,7 +715,6 @@ def generate_flowchart(topic):
             return {"error": "Invalid JSON structure", "raw_response": response.text}
     else:
         return {"error": "No JSON object found in the response", "raw_response": response.text}
-
 
 @app.route('/get_flowchart_data', methods=['POST'])
 def get_flowchart_data():
@@ -822,7 +810,6 @@ def rate_limited(func):
     return wrapper
 
 
-import fitz  # PyMuPDF
 import io
 from PIL import Image
 import base64
@@ -1117,44 +1104,29 @@ def upload_file():
 
     if file and file.filename.lower().endswith('.pdf'):
         try:
-            # Read the file into memory
-            file_content = file.read()
-            file_size = len(file_content)
+            # Upload the file using the File API
+            uploaded_file = genai.upload_file(file.read(), mime_type='application/pdf')
+            file_uri = uploaded_file.uri
+            pdf_id = str(uuid.uuid4()) # Still generate a unique ID for your internal tracking
 
-            # Check file size (10MB limit)
-            if file_size > 10 * 1024 * 1024:
-                return jsonify({'error': 'File size exceeds 10MB limit'}), 400
-
-            # Generate a unique PDF ID
-            pdf_id = str(uuid.uuid4())
-
-            # Upload the PDF to Firebase Storage
-            blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
-            blob.upload_from_string(file_content, content_type='application/pdf')
-
-            # Get the total number of pages
-            pdf_document = fitz.open(stream=file_content, filetype="pdf")
-            total_pages = len(pdf_document)
-            pdf_document.close()
-
-            # Initialize processing status in Firestore
+            # Initialize processing status in Firestore (adjust as needed)
             db.collection('pdf_processes').document(pdf_id).set({
-                'status': 'processing',
-                'current_page': 0,
-                'total_pages': total_pages,
-                'summary': '',
-                'processing_start_time': time.time(),
+                'status': 'pending_upload_processing', # Indicate it's ready for processing
+                'file_uri': file_uri, # Store the file URI
+                'total_pages': -1, # Will be updated during processing
+                'summary': [],
+                'processing_start_time': None,
                 'timestamp': firestore.SERVER_TIMESTAMP,
-                'file_size': file_size
+                 'file_size': file.content_length # Get the file size
             })
 
             return jsonify({
                 'pdf_id': pdf_id,
-                'total_pages': total_pages,
-                'file_size': file_size
+                'file_uri': file_uri,
+                'file_size': file.content_length
             }), 200
         except Exception as e:
-            logging.error(f"Error uploading file: {e}")
+            logging.error(f"Error uploading file to File API: {e}")
             return jsonify({'error': f'Error uploading file: {str(e)}'}), 500
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
@@ -1175,43 +1147,42 @@ def process_pdf_endpoint():
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     
     result = doc.to_dict()
-    current_page = result['current_page']
-    total_pages = result['total_pages']
+    file_uri = result.get('file_uri')
+    if not file_uri:
+        logger.error(f"File URI not found for PDF ID: {pdf_id}")
+        return jsonify({'error': 'File URI not found.'}), 500
 
-    if current_page >= total_pages:
+    if result['status'] == 'completed':
         logger.info(f"PDF {pdf_id} processing already completed")
         return jsonify({'status': 'completed'}), 200
 
-    try:
-        logger.info(f"Processing PDF {pdf_id}, page {current_page + 1} of {total_pages}")
-        blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
-        pdf_bytes = blob.download_as_bytes()
-        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+    if result['status'] == 'pending_upload_processing':
+        try:
+            logger.info(f"Starting processing for PDF {pdf_id} using File API URI: {file_uri}")
+            doc_ref.update({'status': 'processing', 'processing_start_time': time.time()})
 
-        process_page(pdf_document, current_page, doc_ref)
-        pdf_document.close()
-
-        updated_doc = doc_ref.get().to_dict()
-        if updated_doc['current_page'] >= total_pages:
-            logger.info(f"PDF {pdf_id} processing completed")
+            # **Option 1: Summarize the entire document at once (if feasible within context window)**
+            prompt = f"Summarize the content of this document."
+            response = model_vision.generate_content([file_uri, prompt], safety_settings=safety_settings)
+            summary_text = response.text
             doc_ref.update({
+                'summary': [summary_text], # Store the single summary
                 'status': 'completed',
                 'processing_end_time': time.time()
             })
-            blob.delete()
             return jsonify({'status': 'completed'}), 200
-        else:
-            logger.info(f"PDF {pdf_id} processing in progress. Current page: {updated_doc['current_page']}")
-            return jsonify({
-                'status': 'processing',
-                'current_page': updated_doc['current_page'],
-                'total_pages': total_pages
-            }), 200
 
-    except Exception as e:
-        logger.error(f"Error processing PDF {pdf_id}: {e}")
-        return jsonify({'error': str(e)}), 500
+            # **Option 2: Process by sections or chunks (more robust for large documents)**
+            # You'll need to refine the prompt to instruct Gemini on how to process sections.
+            # This might involve making multiple API calls.
 
+        except Exception as e:
+            logger.error(f"Error processing PDF {pdf_id} using File API: {e}")
+            doc_ref.update({'status': 'failed', 'error': str(e)})
+            return jsonify({'error': str(e)}), 500
+    else:
+        # Handle other statuses if needed
+        return jsonify({'status': result['status']}), 200
 @app.route('/check_status', methods=['GET'])
 def check_status():
     pdf_id = request.args.get('pdf_id')
@@ -1226,11 +1197,11 @@ def check_status():
         return jsonify({'error': 'Invalid PDF ID.'}), 400
     
     result = doc.to_dict()
-    status = result.get('status', 'processing')
+    status = result.get('status', 'pending_upload_processing')
 
     if status == 'completed':
         logger.info(f"Status check: PDF {pdf_id} processing completed")
-        summary = '\n\n'.join(result['summary'])
+        summary = '\n\n'.join(result.get('summary', []))
         docx_buffer = create_word_document(summary)
         docx_base64 = base64.b64encode(docx_buffer.getvalue()).decode('utf-8')
 
@@ -1245,10 +1216,9 @@ def check_status():
             'processing_time': processing_time
         }), 200
     else:
-        logger.info(f"Status check: PDF {pdf_id} processing in progress. Current page: {result.get('current_page', 0)}")
+        logger.info(f"Status check: PDF {pdf_id} processing in progress. Status: {status}")
         return jsonify({
-            'status': 'processing',
-            'current_page': result.get('current_page', 0),
+            'status': status,
             'total_pages': result.get('total_pages', 0)
         }), 200
 if __name__ == '__main__':
