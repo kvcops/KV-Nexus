@@ -1108,9 +1108,11 @@ def upload_file():
 
     if file and file.filename.lower().endswith('.pdf'):
         try:
-            # Upload the file using the File API
-            uploaded_file = genai.upload_file(data=io.BytesIO(file.read()), mime_type='application/pdf')
-            file_uri = uploaded_file.uri
+            # Use the 'path' parameter to pass a file-like object
+            with io.BytesIO(file.read()) as file_content:
+                uploaded_file = genai.upload_file(path=file_content, mime_type='application/pdf')
+                file_uri = uploaded_file.uri
+            
             pdf_id = str(uuid.uuid4()) # Still generate a unique ID for your internal tracking
 
             # Initialize processing status in Firestore (adjust as needed)
