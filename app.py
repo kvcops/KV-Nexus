@@ -1093,6 +1093,7 @@ def add_table_to_document_from_html(doc, table_element):
                 shading_elm.set(qn('w:fill'), 'D9E1F2')  # Light blue background
                 row_cells[idx]._tc.get_or_add_tcPr().append(shading_elm)
 
+
 @app.route('/upload', methods=['POST'])
 @rate_limited
 def upload_file():
@@ -1105,7 +1106,7 @@ def upload_file():
     if file and file.filename.lower().endswith('.pdf'):
         try:
             # Upload the file using the File API
-            uploaded_file = genai.upload_file(file.read(), mime_type='application/pdf')
+            uploaded_file = genai.upload_file(data=io.BytesIO(file.read()), mime_type='application/pdf')
             file_uri = uploaded_file.uri
             pdf_id = str(uuid.uuid4()) # Still generate a unique ID for your internal tracking
 
@@ -1130,7 +1131,6 @@ def upload_file():
             return jsonify({'error': f'Error uploading file: {str(e)}'}), 500
     else:
         return jsonify({'error': 'Invalid file type. Please upload a PDF.'}), 400
-
 # Update the process_pdf_endpoint function
 @app.route('/process_pdf', methods=['POST'])
 def process_pdf_endpoint():
