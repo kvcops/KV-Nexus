@@ -1135,24 +1135,22 @@ def upload_file():
 
     if file and file.filename.lower().endswith('.pdf'):
         try:
-            # Read the file into memory
+            # Read the file content directly as bytes
             file_content = file.read()
             file_size = len(file_content)
 
             # Generate a unique PDF ID
             pdf_id = str(uuid.uuid4())
 
-            # Upload the PDF to Gemini File API 
-            # (Corrected: Pass file_content directly, not as data=...)
-            file_data = io.BytesIO(file_content)
-            uploaded_file = genai.upload_file(file_data, mime_type='application/pdf') # Pass the BytesIO object directly
+            # Upload the PDF to Gemini File API (Corrected)
+            uploaded_file = genai.upload_file(file_content, mime_type='application/pdf')  # Pass file_content directly
             file_uri = uploaded_file.name  # Get the File API URI
 
-            # Optionally store a copy in Firebase Storage 
+            # Optionally store a copy in Firebase Storage if needed
             blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
             blob.upload_from_string(file_content, content_type='application/pdf')
 
-            # Get the total number of pages
+            # Get the total number of pages (using file_content directly)
             pdf_document = fitz.open(stream=file_content, filetype="pdf")
             total_pages = len(pdf_document)
             pdf_document.close()
@@ -1166,7 +1164,7 @@ def upload_file():
                 'processing_start_time': time.time(),
                 'timestamp': firestore.SERVER_TIMESTAMP,
                 'file_size': file_size,
-                'file_uri': file_uri
+                'file_uri': file_uri  # Store the File API URI
             })
 
             return jsonify({
