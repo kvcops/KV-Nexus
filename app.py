@@ -1142,12 +1142,13 @@ def upload_file():
             # Generate a unique PDF ID
             pdf_id = str(uuid.uuid4())
 
-            # Upload the PDF to Gemini File API
+            # Upload the PDF to Gemini File API 
+            # (Corrected: Pass file_content directly, not as data=...)
             file_data = io.BytesIO(file_content)
-            uploaded_file = genai.upload_file(data=file_data, mime_type='application/pdf')
+            uploaded_file = genai.upload_file(file_data, mime_type='application/pdf') # Pass the BytesIO object directly
             file_uri = uploaded_file.name  # Get the File API URI
 
-            # Optionally store a copy in Firebase Storage if needed for long-term persistence
+            # Optionally store a copy in Firebase Storage 
             blob = bucket.blob(f'pdfs/{pdf_id}.pdf')
             blob.upload_from_string(file_content, content_type='application/pdf')
 
@@ -1156,7 +1157,7 @@ def upload_file():
             total_pages = len(pdf_document)
             pdf_document.close()
 
-            # Initialize processing status in Firestore, storing the File API URI
+            # Initialize processing status in Firestore
             db.collection('pdf_processes').document(pdf_id).set({
                 'status': 'processing',
                 'current_page': 0,
@@ -1165,7 +1166,7 @@ def upload_file():
                 'processing_start_time': time.time(),
                 'timestamp': firestore.SERVER_TIMESTAMP,
                 'file_size': file_size,
-                'file_uri': file_uri  # Store the File API URI
+                'file_uri': file_uri
             })
 
             return jsonify({
