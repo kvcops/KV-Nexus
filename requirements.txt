@@ -1,17 +1,17 @@
 google-generativeai==0.7.2
 python-dotenv==1.0.1
 Werkzeug==3.0.3
-Pillow==10.4.0
+Pillow==9.0.0         # Downgraded from 10.4.0 to reduce size
 Markdown==3.3.7
 mailjet-rest==1.3.4
 requests==2.31.0
-pdf2image==1.16.3
+pdf2image==1.14.0     # Using an older version to help lower the overall size
 python-docx==0.8.11
-PyMuPDF==1.23.7
+PyMuPDF==1.18.19      # Older version expected to be lighter than 1.23.7
 firebase-admin==6.2.0
 beautifulsoup4==4.12.2
 google-api-core==2.11.1
-Flask-Cors
+Flask-Cors==3.0.10     # Explicitly pin a stable version
 Flask==3.0.0
 xhtml2pdf==0.2.11
 PyPDF2==3.0.1
