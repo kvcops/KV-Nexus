@@ -4,541 +4,1708 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enchanted Story Forge</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-</script>
-<div class="gtranslate_wrapper"></div>
-<script>window.gtranslateSettings = {"default_language":"en","detect_browser_language":true,"wrapper_selector":".gtranslate_wrapper"}</script>
-<script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
-
-</script>
+    <title>Enchanted Tales Creator</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Cinzel+Decorative:wght@400;700;900&family=Almendra:wght@400;700&family=Cormorant+Infant:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.birds.min.js"></script>
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key={{ responsive_voice_key }}"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-        
-
-        :root {
-            --primary-color: #ff6f61;
-            --secondary-color: #00bfa5;
-            --accent-color: #ffb74d;
-            --text-color: #333;
-            --background-color: #121212;
-            --card-background: #1e1e1e;
-            --hover-color: #ff8a65;
+       :root {
+            --primary: #2a1b3d;
+            --secondary: #44318d;
+            --accent: #e98074;
+            --accent-light: #e85a4f;
+            --text: #2d2d2d;
+            --bg: #f4e4bc;
+            --white: #ffffff;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            --page-color: #fff9f0;
+            --gold: #d4af37;
         }
-        
-        body {
-            font-family: 'Roboto', sans-serif;
+
+        * {
             margin: 0;
             padding: 0;
-            background-color: var(--background-color);
-            color: #fff;
-            transition: background 1s ease;
-            overflow-x: hidden;
+            box-sizing: border-box;
         }
-        
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 3em;
-            color: var(--primary-color);
+
+        body {
+            font-family: 'Crimson Pro', serif;
+            background: transparent;
+            /* Important for Vanta.js */
+            color: var(--text);
+            min-height: 100vh;
             position: relative;
-            letter-spacing: 2px;
+            /* For absolute positioning of elements */
+            overflow-x: hidden;
+            /* Prevent horizontal scroll */
         }
-        
-        h1::after {
+
+        /* Sparkle Effect */
+        .sparkle {
+            position: absolute;
+            pointer-events: none;
+            animation: sparkle 1.5s linear infinite;
+            opacity: 0;
+        }
+
+        @keyframes sparkle {
+            0%,
+            100% {
+                opacity: 0;
+                transform: scale(0);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Enhanced Header Styles */
+        .header {
+            padding: 4rem 1rem;
+            text-align: center;
+            position: relative;
+            background: linear-gradient(180deg, rgba(42, 27, 61, 0.05), transparent);
+        }
+
+        .header::before,
+        .header::after {
             content: '';
             position: absolute;
-            width: 60px;
-            height: 4px;
-            background-color: var(--primary-color);
+            width: 200px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
             left: 50%;
-            bottom: -10px;
             transform: translateX(-50%);
-            transition: width 0.4s ease;
         }
-        
-        h1:hover::after {
-            width: 120px;
+
+        .header::before {
+            top: 20px;
         }
-        
-        .story-container {
-            display: none;
-            background-color: var(--card-background);
-            border-radius: 20px;
-            padding: 30px;
-            width: 90%;
+
+        .header::after {
+            bottom: 20px;
+        }
+
+        .header h1 {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 4.5rem;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px4px rgba(0, 0, 0, 0.1);
+            letter-spacing: 3px;
+            position: relative;
+            animation: titleFloat 6s ease-in-out infinite;
+        }
+
+        @keyframes titleFloat {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .header p {
+            font-family: 'Almendra', serif;
+            color: var(--secondary);
+            font-size: 1.8rem;
+            font-style: italic;
             max-width: 800px;
-            margin: 20px auto;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
-            opacity: 0;
-            transform: translateY(50px);
-            transition: opacity 0.8s ease, transform 0.8s ease;
+            margin: 0 auto;
         }
-        
-        .story-container.visible {
-            opacity: 1;
+
+        /* Enhanced Input Container */
+        .creation-panel {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 3rem 1rem; /* Reduced padding for better mobile layout*/
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
             transform: translateY(0);
-        }
-        
-        form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-        
-        label {
-            font-weight: 500;
-            color: var(--accent-color);
-            font-size: 1.1em;
-        }
-        
-        input[type="text"],
-        select {
-            width: 100%;
-            padding: 12px;
-            margin-top: 5px;
-            border: none;
-            border-radius: 10px;
-            box-sizing: border-box;
-            font-size: 1em;
-            background: #333;
-            color: #fff;
-            transition: background 0.3s ease;
-        }
-        
-        input[type="text"]:focus,
-        select:focus {
-            background-color: var(--primary-color);
-            color: #fff;
-            outline: none;
-        }
-        
-        .genre-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .genre-btn {
-            padding: 10px 20px;
-            background-color: var(--secondary-color);
-            color: #fff;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 0.9em;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 191, 165, 0.4);
-        }
-        
-        .genre-btn:hover {
-            background-color: var(--hover-color);
-            transform: translateY(-3px);
-        }
-        
-        .genre-btn.active {
-            background-color: var(--accent-color);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(255, 183, 77, 0.4);
-        }
-        
-        .generate-btn {
-            padding: 12px 30px;
-            background-color: var(--primary-color);
-            color: #fff;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 1.1em;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(68, 49, 141, 0.1);
             position: relative;
             overflow: hidden;
-            transition: all 0.4s ease;
-            box-shadow: 0 5px 15px rgba(255, 111, 97, 0.4);
         }
-        
-        .generate-btn::before {
+
+        .creation-panel::before {
             content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--accent), var(--secondary));
+        }
+
+        .creation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 0.8rem;
+            font-family: 'Cormorant Infant', serif;
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 1.3rem;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .input-label::before {
+            content: '✧';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 2px solid rgba(68, 49, 141, 0.2);
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-family: 'Crimson Pro', serif;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(233, 128, 116, 0.1);
+        }
+
+        /* New Advanced Options Section */
+        .advanced-options {
+            background: rgba(42, 27, 61, 0.03);
+            padding: 2rem;
+            border-radius: 15px;
+            margin-top: 2rem;
+        }
+
+        .advanced-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+        }
+
+        .advanced-header h3 {
+            font-family: 'Cormorant Infant', serif;
+            color: var(--secondary);
+            font-size: 1.4rem;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .custom-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent);
+            border-radius: 5px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .custom-checkbox:checked {
+            background: var(--accent);
+        }
+
+        .custom-checkbox:checked::after {
+            content: '✔';
+            color: white;
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 0;
-            height: 0;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
             transform: translate(-50%, -50%);
-            transition: width 0.6s ease, height 0.6s ease;
         }
-        
-        .generate-btn:hover {
-            background-color: var(--hover-color);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(255, 111, 97, 0.4);
-        }
-        
-        .generate-btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-        
-        .generate-btn:active {
-            transform: translateY(1px);
-        }
-        
-        #output {
-            display: none;
-            margin-top: 20px;
-            padding: 30px;
-            background-color: rgba(41, 41, 41, 0.9);
+
+        /* Enhanced Generate Button */
+        .generate-btn {
+            width: 100%;
+            padding: 1.5rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: var(--white);
+            border: none;
             border-radius: 15px;
-            max-width: 100%;
-            height: 100%;
-            max-height: calc(100vh - 250px);
-            overflow-y: auto;
-            transition: all 0.5s ease;
-            color: #fff;
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-            font-size: 1.1em;
-            line-height: 1.6;
-            font-family: 'Georgia', serif;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-size: 1.4rem;
+            font-family: 'Almendra', serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            margin-top: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
-        
-        #output::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        #output::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-        
-        #output::-webkit-scrollbar-thumb {
-            background: var(--primary-color);
-            border-radius: 10px;
-        }
-        
-        #output::-webkit-scrollbar-thumb:hover {
-            background: var(--hover-color);
-        }
-        
-        #output h2 {
-            font-size: 2em;
-            color: var(--accent-color);
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 10px;
-        }
-        
-        .story-content {
-            padding: 20px;
-        }
-        
-        .story-content p {
-            text-indent: 2em;
-            margin-bottom: 1em;
-        }
-        
-        .drop-cap {
-            float: left;
-            font-size: 3em;
-            line-height: 0.8;
-            padding-top: 4px;
-            padding-right: 8px;
-            padding-left: 3px;
-            font-family: 'Times New Roman', serif;
-            color: var(--primary-color);
-        }
-        
-        .error-message {
-            color: #e74c3c;
-            text-align: center;
-            font-weight: bold;
-        }
-        
-        .loader {
-            display: none;
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--secondary-color);
-            border-radius: 50%;
-            margin: 20px auto;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Particle Background Effect */
-        body::before {
+
+        .generate-btn::before {
             content: '';
-            position: fixed;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 50% 50%, #ff6f61, transparent),
-                        radial-gradient(circle at 50% 50%, #00bfa5, transparent);
-            background-size: 50% 50%;
-            animation: rotateBackground 30s infinite linear;
-            z-index: -1;
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
         }
-        
-        @keyframes rotateBackground {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        .generate-btn:hover::before {
+            left: 100%;
         }
-        
-        /* Responsive design */
-        @media (max-width: 600px) {
-            .story-container {
-                width: 95%;
-                padding: 20px;
-            }
-        
-            input[type="text"],
-            .generate-btn,
-            select {
-                font-size: 16px;
-            }
-        
-            h1 {
-                font-size: 2.2em;
-            }
-        
-            #output {
-                max-height: calc(100vh - 200px);
-                font-size: 0.85em;
-                padding: 20px;
-            }
-        
-            #output h2 {
-                font-size: 1.5em;
-            }
-        
-            .drop-cap {
-                font-size: 2.5em;
-            }
-        
-            .genre-btn {
-                padding: 8px 15px;
-                font-size: 0.8em;
-            }
+
+        .generate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(42, 27, 61, 0.2);
         }
-        
-        /* Additional styles for moral and vocabulary sections */
-        .moral {
-            font-style: italic;
-            color: var(--accent-color);
-            margin-bottom: 20px;
+
+        /* Enhanced Book Display */
+         .book-display {
+             max-width: 1400px;
+             margin: 4rem auto;
+             padding: 2rem 1rem; /*Adjusted padding for mobile*/
+             display: none;
+         }
+        /* Enhanced Book Container and 3D Effects */
+        .book-container {
+            perspective: 3000px;
+             margin: 4rem auto;
+             max-width: 600px; /* Max width instead of specific width*/
+             width: 90%; /* Width as a percentage for responsiveness*/
+              height: auto; /*Allow the height to adjust to aspect ratio */
+            position: relative;
+            transform-style: preserve-3d;
+             padding: 0px 20px; /* Add some side padding */
+         }
+
+          .book {
+              position: relative;
+             width: 100%;
+             padding-bottom: 133%; /* Maintain a 3:4 aspect ratio (4/3 *100) to calculate the height based on the width  */
+              transform-style: preserve-3d;
+            transform: rotateY(-30deg);
+            transition: all 1.5s cubic-bezier(0.645, 0.045, 0.355, 1);
+              box-shadow:
+                  20px 20px 60px rgba(0, 0, 0, 0.4),
+                 -20px 0 60px rgba(0, 0, 0, 0.2);
+
+           }
+
+            .book>div {
+              position: absolute;
+                width: 100%;
+                height: 100%;
+            }
+        /* Realistic Book Cover */
+        .book-cover {
+             transform-origin: left;
+              transform-style: preserve-3d;
+             transition: transform 1.5s cubic-bezier(0.645, 0.045, 0.355, 1);
+              background: linear-gradient(45deg, #2a1b3d, #44318d);
+           border-radius: 2px 15px 15px 2px;
+             box-shadow:
+                inset -5px 0 15px rgba(0, 0, 0, 0.4),
+                5px 0 15px rgba(0, 0, 0, 0.2);
+       }
+
+         .book-cover::before {
+           content: '';
+              position: absolute;
+             width: 50px;
+            height: 100%;
+            transform: translateX(-49px) rotateY(-90deg);
+           background: linear-gradient(90deg,
+                #1a0f28,
+                #2a1b3d 20%,
+               #44318d 60%,
+              #2a1b3d 80%,
+               #1a0f28
+            );
+             transform-origin: right;
+            border-left: 2px solid rgba(255, 255, 255, 0.1);
+           border-right: 2px solid rgba(0, 0, 0, 0.2);
+      }
+
+         .book-cover::after {
+            content: '';
+             position: absolute;
+            width: 100%;
+             height: 100%;
+          transform: translateZ(-50px);
+           background: linear-gradient(135deg, #f8f4e9, #fff9f0);
+            border-radius: 2px 15px 15px 2px;
+             box-shadow:
+                 -10px 0 30px rgba(0, 0, 0, 0.2),
+              inset 0 0 40px rgba(0, 0, 0, 0.1);
+         }
+
+        /* Apply the cover image as a background */
+         .book-cover img#coverImage {
+            position: absolute;
+            top: 0;
+             left: 0;
+            width: 100%;
+            height: 100%;
+             object-fit: fill;
+              border-radius: inherit; /* Match the book cover's border-radius */
+      }
+
+       /* Enhanced Page Spread Styles */
+         .page-spread {
+            display: flex;
+            gap: 0;
+           background: #fff9f0;
+            border-radius: 5px;
+             box-shadow:
+                0 30px 60px rgba(0, 0, 0, 0.3),
+              0 0 100px rgba(0, 0, 0, 0.2);
+            position: relative;
+          overflow: hidden;
+          max-width: 100%; /* Ensure it fits container's width*/
+            margin: 2rem auto;
+             transform-style: preserve-3d;
+           perspective: 2000px;
+         }
+
+        .page {
+           flex: 1;
+           padding: 3rem 2rem;  /* Reduce side padding */
+           background: linear-gradient(to right,
+                #fff9f0,
+                #fff9f0 97%,
+               rgba(0, 0, 0, 0.05) 100%
+           );
+            position: relative;
+             min-height: 500px;  /* Make sure pages always have a certain minimum*/
+          transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+             border-radius: 5px;
+           box-shadow:
+                inset 0 0 60px rgba(0, 0, 0, 0.03),
+              0 0 30px rgba(0, 0, 0, 0.1);
+       }
+
+        .page::before {
+           content: '';
+             position: absolute;
+            top: 0;
+              left: 0;
+             width: 100%;
+           height: 100%;
+              background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39ra2uRkZGZmZlpaWmXl5dvb29xcXGTk5NnZ2c8TV1mAAAAG3RSTlNAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEAvEOwtAAAFVklEQVR4XpWWB67c2BUFb3g557T/hRo9/WUMZHlgr4Bg8Z4qQgQJlHI4A8SzFVrapvmTF9O7dmYRFZ60YiBhJRCgh1FYhiLAmdvX0CzTOpNE77ME0Zty/nWWzchDtiqrmQDeuv3powQ5ta2eN0FY0InkqDD73lT9c9lEzwUNqgFHs9VQce3TVClFCQrSTfOiYkVJQBmpbq2L6iZavPnAPcoU0dSw0SUTqz/GtrGuXfbyyBniKykOWQWGqwwMA7QiYAxi+IlPdqo+hYHnUt5ZPfnsHJyNiDtnpJzayNBkF6cWoYGAMY92U2hXHF/C1M8uP/ZtYdiuj26UdAdQQSXQErwSOMzt/XWRWAz5GuSBIkwG1H3FabJ2OsUOUhGC6tK4EMtJO0ttC6IBD3kM0ve0tJwMdSfjZo+EEISaeTr9P3wYrGjXqyC1krcKdhMpxEnt5JetoulscpyzhXN5FRpuPHvbeQaKxFAEB6EN+cYN6xD7RYGpXpNndMmZgM5Dcs3YSNFDHUo2LGfZuukSWyUYirJAdYbF3MfqEKmjM+I2EfhA94iG3L7uKrR+GdWD73ydlIB+6hgref1QTlmgmbM3/LeX5GI1Ux1RWpgxpLuZ2+I+IjzZ8wqE4nilvQdkUdfhzI5QDWy+kw5Wgg2pGpeEVeCCA7b85BO3F9DzxB3cdqvBzWcmzbyMiqhzuYqtHRVG2y4x+KOlnyqla8AoWWpuBoYRxzXrfKuILl6SfiWCbjxoZJUaCBj1CjH7GIaDbc9kqBY3W-Rgjda1iqQcOJu2WW+76pZC9QG7M00dffe9hNnseupFL53r8F7YHSwJWUKP2q+k7RdsxyOB11n0xtOvnW4irMMFNV4H0uqwS5ExsmP9AxbDTc9JwgneAT5vTiUSm1E7BSflSt3bfa1tv8Di3R8n3Af7MNWzs49hmauE2wP+ttrq+AsWpFG2awvsuOqbipWHgtuvuaAE+A1Z/7gC9hesnr+7wqCwG8c5yAg3AL1fm8T9AZtp/bbJGwl1pNrE7RuOX7PeMRUERVaPpEs+yqeoSmuOlokqw49pgomjLeh7icHNlG19yjs6XXOMedYm5xH2YxpV2tc0Ro2jJfxC50ApuxGob7lMsxfTbeUv07TyYxpeLucEH1gNd4IKH2LAg5TdVhlCafZvpskfncCfx8pOhJzd76bJWeYFnFciwcYfubRc12Ip/ppIhA1/mSZ/RxjFDrJC5xifFjJpY2Xl5zXdguFqYyTR1zSp1Y9p+tktDYYSNflcxI0iyO4TPBdlRcpeqjK/piF5bklq77VSEaA+z8qmJTFzIWiitbnzR794USKBUaT0NTEsVjZqLaFVqJoPN9ODG70IPbfBHKK+/q/AWR0tJzYHRULOa4MP+W/HfGadZUbfw177G7j/OGbIs8TahLyynl4X4RinF793Oz+BU0saXtUHrVBFT/DnA3ctNPoGbs4hRIjTok8i+algT1lTHi4SxFvONKNrgQFAq2/gFnWMXgwffgYMJpiKYkmW3tTg3ZQ9Jq+f8XN+A5eeUKHWvJWJ2sgJ1Sop+wwhqFVijqWaJhwtD8MNlSBeWNNWTa5Z5kPZw5+LbVT99wqTdx29lMUH4OIG/D86ruKEauBjvH5xy6um/Sfj7ei6UUVk4AIl3MyD4MSSTOFgSwsH/QJWaQ5as7ZcmgBZmzjjU1UrQ74ci1gWBCSGHtuV1H2mhSnO3Wp/3fEV5a+4wz//6qy8JxjZsmxxy5+4w9CDNJY09T072iKG0EnOS0arEYgXqYnXcYHwjTtUNAcMelOd4xpkoqiTYICWFq0JSiPfPDQdnt+4/wuqcXY47QILbgAAAABJRU5ErkJggg==');
+              opacity: 0.03;
+               pointer-events: none;
+                mix-blend-mode: multiply;
+        }
+
+        /* Page Turn Animation */
+         @keyframes pageTurn {
+             0% {
+                 transform: rotateY(0deg);
+               box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+             }
+             100% {
+              transform: rotateY(-180deg);
+             box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+          }
+        }
+
+      .page-turn {
+            animation: pageTurn 1.2s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
+        }
+
+    /* Enhanced Chapter Content */
+        .chapter-content {
+          font-size: 1.3rem;
+          line-height: 1.8;
+            color: var(--text);
+           text-align: justify;
+           column-gap: 2rem;
+          position: relative;
+           text-indent: 2rem;
+            font-family: 'Crimson Pro', serif;
+            letter-spacing: 0.02em;
+      }
+
+        /* First Letter Drop Cap */
+        .chapter-content p:first-of-type::first-letter {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 3.5em;
+             float: left;
+            line-height: 0.8;
+          padding: 0.1em 0.1em 0 0;
+           color: var(--primary);
+        }
+
+         /* Page Number Effect */
+         .page::after {
+            content: attr(data-page);
+          position: absolute;
+         bottom: 2rem;
+           font-family: 'Cormorant Infant', serif;
+          font-size: 1rem;
+         color: rgba(0, 0, 0, 0.5);
+       }
+
+       .page:first-child::after {
+           left: 3rem;
+     }
+
+        .page:last-child::after {
+             right: 3rem;
+        }
+
+        /* Book Opening Animation */
+       .book-cover.open {
+          transform: rotateY(-180deg);
+             transition: transform 1.5s cubic-bezier(0.645, 0.045, 0.355, 1);
+     }
+   /* Book Hover Effect */
+        .book:hover {
+            transform: rotateY(-35deg) translateY(-10px);
+     }
+
+       /* Story Pages */
+      .story-pages {
+            max-width: 1400px;
+          margin: 2rem auto;
+          padding: 2rem 1rem;
+          display: none;
+        }
+
+        .page-decoration {
+           position: absolute;
+          width: 100px;
+           height: 100px;
+            opacity: 0.1;
+           pointer-events: none;
+        }
+
+       .page-decoration.top-left {
+             top: 20px;
+           left: 20px;
+           transform: rotate(-45deg);
+        }
+
+      .page-decoration.bottom-right {
+            bottom: 20px;
+          right: 20px;
+          transform: rotate(135deg);
+      }
+
+      .chapter-image {
+          width: 100%;
+            height: 300px;
+           object-fit: cover;
+            border-radius: 15px;
+           margin-bottom: 2rem;
+           box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+      .chapter-image:hover {
+            transform: scale(1.02);
+        }
+
+      .chapter-title {
+         font-family: 'Cinzel Decorative', cursive;
+           font-size: 2.2rem;
+          color: var(--primary);
+           margin-bottom: 1.5rem;
             text-align: center;
-        }
-        
-        .vocabulary {
-            background-color: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-        }
-        
-        .vocabulary-item {
-            margin-bottom: 10px;
-        }
-        
-        .vocabulary-item strong {
-            color: var(--secondary-color);
-        }
-    </style>
-</head>
+           position: relative;
+           padding-bottom: 1rem;
+    }
 
-<body>
-    <div class="story-container" id="storyContainer">
-        <h1 class="animate__animated animate__zoomIn">Enchanted Story Forge</h1>
-        <form id="storyForm">
-            <label for="keywords">Enter your story random Keywords:</label>
-            <input type="text" id="keywords" name="keywords" placeholder="e.g., ancient relic, time travel, unexpected ally...">
+      .chapter-title::after {
+         content: '';
+           position: absolute;
+           bottom: 0;
+            left: 50%;
+          transform: translateX(-50%);
+          width: 120px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
 
-            <label for="genre">Choose your story's genre:</label>
-            <div class="genre-container">
-                <button type="button" class="genre-btn" data-genre="fantasy"><i class="fas fa-hat-wizard"></i> Fantasy</button>
-                <button type="button" class="genre-btn" data-genre="sci-fi"><i class="fas fa-robot"></i> Sci-Fi</button>
-                <button type="button" class="genre-btn" data-genre="mystery"><i class="fas fa-mask"></i> Mystery</button>
-                <button type="button" class="genre-btn" data-genre="romance"><i class="fas fa-heart"></i> Romance</button>
-                <button type="button" class="genre-btn" data-genre="horror"><i class="fas fa-skull-crossbones"></i> Horror</button>
-                <button type="button" class="genre-btn" data-genre="adventure"><i class="fas fa-mountain"></i> Adventure</button>
-                <button type="button" class="genre-btn" data-genre="historical"><i class="fas fa-landmark"></i> Historical</button>
-                <button type="button" class="genre-btn" data-genre="comedy"><i class="fas fa-laugh"></i> Comedy</button>
-                <button type="button" class="genre-btn" data-genre="thriller"><i class="fas fa-dragon"></i> Thriller</button>
-                <button type="button" class="genre-btn" data-genre="drama"><i class="fas fa-theater-masks"></i> Drama</button>
+        /* Enhanced Navigation */
+         .story-navigation {
+           display: flex;
+           justify-content: center;
+         gap: 2rem;
+           margin-top: 3rem;
+          padding: 1rem;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+       }
+
+       .nav-btn {
+             padding: 1rem 2rem;
+            border: none;
+             border-radius: 10px;
+           font-family: 'Almendra', serif;
+           font-weight: 600;
+             font-size: 1.2rem;
+            cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+           align-items: center;
+         gap: 1rem;
+    }
+
+        .nav-btn.primary {
+          background: linear-gradient(45deg, var(--primary), var(--secondary));
+             color: var(--white);
+     }
+
+        .nav-btn.secondary {
+         background: transparent;
+          color: var(--primary);
+           border: 2px solid var(--primary);
+      }
+
+         .nav-btn:hover:not(:disabled) {
+           transform: translateY(-3px);
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+    }
+
+        /* Enhanced Loading Animation */
+       .loading-overlay {
+           position: fixed;
+             top: 0;
+              left: 0;
+             width: 100%;
+            height: 100%;
+         background: rgba(244, 228, 188, 0.98);
+         display: none;
+           justify-content: center;
+             align-items: center;
+            z-index: 1000;
+          flex-direction: column;
+           backdrop-filter: blur(10px);
+         }
+
+      .loading-content {
+          text-align: center;
+           position: relative;
+         }
+
+       .magic-circle {
+         width: 120px;
+         height: 120px;
+           border: 4px solid transparent;
+          border-image: linear-gradient(45deg, var(--accent), var(--secondary)) 1;
+          animation: rotateAndPulse 3s infinite;
+     }
+
+    @keyframes rotateAndPulse {
+            0% {
+             transform: rotate(0deg) scale(1);
+           border-width: 4px;
+          }
+            50% {
+               transform: rotate(180deg) scale(1.1);
+                border-width: 2px;
+          }
+         100% {
+               transform: rotate(360deg) scale(1);
+              border-width: 4px;
+          }
+        }
+
+     .loading-text {
+          font-family: 'Cinzel Decorative', cursive;
+             font-size: 1.8rem;
+          color: var(--primary);
+          margin-top: 2rem;
+           position: relative;
+      }
+
+         .loading-text::after {
+          content: '...';
+             position: absolute;
+          animation: ellipsis 1.5s infinite;
+        }
+
+       @keyframes ellipsis {
+           0% {
+                content: '.';
+             }
+
+            33% {
+              content: '..';
+        }
+         66% {
+                content: '...';
+        }
+
+         100% {
+                content: '.';
+            }
+        }
+
+        .progress-container {
+         width: 300px;
+            height: 10px;
+           background: rgba(42, 27, 61, 0.1);
+           border-radius: 10px;
+            overflow: hidden;
+         margin-top: 2rem;
+      }
+
+     .progress-bar {
+        height: 100%;
+         background: linear-gradient(90deg, var(--accent), var(--secondary));
+         border-radius: 10px;
+          width: 0;
+           transition: width 0.3s ease;
+    }
+
+    /* Enhanced Toast Notification */
+        .toast {
+             position: fixed;
+          bottom: 2rem;
+          right: 2rem;
+           padding: 1.5rem 3rem;
+             background: rgba(255, 255, 255, 0.98);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+           display: none;
+             animation: slideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+             font-family: 'Cormorant Infant', serif;
+           color: var(--primary);
+             border-left: 4px solid var(--accent);
+         backdrop-filter: blur(10px);
+            font-size: 1.2rem;
+       }
+
+      @keyframes slideIn {
+         from {
+            transform: translateX(100%);
+          opacity: 0;
+       }
+
+          to {
+              transform: translateX(0);
+            opacity: 1;
+        }
+       }
+
+         @keyframes slideOut {
+             to {
+                transform: translateX(100%);
+                  opacity: 0;
+         }
+         }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header h1 {
+               font-size: 3rem;
+         }
+
+           .header p {
+             font-size: 1.4rem;
+           }
+
+           .creation-panel {
+               padding: 2rem 1rem; /*Adjusted for smaller devices*/
+           }
+
+         .book-container{
+             width: 85%; /* Increased for smaller screens*/
+             height: auto;
+            padding: 0px;       }
+
+            .book {
+                width: 80%;
+                 height: auto;
+            }
+            .page-spread {
+                  flex-direction: column;
+                }
+   
+                .page {
+                    padding: 1.5rem;
+                 }
+   
+   
+             .chapter-title {
+                font-size: 1.8rem;
+               }
+   
+   
+                .chapter-content {
+                     font-size: 1.1rem;
+                  }
+   
+             .story-navigation {
+                  flex-wrap: wrap;
+               }
+             }
+         /* Enhanced book hover effect with depth */
+          .book {
+              cursor: pointer; /* Add pointer cursor for interaction */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+         /* Enhanced Background Container */
+         #vanta-background {
+             position: fixed;
+               top: 0;
+               left: 0;
+               width: 100%;
+                height: 100%;
+              z-index: -1;
+           }
+   
+        /* Modified body background */
+   
+           /* Enhanced Loading Animation */
+           .loading-overlay {
+                 backdrop-filter: blur(10px);
+                background: rgba(244, 228, 188, 0.85);
+           }
+   
+   
+           .loading-content {
+                position: relative;
+          }
+   
+        .magic-book {
+               width: 100px;
+               height: 150px;
+                position: relative;
+                 perspective: 1500px;
+               margin: 0 auto 30px;
+           }
+   
+            .book-cover-animated {
+              position: absolute;
+              width: 100%;
+               height: 100%;
+             transform-style: preserve-3d;
+               animation: bookFloat 3s ease-in-out infinite;
+               background: linear-gradient(45deg, var(--primary), var(--secondary));
+              border-radius: 5px;
+               box-shadow: 0 0 30px rgba(0,0,0,0.2);
+          }
+   
+   
+           .book-page {
+              position: absolute;
+               width: 95%;
+             height: 95%;
+             background: var(--white);
+              top: 2.5%;
+            left: 2.5%;
+             transform-origin: left;
+                animation: pageFlip 4s ease-in-out infinite;
+        }
+   
+   
+          @keyframes bookFloat {
+            0%,
+              100% {
+                transform: translateY(0) rotateY(-30deg);
+               }
+                50% {
+                   transform: translateY(-20px) rotateY(-35deg);
+           }
+           }
+   
+   
+            @keyframes pageFlip {
+                 0%,
+                  100% {
+                     transform: rotateY(0deg);
+             }
+               50% {
+                  transform: rotateY(-160deg);
+           }
+          }
+   
+   
+         /* Magical particles */
+           .particle {
+               position: absolute;
+                 width: 6px;
+                height: 6px;
+             background: var(--accent);
+              border-radius: 50%;
+               pointer-events: none;
+                opacity: 0;
+        }
+   
+       @keyframes particleFloat {
+               0% {
+                  transform: translate(0, 0) rotate(0deg);
+                opacity: 1;
+         }
+   
+         100% {
+               transform: translate(var(--x), var(--y)) rotate(360deg);
+                 opacity: 0;
+             }
+         }
+   
+   
+        /* Enhanced Creation Panel */
+        .creation-panel {
+            background: rgba(255, 255, 255, 0.92);
+               backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+               transition: transform 0.3s ease, box-shadow 0.3s ease;
+           }
+   
+         .creation-panel:hover {
+            transform: translateY(-5px);
+              box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            }
+        
+                 /* Glowing input fields */
+               .input-field:focus {
+                 box-shadow: 0 0 15px rgba(233, 128, 116, 0.3);
+                  border-color: var(--accent);
+                  animation: glow 1.5s ease-in-out infinite alternate;
+             }
+        
+        
+              @keyframes glow {
+                    from {
+                         box-shadow: 0 0 5px rgba(233, 128, 116, 0.3);
+                   }
+                   to {
+                       box-shadow: 0 0 20px rgba(233, 128, 116, 0.6);
+                  }
+              }
+        
+             .terminology-section {
+                margin-top: 2rem;
+                    padding: 1.5rem;
+                 background: rgba(255, 255, 255, 0.8);
+                  border-radius: 10px;
+                }
+        
+        
+              .terminology-title {
+                 font-family: 'Cinzel Decorative', cursive;
+                 font-size: 1.5rem;
+                    color: var(--primary);
+                   margin-bottom: 1rem;
+             }
+        
+                 .terminology-list {
+                   list-style: none;
+                 padding: 0;
+            }
+        
+              .terminology-item {
+                     margin-bottom: 0.8rem;
+                    font-family: 'Crimson Pro', serif;
+                      font-size: 1.1rem;
+               }
+        
+        
+              .term {
+                  font-weight: 600;
+                    color: var(--secondary);
+                }
+        
+               .definition {
+                     color: var(--text);
+                }
+             .moral-of-story{
+                 text-align: center;
+                   margin-top: 1rem;
+                   font-style: italic;
+                 display: none;
+                }
+        </style>
+        </head>
+        
+        <body>
+            <!-- Add this HTML right after the <body> tag -->
+            <div id="vanta-background"></div>
+            <header class="header">
+                <h1>Enchanted Tales Creator</h1>
+                <p>Where imagination weaves stories of wonder and magic</p>
+            </header>
+        
+            <div class="creation-panel">
+                <div class="creation-grid">
+                    <div class="input-group">
+                        <label class="input-label">Story Keywords</label>
+                        <input type="text" id="keywords" class="input-field"
+                            placeholder="Dragons, ancient prophecy, hidden kingdom...">
+                    </div>
+        
+     <div class="input-group">
+                 <label class="input-label">Choose Genre</label>
+                 <select id="genre" class="input-field">
+                     <option value="fantasy">Mystical Fantasy</option>
+                     <option value="mystery">Dark Mystery</option>
+                     <option value="heartwarming">Heartwarming Story</option>
+                     <option value="sci-fi">Cosmic Science Fiction</option>
+                     <option value="scary">Spooky Story</option>
+                     <option value="adventure">Grand Adventure</option>
+                     <option value="fairytale">Enchanted Fairytale</option>
+                     <option value="invention">Inventive Adventure</option>
+                     <option value="legends">Amazing Legends</option>
+                 </select>
+             </div>
+     
+        
+                    <div class="input-group">
+                        <label class="input-label">Story Length</label>
+                        <select id="storyLength" class="input-field">
+                            <option value="short">Short Tale (3 Chapters)</option>
+                            <option value="medium">Medium Saga (5 Chapters)</option>
+                            <option value="long">Epic Journey (7 Chapters)</option>
+                             <option value="grand">Grand Epic (10 Chapters)</option>
+                         </select>
+                   </div>
+                   <div class="input-group">
+                     <label class="input-label">Image Style</label>
+                     <select id="imageStyle" class="input-field">
+                         <option value="photographic">Photographic</option>
+                         <option value="anime">Anime</option>
+                         <option value="cinematic">Cinematic</option>
+                         <option value="watercolor">Watercolor</option>
+                         <option value="pencil sketch">Pencil Sketch</option>
+                         <option value="pop art">Pop Art</option>
+                         <option value="steampunk">Steampunk</option>
+                         <option value="3d render">3D Render</option>
+                     </select>
+                 </div>
+              </div>
+               <div class="advanced-options">
+                   <div class="advanced-header">
+                        <h3>Advanced Story Options</h3>
+                        <i class="fas fa-caret-down"></i>
+                 </div>
+                    <div class="options-grid">
+                         <div class="input-group">
+                             <label class="input-label">Story Tone</label>
+                                <select id="tone" class="input-field">
+                                 <option value="lighthearted">Lighthearted & Whimsical</option>
+                                     <option value="dramatic">Dark & Dramatic</option>
+                                   <option value="mysterious">Mysterious & Ethereal</option>
+                                   <option value="epic">Epic & Grand</option>
+                              </select>
+                           </div>
+        
+                      <div class="input-group">
+                           <label class="input-label">Writing Style</label>
+                           <select id="style" class="input-field">
+                                  <option value="descriptive">Rich & Descriptive</option>
+                                  <option value="concise">Clear & Concise</option>
+                                  <option value="poetic">Poetic & Flowing</option>
+                                <option value="dramatic">Dynamic & Intense</option>
+                              </select>
+                         </div>
+     <div class="input-group">
+                     <label class="input-label">Target Age Group</label>
+                     <select id="ageGroup" class="input-field">
+                         <option value="children">Children (8-12)</option>
+                         <option value="young-adult">Young Adult (13-17)</option>
+                         <option value="mature">Mature Audiences</option>
+                         <option value="all-ages">All Ages</option>
+                     </select>
+                 </div>
+             </div>
+                  <div class="options-grid" style="margin-top: 1.5rem;">
+                       <div class="checkbox-group">
+                             <input type="checkbox" id="includeMagic" class="custom-checkbox">
+                                <label for="includeMagic">Include Magical Elements</label>
+                           </div>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="includeSuperpowers" class="custom-checkbox">
+                              <label for="includeSuperpowers">Include Super Powers</label>
+                             </div>
+                           <div class="checkbox-group">
+                               <input type="checkbox" id="includeConflict" class="custom-checkbox">
+                                 <label for="includeConflict">Include Major Conflicts</label>
+                         </div>
+                      </div>
+                  </div>
+               <button onclick="generateStory()" class="generate-btn">
+                  <i class="fas fa-magic"></i> Weave Your Tale
+              </button>
             </div>
-            <input type="hidden" id="genre" name="genre" value="">
-
-            <button type="button" class="generate-btn animate__animated animate__pulse" id="generateBtn">Forge Your Tale</button>
-        </form>
-        <div class="loader" id="loader"></div>
-        <div id="output" class="animate__animated animate__fadeInUp"></div>
-
-</body>
-    <script>
-        let selectedGenre = '';
-    
-        async function fetchRandomStoryImage() {
-            try {
-                const response = await fetch('/fetch_image?genre=anime');
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                if (data.image_url) {
-                    return data.image_url;
-                } else {
-                    console.error('Error fetching image:', data.error);
-                    return null;
-                }
-            } catch (error) {
-                console.error('Failed to fetch image:', error);
-                return null;
-            }
-        }
-    
-        function showStoryContainer() {
-            document.getElementById('storyContainer').style.display = 'block';
-            setTimeout(() => {
-                document.getElementById('storyContainer').classList.add('visible');
-            }, 100);
-        }
-    
-        // Load the background image
-        fetchRandomStoryImage().then(imageUrl => {
-            if (imageUrl) {
-                const backgroundImage = new Image();
-                backgroundImage.src = imageUrl;
-                backgroundImage.onload = function () {
-                    document.body.style.backgroundImage = `url(${imageUrl})`;
-                    showStoryContainer();
-                };
-            } else {
-                showStoryContainer();
-            }
-        });
-    
-        async function fetchResponse() {
-            const keywords = document.getElementById('keywords').value;
-            if (keywords.trim() === '') {
-                alert('Please enter some story seeds');
-                return;
-            }
-            if (selectedGenre === '') {
-                alert('Please select a genre');
-                return;
-            }
-            document.getElementById('loader').style.display = 'block';
-            document.getElementById('output').style.display = 'none';
-            try {
-                const response = await fetch('/story_generator', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: `keywords=${encodeURIComponent(keywords)}&genre=${encodeURIComponent(selectedGenre)}`
-                });
-                const rawData = await response.json();
-                
-                // Extract the JSON string from the code block
-                const jsonMatch = rawData.response.match(/```json\s*([\s\S]*?)\s*```/);
-                let data;
-                if (jsonMatch && jsonMatch[1]) {
-                    data = JSON.parse(jsonMatch[1]);
-                } else {
-                    throw new Error('Invalid response format');
-                }
-    
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('output').style.display = 'block';
-    
-                // Format the story text
-                const formattedStory = formatStory(data.story);
-    
-                // Format the vocabulary
-                const formattedVocabulary = formatVocabulary(data.vocabulary);
-    
-                document.getElementById('output').innerHTML = `
-                    <h2>${data.title}</h2>
-                    <div class="story-content">${formattedStory}</div>
-                    <h3>Moral of the Story</h3>
-                    <p class="moral">${data.moral}</p>
-                    <h3>Vocabulary</h3>
-                    <div class="vocabulary">${formattedVocabulary}</div>
-                `;
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('output').style.display = 'block';
-                document.getElementById('output').innerHTML = '<p class="error-message">An error occurred while generating the story. Please try again.</p>';
-            }
-        }
-    
-        function formatStory(story) {
-            // Split the story into paragraphs
-            const paragraphs = story.split('\n').filter(p => p.trim() !== '');
-    
-            // Format each paragraph
-            const formattedParagraphs = paragraphs.map((paragraph, index) => {
-                if (index === 0) {
-                    // Add a drop cap to the first paragraph
-                    const firstLetter = paragraph.charAt(0);
-                    const restOfParagraph = paragraph.slice(1);
-                    return `<p><span class="drop-cap">${firstLetter}</span>${restOfParagraph}</p>`;
-                } else {
-                    return `<p>${paragraph}</p>`;
-                }
-            });
-    
-            return formattedParagraphs.join('');
-        }
-    
-        function formatVocabulary(vocabulary) {
-            return vocabulary.map(item => `
-                <div class="vocabulary-item">
-                    <strong>${item.word}</strong>: ${item.definition}
+        
+          <div class="book-display">
+                 <div class="book-container">
+                    <div class="book">
+                         <div class="book-cover">
+                         <img id="coverImage" alt="Book Cover" style="width: 100%; height: 100%; object-fit: cover;">
+                      </div>
+                  </div>
                 </div>
-            `).join('');
-        }
-    
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            const genreButtons = document.querySelectorAll('.genre-btn');
-            const generateBtn = document.getElementById('generateBtn');
-    
-            genreButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    genreButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                    selectedGenre = button.dataset.genre;
-                    document.getElementById('genre').value = selectedGenre;
-                });
-            });
-    
-            generateBtn.addEventListener('click', fetchResponse);
-    
-            // Add keypress event listener to the keywords input
-            document.getElementById('keywords').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault(); // Prevent form submission
-                    fetchResponse();
+          </div>
+        
+        
+            <div class="story-pages">
+                 <div class="page-spread">
+                   <div class="page" data-page="1">
+                          <div class="page-decoration top-left">✧</div>
+                            <img class="chapter-image" src="" alt="Chapter Illustration">
+                         <h2 class="chapter-title"></h2>
+                        <h3 class="moral-of-story"></h3>
+                         <div class="chapter-content"></div>
+                           <div class="page-decoration bottom-right">✧</div>
+                         <div class="terminology-section" style="display: none;">
+                           <h4 class="terminology-title">Magical Words & Meanings</h4>
+                                <ul class="terminology-list"></ul>
+                        </div>
+                         <button class="nav-btn secondary regenerate-btn" style="margin: 10px auto; display: block;">
+                               <i class="fas fa-sync-alt"></i> Regenerate Chapter
+                          </button>
+                    </div>
+                     <div class="page" data-page="2">
+                          <div class="page-decoration top-left">✧</div>
+                            <img class="chapter-image" src="" alt="Chapter Illustration">
+                           <h2 class="chapter-title"></h2>
+                              <h3 class="moral-of-story"></h3>
+                            <div class="chapter-content"></div>
+                          <div class="page-decoration bottom-right">✧</div>
+                           <div class="terminology-section" style="display: none;">
+                               <h4 class="terminology-title">Magical Words & Meanings</h4>
+                               <ul class="terminology-list"></ul>
+                          </div>
+                             <button class="nav-btn secondary regenerate-btn" style="margin: 10px auto; display: block;">
+                                   <i class="fas fa-sync-alt"></i> Regenerate Chapter
+                         </button>
+                      </div>
+                   </div>
+                  <div class="story-navigation">
+                     <button class="nav-btn primary" id="showMoralBtn" onclick="showMoral()" style="display: none;">
+                           <i class="fas fa-book-open"></i> Show Moral
+                      </button>
+                        <button class="nav-btn secondary" id="prevBtn" onclick="previousPages()" disabled>
+                            <i class="fas fa-backward"></i> Previous
+                      </button>
+                       <button class="nav-btn primary" id="nextBtn" onclick="nextPages()">
+                            Next <i class="fas fa-forward"></i>
+                       </button>
+                         <button class="nav-btn primary" id="continueBtn" onclick="continueStory()" style="display: none;">
+                           <i class="fas fa-scroll"></i> Continue the Journey
+                      </button>
+                         <button class="nav-btn primary" id="readAloudBtn" onclick="readAloud()" style="display: block;">
+                            <i class="fas fa-volume-up"></i> Read Aloud
+                          </button>
+                         <button class="nav-btn primary" id="stopReadAloudBtn" onclick="stopReadAloud()" style="display: none;">
+                            <i class="fas fa-stop"></i> Stop Reading
+                        </button>
+                          <button class="nav-btn primary" id="downloadBtn" onclick="downloadStory()" style="display: block;">
+                            <i class="fas fa-download"></i> Download Book
+                        </button>
+                   </div>
+               </div>
+        
+               <!-- Replace the existing loading animation HTML with this -->
+                 <div class="loading-overlay">
+                     <div class="loading-content">
+                         <div class="magic-book">
+                              <div class="book-cover-animated">
+                               <div class="book-page"></div>
+                           </div>
+                     </div>
+                         <div class="loading-text">Weaving your magical tale</div>
+                       <div class="progress-container">
+                            <div class="progress-bar" id="progress-bar"></div>
+                         </div>
+                   </div>
+              </div>
+        
+               <div class="toast" id="toast"></div>
+                <script>
+                  let currentStory = null;
+                     let currentPage = 0;
+                       let speechUtterance = null;
+                          // To store the current speech
+                  // Create sparkle effect
+                 function createSparkle() {
+                   const sparkle = document.createElement('div');
+                  sparkle.className = 'sparkle';
+                     sparkle.innerHTML = '✧';
+                     sparkle.style.left = Math.random() * 100 + 'vw';
+                     sparkle.style.top = Math.random() * 100 + 'vh';
+                     sparkle.style.fontSize = (Math.random() * 20 + 10) + 'px';
+                    sparkle.style.color = `hsl(${Math.random() * 360}, 50%, 50%)`;
+                      document.body.appendChild(sparkle);
+                 setTimeout(() => sparkle.remove(), 1500);
                 }
+            setInterval(createSparkle, 300);
+         function displayCurrentPages() {
+                const leftPage = document.querySelector('.page:first-child');
+               const rightPage = document.querySelector('.page:last-child');
+             const chapters = currentStory.chapters;
+        
+                 if (currentPage < chapters.length) {
+                    leftPage.style.opacity = '0';
+                      rightPage.style.opacity = '0';
+                        setTimeout(() => {
+                              // Left page
+                         leftPage.querySelector('.chapter-image').src = chapters[currentPage].image;
+                               leftPage.querySelector('.chapter-title').textContent =
+                                    `Chapter ${chapters[currentPage].chapter_number}: ${chapters[currentPage].chapter_title}`;
+                              leftPage.querySelector('.chapter-content').innerHTML = formatChapterContent(chapters[currentPage].content);
+                                // Terminology for left page
+                             const terminologyListLeft = leftPage.querySelector('.terminology-list');
+                                 terminologyListLeft.innerHTML = '';
+                               if (Object.keys(chapters[currentPage].terminology).length > 0) {
+                                     leftPage.querySelector('.terminology-section').style.display = 'block';
+                                 for (const term in chapters[currentPage].terminology) {
+                                     const listItem = document.createElement('li');
+                                         listItem.className = 'terminology-item';
+                                        listItem.innerHTML = `<span class="term">${term}:</span> <span class="definition">${chapters[currentPage].terminology[term]}</span>`;
+                                    terminologyListLeft.appendChild(listItem);
+                                }
+                          } else {
+                              leftPage.querySelector('.terminology-section').style.display = 'none';
+                           }
+                          // Regenerate button for left page
+                         leftPage.querySelector('.regenerate-btn').onclick = () => regenerateChapter(currentPage);
+                              // Right page
+                            if (currentPage + 1 < chapters.length) {
+                               rightPage.style.display = 'block';
+                                  rightPage.querySelector('.chapter-image').src = chapters[currentPage + 1].image;
+                                 rightPage.querySelector('.chapter-title').textContent =
+                                     `Chapter ${chapters[currentPage + 1].chapter_number}: ${chapters[currentPage + 1].chapter_title}`;
+                                  rightPage.querySelector('.chapter-content').innerHTML = formatChapterContent(chapters[currentPage + 1].content);
+                                // Terminology for right page
+                             const terminologyListRight = rightPage.querySelector('.terminology-list');
+                                 terminologyListRight.innerHTML = '';
+                                 if (Object.keys(chapters[currentPage + 1].terminology).length > 0) {
+                                    rightPage.querySelector('.terminology-section').style.display = 'block';
+                                    for (const term in chapters[currentPage + 1].terminology) {
+                                     const listItem = document.createElement('li');
+                                    listItem.className = 'terminology-item';
+                                     listItem.innerHTML = `<span class="term">${term}:</span> <span class="definition">${chapters[currentPage + 1].terminology[term]}</span>`;
+                                   terminologyListRight.appendChild(listItem);
+                                 }
+                                } else {
+                                      rightPage.querySelector('.terminology-section').style.display = 'none';
+                                  }
+                                // Regenerate button for right page
+                             rightPage.querySelector('.regenerate-btn').onclick = () => regenerateChapter(currentPage + 1);
+        
+                             document.getElementById('continueBtn').style.display = 'none';
+                             } else {
+                                  rightPage.style.display = 'none';
+                                 document.getElementById('continueBtn').style.display = 'block';
+                              }
+                            leftPage.style.opacity = '1';
+                           rightPage.style.opacity = '1';
+                        // Hide moral display when loading new pages
+                          const leftPageMoral = document.querySelector('.page:first-child .moral-of-story');
+                        const rightPageMoral = document.querySelector('.page:last-child .moral-of-story');
+                      leftPageMoral.style.display = 'none';
+                            if (rightPageMoral)
+                              {
+                               rightPageMoral.style.display = 'none';
+                              }
+                           }, 300);
+                  }
+        
+             document.getElementById('prevBtn').disabled = currentPage === 0;
+              document.getElementById('nextBtn').disabled = currentPage >= chapters.length - 2;
+          }
+        
+          function formatChapterContent(content) {
+                // Split the content into paragraphs
+                const paragraphs = content.split('\n').filter(p => p.trim() !== '');
+                 // Wrap each paragraph in a <p> tag
+                 const formattedContent = paragraphs.map(p => `<p>${p}</p>`).join('');
+                return formattedContent;
+            }
+        
+          function showLoading(message = 'Weaving your magical tale...') {
+               const overlay = document.querySelector('.loading-overlay');
+             const loadingText = document.querySelector('.loading-text');
+             const progressBar = document.getElementById('progress-bar');
+            loadingText.textContent = message;
+            progressBar.style.width = '0%';
+                overlay.style.display = 'flex';
+           }
+          function hideLoading() {
+                 document.querySelector('.loading-overlay').style.display = 'none';
+            }
+          function showToast(message, duration = 3000) {
+                  const toast = document.getElementById('toast');
+                 toast.textContent = message;
+                toast.style.display = 'block';
+                setTimeout(() => {
+                      toast.style.animation = 'slideOut 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+                   setTimeout(() => {
+                            toast.style.display = 'none';
+                              toast.style.animation = '';
+                        }, 500);
+               }, duration);
+          }
+                function enhancedPageTurn(direction) {
+                   const pages = document.querySelectorAll('.page');
+                      pages.forEach(page => {
+                          page.style.transition = 'all 0.6s cubic-bezier(0.645, 0.045, 0.355, 1)';
+                        page.style.transform = direction === 'forward'
+                               ? 'rotateY(-180deg)'
+                             : 'rotateY(0deg)';
+                       });
+        
+                   setTimeout(() => {
+                            pages.forEach(page => {
+                            page.style.transition = 'none';
+                          page.style.transform = 'none';
+                            });
+                       }, 600);
+               }
+        
+           function previousPages() {
+               if (currentPage >= 2) {
+                    showLoading('Turning back the pages...');
+                   enhancedPageTurn('backward');
+                    currentPage -= 2;
+                       setTimeout(() => {
+                          displayCurrentPages();
+                          hideLoading();
+                       }, 800);
+                }
+            }
+        
+           function nextPages() {
+                  if (currentPage < currentStory.chapters.length - 2) {
+                     showLoading('Turning to the next chapter...');
+                       enhancedPageTurn('forward');
+                     currentPage += 2;
+                      setTimeout(() => {
+                             displayCurrentPages();
+                             hideLoading();
+                        }, 800);
+                    }
+             }
+             async function regenerateChapter(chapterIndex) {
+                    showLoading('Reweaving the chapter...');
+                try {
+                     const chapterNumber = currentStory.chapters[chapterIndex].chapter_number;
+                     const response = await fetch('/regenerate', {
+                        method: 'POST',
+                          headers: {
+                             'Content-Type': 'application/json',
+                            },
+                          body: JSON.stringify({
+                             story: currentStory,
+                                chapter_number: chapterNumber,
+                                 tone: document.getElementById('tone').value,
+                                  style: document.getElementById('style').value,
+                               includeMagic: document.getElementById('includeMagic').checked,
+                                 includeSuperpowers: document.getElementById('includeSuperpowers').checked,
+                                 includeConflict: document.getElementById('includeConflict').checked,
+                                 imageStyle: document.getElementById('imageStyle').value
+                           })
+                        });
+                  const data = await response.json();
+                   if (data.error) {
+                        showToast(data.error);
+                    } else {
+                   // Replace the old chapter with the new one
+                   currentStory.chapters[chapterIndex] = data.new_chapter;
+                       // Preload the new image
+                   await preloadImages([data.new_chapter.image]);
+                        displayCurrentPages();
+                      showToast('Chapter rewoven!');
+                  }
+                   } catch (error) {
+                      showToast('A magical mishap occurred while regenerating the chapter. Please try again.');
+                      console.error('Error:', error);
+                     } finally {
+                         hideLoading();
+                   }
+                }
+        
+            async function generateStory() {
+              const keywords = document.getElementById('keywords').value;
+                if (!keywords) {
+                        showToast('Please share some keywords to begin your tale');
+                      return;
+                }
+        
+                  showLoading();
+                  try {
+                       const storyConfig = {
+                         keywords: keywords,
+                         genre: document.getElementById('genre').value,
+                           storyLength: document.getElementById('storyLength').value,
+                        tone: document.getElementById('tone').value,
+                        style: document.getElementById('style').value,
+                       ageGroup: document.getElementById('ageGroup').value,
+                        includeMagic: document.getElementById('includeMagic').checked,
+                       includeSuperpowers: document.getElementById('includeSuperpowers').checked,
+                         includeConflict: document.getElementById('includeConflict').checked,
+                         imageStyle: document.getElementById('imageStyle').value
+                       };
+        
+                        const response = await fetch('/generate', {
+                         method: 'POST',
+                             headers: {
+                                   'Content-Type': 'application/json',
+                               },
+                            body: JSON.stringify(storyConfig)
+                        });
+                   const data = await response.json();
+                    currentStory = data.story;
+        
+                  // Preload images
+                    await preloadImages(currentStory.chapters.map(chapter => chapter.image).concat(data.cover_image));
+                  // Display the book
+                   document.getElementById('coverImage').src = data.cover_image;
+                    document.querySelector('.book-display').style.display = 'block';
+                   document.querySelector('.book-cover').onclick = showPages;
+                  // Add some magical effects
+                  createMagicalEffect();
+                   hideLoading();
+                   showToast('Your magical tale awaits! Click the book cover to begin reading.');
+                 } catch (error) {
+                      hideLoading();
+                     showToast('A magical mishap occurred. Please try again.');
+                   console.error('Error:', error);
+                }
+              }
+          function createMagicalEffect() {
+                // Create multiple sparkles around the book
+                for (let i = 0; i < 20; i++) {
+                     setTimeout(() => createSparkle(), i * 100);
+                   }
+            }
+             function showPages() {
+                document.querySelector('.book-cover').classList.add('open');
+                   setTimeout(() => {
+                      document.querySelector('.book-display').style.display = 'none';
+                   document.querySelector('.story-pages').style.display = 'block';
+                      currentPage = 0;
+                      displayCurrentPages();
+        
+                         // Show the "Show Moral" button
+                     document.getElementById('showMoralBtn').style.display = 'block';
+                    }, 1000);
+            }
+        
+         async function continueStory() {
+                showLoading('Extending your magical journey...');
+               try {
+                      const response = await fetch('/continue', {
+                          method: 'POST',
+                         headers: {
+                           'Content-Type': 'application/json',
+                         },
+                            body: JSON.stringify({
+                           previous_story: currentStory,
+                          num_new_chapters: 3, // Add a fixed value for more chapters
+                              tone: document.getElementById('tone').value,
+                              style: document.getElementById('style').value,
+                            includeMagic: document.getElementById('includeMagic').checked,
+                            includeSuperpowers: document.getElementById('includeSuperpowers').checked,
+                                includeConflict: document.getElementById('includeConflict').checked,
+                                imageStyle: document.getElementById('imageStyle').value
+                           })
+                        });
+        
+                 const data = await response.json();
+                    const newChapters = data.new_chapters;
+                     // Preload new chapter images
+                      await preloadImages(newChapters.map(chapter => chapter.image));
+                  currentStory.chapters.push(...newChapters);
+                       document.getElementById('continueBtn').style.display = 'none';
+                  document.getElementById('nextBtn').disabled = false;
+        
+                      // Add magical effect for new chapters
+                        createMagicalEffect();
+                     hideLoading();
+                   showToast('New chapters have been woven into your tale!');
+                        displayCurrentPages();
+                 } catch (error) {
+                      hideLoading();
+                  showToast('A magical mishap occurred while extending your tale. Please try again.');
+                        console.error('Error:', error);
+                }
+              }
+        
+        
+         async function downloadStory() {
+                   showLoading("Preparing your magical book for download...");
+               try {
+                  const response = await fetch('/download', {
+                   method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                       },
+                     body: JSON.stringify({
+                          story: currentStory,
+                            cover_image: document.getElementById('coverImage').src
+                     })
+                      });
+                       if (response.ok) {
+                        const blob = await response.blob();
+                       const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                          a.href = url;
+                      a.download = `${currentStory.title}.pdf`;
+                          document.body.appendChild(a);
+                          a.click();
+                         window.URL.revokeObjectURL(url);
+                          document.body.removeChild(a);
+                       showToast('Your book is ready for download!');
+                } else {
+                          const errorData = await response.json();
+                         showToast(`Download failed: ${errorData.error || 'Unknown error'}`);
+                        console.error('Download failed', errorData);
+                    }
+                  } catch (error) {
+                        showToast('A magical mishap occurred during the download process.');
+                     console.error('Download error:', error);
+                 } finally {
+                      hideLoading();
+              }
+          }
+        
+        async function preloadImages(imageUrls) {
+            let loadedCount = 0;
+             const progressBar = document.getElementById('progress-bar');
+        
+                const updateProgress = (loaded) => {
+                    const progress = (loaded / imageUrls.length) * 100;
+                    progressBar.style.width = `${progress}%`;
+                };
+               return new Promise((resolve) => {
+                     const promises = imageUrls.map((url) => {
+                     return new Promise((resolveImage) => {
+                      const img = new Image();
+                        img.src = url;
+                            img.onload = () => {
+                                 loadedCount++;
+                                 updateProgress(loadedCount);
+                              resolveImage();
+                         };
+                      img.onerror = () => {
+                         console.error('Error loading image:', url);
+                          loadedCount++;
+                          updateProgress(loadedCount);
+                           resolveImage();
+                         };
+                     });
+                   });
+                Promise.all(promises).then(() => resolve(true));
+                 });
+               }
+            // Enhanced book hover effect with depth
+            const book = document.querySelector('.book');
+                  book.addEventListener('mousemove', (e) => {
+                 const { left, top, width, height } = book.getBoundingClientRect();
+                   const x = (e.clientX - left) / width;
+                  const y = (e.clientY - top) / height;
+        
+                  const rotateY = -30 + (x - 0.5) * 20;
+                 const rotateX = (y - 0.5) * 10;
+                 const translateZ = Math.abs((x - 0.5) * 30);
+                     book.style.transform = `
+                    rotateY(${rotateY}deg)
+                  rotateX(${rotateX}deg)
+                   translateZ(${translateZ}px)
+                    `;
+              });
+        
+             book.addEventListener('mouseleave', () => {
+                book.style.transform = 'rotateY(-30deg) rotateX(0) translateZ(0)';
+                 });
+            // Initialize advanced options toggle
+           document.querySelector('.advanced-header').addEventListener('click', function () {
+                const optionsGrid = this.nextElementSibling;
+                  const caret = this.querySelector('.fa-caret-down');
+        
+                    if (optionsGrid.style.display === 'none') {
+                      optionsGrid.style.display = 'grid';
+                         caret.style.transform = 'rotate(180deg)';
+                      } else {
+                        optionsGrid.style.display = 'none';
+                      caret.style.transform = 'rotate(0deg)';
+                   }
+                });
+         // Add keyboard navigation
+            document.addEventListener('keydown', function (e) {
+                    if (document.querySelector('.story-pages').style.display === 'block') {
+                     if (e.key === 'ArrowLeft' && !document.getElementById('prevBtn').disabled) {
+                      previousPages();
+                 } else if (e.key === 'ArrowRight' && !document.getElementById('nextBtn').disabled) {
+                     nextPages();
+                    }
+                   }
             });
-        });
-    </script>
-</body>
-</html>
+        
+             // Text-to-Speech functionality
+             function readAloud() {
+               if (!currentStory || !currentStory.chapters.length) {
+                     showToast("No story available to read.");
+                     return;
+              }
+              if (responsiveVoice.isPlaying()) {
+                         stopReadAloud(); //stop current speech if button clicked while reading
+                    return;
+              }
+           const currentChapterContent = getCurrentPageContent();
+           if (currentChapterContent) {
+                const firstFemaleVoice = responsiveVoice.getVoices().find(voice => voice.gender === "female");
+                      responsiveVoice.speak(currentChapterContent, firstFemaleVoice ? firstFemaleVoice.name : "UK English Female", {
+                        onstart: () => {
+                             document.getElementById('readAloudBtn').style.display = 'none';
+                            document.getElementById('stopReadAloudBtn').style.display = 'block';
+                          },
+                          onend: () => {
+                          document.getElementById('readAloudBtn').style.display = 'block';
+                              document.getElementById('stopReadAloudBtn').style.display = 'none';
+                            },
+                       onerror: (e) => {
+                          console.error('ResponsiveVoice error:', e);
+                                showToast("Stopped Reading Aloud.");
+                                document.getElementById('readAloudBtn').style.display = 'block';
+                                document.getElementById('stopReadAloudBtn').style.display = 'none';
+                             }
+                           });
+                        }
+                   }
+        
+               function stopReadAloud() {
+                  if (responsiveVoice && responsiveVoice.isPlaying()) {
+                    responsiveVoice.cancel();
+                  document.getElementById('readAloudBtn').style.display = 'block';
+                 document.getElementById('stopReadAloudBtn').style.display = 'none';
+            }
+            }
+        
+        
+            function getCurrentPageContent() {
+                const leftPage = document.querySelector('.page:first-child');
+                    const rightPage = document.querySelector('.page:last-child');
+                    let content = "";
+        
+                 if (leftPage.style.opacity === '1') {
+                   content += leftPage.querySelector('.chapter-title').textContent + ". ";
+                   content += leftPage.querySelector('.chapter-content').textContent;
+                }
+                   if (rightPage.style.display === 'block' && rightPage.style.opacity === '1') {
+                     content += rightPage.querySelector('.chapter-title').textContent + ". ";
+                   content += rightPage.querySelector('.chapter-content').textContent;
+                 }
+                 return content;
+              }
+                // Initialize Vanta.js background
+                VANTA.BIRDS({
+                  el: "#vanta-background",
+                    mouseControls: true,
+                     touchControls: true,
+                   gyroControls: false,
+                     minHeight: 200.00,
+                   minWidth: 200.00,
+                      scale: 1.00,
+                  scaleMobile: 1.00,
+                   backgroundColor: 0xf4e4bc,
+                   color1: 0x2a1b3d,
+                     color2: 0xe98074,
+                     colorMode: "lerpGradient",
+                    birdSize: 1.50,
+                     wingSpan: 15.00,
+                   separation: 50.00,
+                  alignment: 30.00,
+                  cohesion: 30.00,
+                      quantity: 3.00
+                });
+                // Create magical particles
+                function createParticle(x, y) {
+                    const particle = document.createElement('div');
+                       particle.className = 'particle';
+                       document.body.appendChild(particle);
+              
+                    const angle = Math.random() * Math.PI * 2;
+                   const velocity = 50 + Math.random() * 100;
+                       const moveX = Math.cos(angle) * velocity;
+                        const moveY = Math.sin(angle) * velocity;
+                    particle.style.left = `${x}px`;
+                  particle.style.top = `${y}px`;
+                 particle.style.setProperty('--x', `${moveX}px`);
+                    particle.style.setProperty('--y', `${moveY}px`);
+                 particle.style.animation = 'particleFloat 1.5s ease-out forwards';
+                    setTimeout(() => particle.remove(), 1500);
+                  }
+                // Add particle effects to interactive elements
+                  document.querySelectorAll('.input-field, .generate-btn').forEach(element => {
+                    element.addEventListener('mouseover', (e) => {
+                          const rect = element.getBoundingClientRect();
+                            for (let i = 0; i < 3; i++) {
+                              createParticle(
+                                  rect.left + Math.random() * rect.width,
+                                rect.top + Math.random() * rect.height
+                              );
+                          }
+                         });
+                  });
+              
+                 function showMoral() {
+                     const leftPageMoral = document.querySelector('.page:first-child .moral-of-story');
+                       const rightPageMoral = document.querySelector('.page:last-child .moral-of-story');
+                  const isMoralVisible = leftPageMoral.style.display === 'block';
+                    leftPageMoral.style.display = isMoralVisible ? 'none' : 'block';
+                        if (rightPageMoral)
+                       {
+                      rightPageMoral.style.display = isMoralVisible ? 'none' : 'block';
+                        }
+                        if (!isMoralVisible)
+                       {
+                         const leftPage = document.querySelector('.page:first-child');
+                         leftPageMoral.textContent = currentStory.moral;
+                         const rightPage = document.querySelector('.page:last-child');
+                         if (rightPage)
+                          {
+                                rightPageMoral.textContent = currentStory.moral;
+                          }
+                      }
+                      }
+                       </script>
+                   </body>
+                   
+                   </html>
