@@ -1,344 +1,1552 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flowchart Generator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>ChartForge - Visualize Ideas Beautifully</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
     <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.2/dist/vis-network.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: 'Raleway', sans-serif;
-            background-color: rgba(26, 26, 46, 0.9);
-            color: #ffffff;
-            overflow: hidden;
-        }
+      /* ======  New CSS Styles  ====== */
+      :root {
+        --primary: #6c5dd3; /* Vibrant Purple */
+        --primary-light: #aeaee5;
+        --secondary: #ff7ea0; /* Energetic Pink */
+        --background: #111827; /* Deep Charcoal */
+        --surface: rgba(31, 41, 55, 0.8); /* Darker Grey with Transparency */
+        --text: #f9fafb; /* Off-White */
+        --text-secondary: #9ca3af; /* Light Grey */
+        --error: #f44336;
+        --accent: #fde047; /* Sunny Yellow */
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --input-border: rgba(255, 255, 255, 0.1);
+        --focus-shadow: rgba(108, 93, 211, 0.6);
+        --dropdown-bg: #1f2937;
+        --dropdown-hover-bg: rgba(255, 255, 255, 0.08);
+        --font-family-heading: "Poppins", sans-serif;
+        --font-family-body: "Inter", sans-serif;
+      }
 
-        #vanta-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-        }
+      body,
+      html {
+        height: 100%;
+        background-color: var(--background);
+        color: var(--text);
+        overflow-x: hidden;
+        font-family: var(--font-family-body);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
 
+      #vanta-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 3rem;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        gap: 3rem;
+        position: relative;
+        z-index: 1;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeInUp 0.8s ease-out forwards 0.2s;
+      }
+
+      @keyframes fadeInUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .app-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .app-logo {
+        width: 70px;
+        height: 70px;
+        margin-bottom: 1rem;
+        border-radius: 50%;
+        background: linear-gradient(45deg, var(--primary), var(--secondary));
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: var(--background);
+        font-size: 1.8rem;
+        font-family: var(--font-family-heading);
+        font-weight: 700;
+        letter-spacing: -1px;
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      .app-title {
+        font-size: 3rem;
+        font-family: var(--font-family-heading);
+        font-weight: 700;
+        letter-spacing: -1.5px;
+        background: linear-gradient(45deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 2px 4px var(--shadow-color);
+      }
+
+      .app-subtitle {
+        font-size: 1.1rem;
+        color: var(--text-secondary);
+        margin-top: 0.5rem;
+      }
+
+      .form-container {
+        background: var(--surface);
+        border-radius: 12px;
+        border: 1px solid var(--input-border);
+        backdrop-filter: blur(15px);
+        box-shadow: 0 8px 20px var(--shadow-color);
+        padding: 3rem;
+        transition: transform 0.3s ease-in-out;
+      }
+
+      .form-container:hover {
+        transform: translateY(-5px);
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+      }
+
+      .input-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+      }
+
+      .input-field label {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        opacity: 0.85;
+        transition: color 0.3s ease;
+      }
+
+      .input-field label:hover {
+        color: var(--primary-light);
+      }
+
+      .input-field input,
+      .input-field select {
+        padding: 1rem 1.2rem;
+        border-radius: 8px;
+        border: 1px solid var(--input-border);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text);
+        font-size: 1rem;
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .input-field input:focus,
+      .input-field select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--focus-shadow);
+      }
+
+      .input-field input::placeholder {
+        color: var(--text-secondary);
+        opacity: 0.7;
+      }
+
+      .input-field select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1rem;
+      }
+
+      .input-field select option {
+        color: var(--text);
+        background-color: var(--dropdown-bg);
+        padding: 0.5rem 1rem;
+      }
+
+      .input-field select option:hover,
+      .input-field select option:focus {
+        background-color: var(--dropdown-hover-bg);
+      }
+
+      .generate-button {
+        margin-top: 2.5rem;
+        padding: 1.2rem 2.8rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text);
+        background: linear-gradient(45deg, var(--primary), var(--secondary));
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55),
+          box-shadow 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .generate-button:hover {
+        transform: scale(1.03);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+      }
+
+      .generate-button::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.15);
+        transition: all 0.4s ease;
+        transform: skewX(-45deg);
+      }
+
+      .generate-button:hover::before {
+        left: 120%;
+      }
+
+      .chart-container {
+        width: 100%;
+        height: 650px;
+        background: var(--surface);
+        border-radius: 12px;
+        border: 1px solid var(--input-border);
+        backdrop-filter: blur(15px);
+        position: relative;
+        display: none;
+        overflow: hidden;
+        box-shadow: 0 8px 20px var(--shadow-color);
+        opacity: 0;
+        transform: scale(0.95);
+        transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+      }
+
+      .chart-container.show {
+        display: block;
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      .chart-canvas {
+        width: 100%;
+        height: 100%;
+      }
+
+      .loader-container {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .loader {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 6px solid var(--text-secondary);
+        border-top-color: var(--primary);
+        animation: rotate 1s linear infinite;
+        margin-bottom: 1rem;
+      }
+
+      @keyframes rotate {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loader-text {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+
+      .control-panel {
+        position: absolute;
+        bottom: 1.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        display: none;
+        gap: 1rem;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 0.8rem 1.5rem;
+        border-radius: 30px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 5px 15px var(--shadow-color);
+        z-index: 2;
+      }
+
+      .control-button {
+        padding: 0.7rem 1.4rem;
+        border: none;
+        border-radius: 25px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease-in-out;
+      }
+
+      .control-button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: scale(1.1);
+      }
+
+      .control-button:active {
+        transform: scale(0.95);
+      }
+
+      .zoom-button {
+        position: absolute;
+        top: 1rem;
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.4);
+        color: var(--text);
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease-in-out;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(10px);
+      }
+
+      .zoom-button:hover {
+        background-color: rgba(0, 0, 0, 0.6);
+        transform: scale(1.1);
+      }
+
+      .zoom-button:active {
+        transform: scale(0.95);
+      }
+
+      #zoom-in-btn {
+        left: 1rem;
+      }
+
+      #zoom-out-btn {
+        left: 5.5rem;
+      }
+
+      .utility-button {
+        position: absolute;
+        top: 1rem;
+        padding: 0.7rem 1.4rem;
+        border: none;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.4);
+        color: var(--text);
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease-in-out;
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .utility-button i {
+        font-size: 1rem;
+      }
+
+      .utility-button:hover {
+        background-color: rgba(0, 0, 0, 0.6);
+        transform: scale(1.05);
+      }
+
+      .utility-button:active {
+        transform: scale(0.95);
+      }
+
+      #fullscreen-btn {
+        right: 1rem;
+      }
+
+      #save-btn {
+        right: 9rem;
+        background: linear-gradient(45deg, var(--accent), var(--primary));
+      }
+
+      .error-message {
+        color: var(--error);
+        text-align: center;
+        padding: 1.2rem;
+        border-radius: 8px;
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.3);
+        display: none;
+        animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        margin-top: 2rem;
+        font-weight: 500;
+      }
+
+      @keyframes shake {
+        10%,
+        90% {
+          transform: translateX(-2px);
+        }
+        20%,
+        80% {
+          transform: translateX(4px);
+        }
+        30%,
+        50%,
+        70% {
+          transform: translateX(-6px);
+        }
+        40%,
+        60% {
+          transform: translateX(6px);
+        }
+      }
+
+      ::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 5;
+        padding: 5px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(45deg, var(--secondary), var(--primary));
+      }
+
+      @media (max-width: 768px) {
         .container {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            padding: 20px;
-            box-sizing: border-box;
+          padding: 1rem;
+          gap: 1.5rem;
         }
 
-        h1 {
-            font-size: 3.5rem;
-            color: #e94560; 
-            margin-bottom: 30px;
-            text-align: center;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        .app-header {
+          margin-bottom: 1.5rem;
         }
 
-        #topic-input {
-            width: 80%;
-            max-width: 500px;
-            padding: 15px;
-            border: none;
-            border-radius: 50px;
-            background-color: rgba(255, 255, 255, 0.2);
-            color: #ffffff;
-            font-size: 1.2rem;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
+        .app-logo {
+          width: 50px;
+          height: 50px;
+          font-size: 1.5rem;
         }
 
-        #topic-input:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.5);
-            transform: scale(1.05);
+        .app-title {
+          font-size: 2rem;
         }
 
-        #generate-btn {
-            background: linear-gradient(45deg, #e94560, #0f3460);
-            color: #ffffff;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        .app-subtitle {
+          font-size: 0.9rem;
+          padding: 0 1rem;
         }
 
-        #generate-btn:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+        .form-container {
+          padding: 1.5rem;
         }
 
-        #flowchart-container {
-            width: 90%;
-            height: 60vh;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
-            margin-top: 30px;
-            overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-            display: none;
-            backdrop-filter: blur(5px);
-            position: relative; 
+        .form-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
         }
 
-        #flowchart {
-            width: 100%;
-            height: 100%;
+        .input-field {
+          margin-bottom: 0.8rem;
         }
 
-        #loading-animation {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: none;
+        .input-field input,
+        .input-field select {
+          padding: 0.8rem 1rem;
+          font-size: 0.9rem;
         }
 
-        /* Cool Loader Styles */
-        .loader {
-            border: 8px solid rgba(0, 0, 0, 0.1);
-            border-radius: 50%;
-            border-top: 8px solid #e94560;
-            width: 80px;
-            height: 80px;
-            animation: spin 1.5s linear infinite;
+        .generate-button {
+          width: 100%;
+          margin-top: 1.5rem;
+          padding: 1rem 2rem;
+          font-size: 1rem;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .chart-container {
+          height: 400px;
+          margin: 1rem 0;
         }
 
-        #error-message {
-            color: #e94560;
-            text-align: center;
-            margin-top: 20px;
-            display: none;
-            font-weight: 600;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        .control-panel {
+          bottom: 1rem;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 0.5rem;
+          width: 90%;
+          padding: 0.5rem;
         }
 
-        /* Fullscreen Button Styles */
+        .control-button {
+          padding: 0.5rem 0.8rem;
+          font-size: 0.8rem;
+        }
+
+        .utility-button {
+          font-size: 0.8rem;
+          padding: 0.5rem 0.8rem;
+        }
+
+        #save-btn {
+          right: 1rem;
+          top: auto;
+          bottom: 1rem;
+        }
+
         #fullscreen-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: #e94560;
-            color: #ffffff;
-            border: none;
-            border-radius: 5px;
-            padding: 10px;
-            cursor: pointer;
-            font-size: 16px;
+          right: 1rem;
         }
 
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2.5rem;
-            }
-
-            #topic-input {
-                width: 90%;
-            }
+        .zoom-button {
+          width: 32px;
+          height: 32px;
+          font-size: 0.9rem;
         }
+
+        #zoom-in-btn {
+          left: 0.5rem;
+        }
+
+        #zoom-out-btn {
+          left: 3rem;
+        }
+
+        .modify-container {
+          padding: 1rem;
+          margin-top: 1rem;
+        }
+
+        .modify-container textarea {
+          min-height: 80px;
+          font-size: 0.9rem;
+        }
+
+        .modal-content {
+          width: 90%;
+          margin: 20% auto;
+          padding: 1rem;
+        }
+
+        .modal-button {
+          padding: 0.8rem 1rem;
+          font-size: 0.9rem;
+        }
+      }
+
+      @media (max-width: 380px) {
+        .app-title {
+          font-size: 1.8rem;
+        }
+
+        .app-subtitle {
+          font-size: 0.8rem;
+        }
+
+        .control-panel {
+          padding: 0.4rem;
+        }
+
+        .control-button {
+          padding: 0.4rem 0.6rem;
+          font-size: 0.75rem;
+        }
+
+        .utility-button {
+          padding: 0.4rem 0.6rem;
+          font-size: 0.75rem;
+        }
+      }
+
+      @media (hover: none) {
+        .input-field input,
+        .input-field select,
+        .control-button,
+        .utility-button,
+        .zoom-button {
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .generate-button:active,
+        .control-button:active,
+        .utility-button:active,
+        .zoom-button:active {
+          transform: scale(0.95);
+        }
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1000; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+      }
+
+      .modal-content {
+        background-color: var(--surface);
+        margin: 15% auto; /* 15% from the top and centered */
+        padding: 20px;
+        border: 1px solid var(--input-border);
+        border-radius: 10px;
+        width: 80%; /* Could be more or less, depending on screen size */
+        max-width: 600px;
+        position: relative;
+      }
+
+      .close-button {
+        color: var(--text);
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .close-button:hover,
+      .close-button:focus {
+        color: #000;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .modal-input-field {
+        margin-bottom: 15px;
+      }
+
+      .modal-input-field label {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--text);
+      }
+
+      .modal-input-field input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid var(--input-border);
+        background-color: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+      }
+
+      .modal-actions {
+        text-align: right;
+        margin-top: 20px;
+      }
+
+      .modal-button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        background: linear-gradient(45deg, var(--primary), var(--secondary));
+        color: var(--text);
+        cursor: pointer;
+        margin-left: 10px;
+      }
+
+      .modal-button:hover {
+        opacity: 0.8;
+      }
+
+      .modify-container {
+        background: var(--surface);
+        border-radius: 12px;
+        border: 1px solid var(--input-border);
+        backdrop-filter: blur(15px);
+        box-shadow: 0 8px 20px var(--shadow-color);
+        padding: 1.5rem;
+        margin: 1rem;
+        width: auto;
+        box-sizing: border-box;
+      }
+
+      .modify-container label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .modify-container textarea {
+        width: 100%;
+        padding: 0.8rem;
+        border-radius: 8px;
+        border: 1px solid var(--input-border);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text);
+        font-size: 0.9rem;
+        resize: vertical;
+        min-height: 80px;
+        box-sizing: border-box;
+        margin-top: 0.5rem;
+      }
+
+      .modify-container button {
+        margin-top: 1rem;
+      }
+
+      @media (max-width: 768px) {
+        .modify-container {
+          padding: 1rem;
+          margin: 0.5rem;
+          width: auto;
+        }
+
+        .modify-container textarea {
+          padding: 0.8rem;
+          font-size: 0.9rem;
+          min-height: 60px;
+        }
+
+        .modify-container label {
+          font-size: 0.9rem;
+        }
+
+        .modify-container button {
+          width: 100%;
+          margin-top: 0.8rem;
+        }
+      }
+
+      @media (max-width: 380px) {
+        .modify-container {
+          padding: 0.8rem;
+          margin: 0.3rem;
+        }
+
+        .modify-container textarea {
+          padding: 0.6rem;
+          font-size: 0.85rem;
+        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="vanta-background"></div>
     <div class="container">
-        <h1>Flowchart Generator</h1>
-        <input type="text" id="topic-input" placeholder="Enter topic or algorithm name" required>
-        <button id="generate-btn">Generate</button>
-        <div id="flowchart-container">
-            <div id="flowchart"></div>
-            <div id="loading-animation">
-                <div class="loader"></div>
-            </div>
-            <button id="fullscreen-btn">Fullscreen</button>
+      <header class="app-header">
+        <div class="app-logo">
+          <i class="fas fa-project-diagram"></i>
         </div>
-        <div id="error-message"></div>
+        <h1 class="app-title">ChartForge</h1>
+        <p class="app-subtitle">
+          Visualize your ideas and knowledge with interactive charts.
+        </p>
+      </header>
+      <div class="form-container">
+        <form id="generate-form" enctype="multipart/form-data">
+          <div class="form-grid">
+            <div class="input-field">
+              <label for="topic-input">Topic or Algorithm</label>
+              <input
+                type="text"
+                id="topic-input"
+                name="topic"
+                placeholder="e.g., Quantum Entanglement"
+              />
+            </div>
+            <div class="input-field">
+              <label for="file-input">Upload Document (PDF/DOCX)</label>
+              <input
+                type="file"
+                id="file-input"
+                name="file"
+                accept=".pdf,.docx"
+              />
+            </div>
+            <div class="input-field">
+              <label for="type-select">Chart Type</label>
+              <select id="type-select" name="type">
+                <option value="flowchart">Flowchart</option>
+                <option value="mind_map">Mind Map</option>
+              </select>
+            </div>
+            <div class="input-field">
+              <label for="animation-select">Animation</label>
+              <select id="animation-select" name="animation">
+                <option value="static">Static</option>
+                <option value="animated">Animated</option>
+              </select>
+            </div>
+            <div class="input-field">
+              <label for="detail-select">Detail Level</label>
+              <select id="detail-select" name="detail_level">
+                <option value="simple">Simple</option>
+                <option value="normal">Normal</option>
+                <option value="detailed">Detailed</option>
+              </select>
+            </div>
+          </div>
+          <button type="button" id="generate-btn" class="generate-button">
+            <i class="fas fa-magic mr-2"></i> Generate Chart
+          </button>
+        </form>
+      </div>
+      <div class="chart-container" id="flowchart-container">
+        <div id="flowchart" class="chart-canvas"></div>
+        <div class="loader-container" id="loading-animation">
+          <div class="loader"></div>
+          <div class="loader-text">Crafting Your Visual...</div>
+        </div>
+        <button class="zoom-button" id="zoom-in-btn">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button class="zoom-button" id="zoom-out-btn">
+          <i class="fas fa-minus"></i>
+        </button>
+        <button class="utility-button" id="fullscreen-btn">
+          <i class="fas fa-expand-alt"></i> Fullscreen
+        </button>
+        <button class="utility-button" id="save-btn">
+          <i class="fas fa-download"></i> Save Image
+        </button>
+        <div class="control-panel" id="animation-controls">
+          <button class="control-button" id="start-animation-btn">Start</button>
+          <button class="control-button" id="play-btn">
+            <i class="fas fa-play"></i> Play
+          </button>
+          <button class="control-button" id="pause-btn">
+            <i class="fas fa-pause"></i> Pause
+          </button>
+          <button class="control-button" id="back-btn">
+            <i class="fas fa-backward"></i> Back
+          </button>
+          <button class="control-button" id="forward-btn">
+            <i class="fas fa-forward"></i> Forward
+          </button>
+        </div>
+      </div>
+      <div class="modify-container">
+        <label for="modify-prompt">Extend or Modify Chart</label>
+        <textarea
+          id="modify-prompt"
+          placeholder="e.g., Add a step for 'Error Handling' after 'Processing Data'"
+        ></textarea>
+        <button type="button" id="modify-btn" class="generate-button">
+          <i class="fas fa-edit mr-2"></i> Modify Chart
+        </button>
+      </div>
+      <div class="error-message" id="error-message"></div>
+    </div>
+
+    <div id="addNodeModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" onclick="closeModal('addNodeModal')">×</span>
+        <h3>Add New Node</h3>
+        <div class="modal-input-field">
+          <label for="nodeLabel">Node Label:</label>
+          <input type="text" id="nodeLabel" />
+        </div>
+        <div class="modal-actions">
+          <button class="modal-button" onclick="addNode()">Add Node</button>
+          <button class="modal-button" onclick="closeModal('addNodeModal')">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script>
-        VANTA.WAVES({
-            el: "#vanta-background",
-            mouseControls: true,
-            touchControls: true,
-            gyroControls: false,
-            minHeight: 200.00,
-            minWidth: 200.00,
-            scale: 1.00,
-            scaleMobile: 1.00,
-            color: 0x0f3460,
-            shininess: 60.00,
-            waveHeight: 20.00,
-            waveSpeed: 1.50,
-            zoom: 0.65
-        })
+      // Initialize Vanta.js Globe effect for a more modern look
+      VANTA.GLOBE({
+        el: "#vanta-background",
+        mouseControls: true,
+        touchControls: true,
+        gyroControls: false,
+        minHeight: 200.0,
+        minWidth: 200.0,
+        scale: 1.0,
+        scaleMobile: 0.8,
+        backgroundColor: 0x111827, // Match background color
+        color: 0x6c5dd3, // Primary color for the globe
+        color2: 0xff7ea0, // Secondary color
+        size: 1.0,
+        zoom: 0.8,
+      });
 
-        // Animate elements on load
-        window.addEventListener('load', () => {
-            gsap.from('h1', {duration: 1, y: -50, opacity: 0, ease: 'power3.out'});
-            gsap.from('#topic-input', {duration: 1, y: 50, opacity: 0, ease: 'power3.out', delay: 0.3});
-            gsap.from('#generate-btn', {duration: 1, y: 50, opacity: 0, ease: 'power3.out', delay: 0.5});
+      let animationInterval = null;
+      let animationData = {};
+      let isAnimated = false;
+      let network = null;
+      let nodesDataset = new vis.DataSet([]);
+      let edgesDataset = new vis.DataSet([]);
+      let isModifying = false;
+
+      document
+        .getElementById("generate-btn")
+        .addEventListener("click", function () {
+          generateFlowchartData();
         });
 
-        document.getElementById('generate-btn').addEventListener('click', function () {
-            var topic = document.getElementById('topic-input').value;
-            gsap.to('#flowchart-container', {duration: 0.5, opacity: 1, display: 'block', ease: 'power2.inOut'});
-            gsap.to('#loading-animation', {duration: 0.3, opacity: 1, display: 'block', ease: 'power2.inOut'});
+      function generateFlowchartData() {
+        const topic = document.getElementById("topic-input").value.trim();
+        const fileInput = document.getElementById("file-input");
+        const chartType = document.getElementById("type-select").value;
+        const animation = document.getElementById("animation-select").value;
+        const detailLevel = document.getElementById("detail-select").value;
 
-            fetch('/get_flowchart_data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ topic: topic })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    gsap.to('#loading-animation', {duration: 0.3, opacity: 0, display: 'none', ease: 'power2.inOut'});
-                    if (data.error) {
-                        gsap.to('#error-message', {duration: 0.5, opacity: 1, display: 'block', text: "Error: " + data.error, ease: 'power2.inOut'});
-                    } else {
-                        gsap.to('#error-message', {duration: 0.3, opacity: 0, display: 'none', ease: 'power2.inOut'});
-                        drawFlowchart(data);
-                    }
-                });
-        });
-
-        function drawFlowchart(data) {
-            var container = document.getElementById('flowchart');
-            var nodes = new vis.DataSet(data.nodes);
-            var edges = new vis.DataSet(data.edges);
-
-            var options = {
-                layout: {
-                    hierarchical: {
-                        direction: 'UD',
-                        sortMethod: 'directed',
-                        nodeSpacing: 200,
-                        levelSeparation: 200,
-                    }
-                },
-                nodes: {
-                    shape: 'box',
-                    font: {
-                        size: 16,
-                        face: 'Raleway',
-                        color: '#ffffff',
-                    },
-                    color: {
-                        background: '#e94560',
-                        border: '#0f3460',
-                        highlight: {
-                            background: '#0f3460',
-                            border: '#e94560',
-                        },
-                    },
-                    borderWidth: 2,
-                    shadow: true,
-                },
-                edges: {
-                    smooth: {
-                        type: 'cubicBezier',
-                        forceDirection: 'vertical',
-                        roundness: 0.4,
-                    },
-                    arrows: {
-                        to: { enabled: true, scaleFactor: 1.2 },
-                    },
-                    color: '#e94560',
-                    width: 2,
-                    shadow: true,
-                },
-                interaction: {
-                    dragNodes: true,
-                    dragView: true,
-                    zoomView: true,
-                    hover: true,
-                    tooltipDelay: 100,
-                    hideEdgesOnDrag: false,
-                },
-                physics: false,
-            };
-
-            var network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
-
-            // Add interactivity to nodes
-            network.on("selectNode", function (params) {
-                if (params.nodes.length === 1) {
-                    var node = nodes.get(params.nodes[0]);
-                    gsap.to(node, {duration: 0.3, scale: 1.2, ease: 'power2.out'});
-                    nodes.update(node);
-                }
-            });
-
-            network.on("deselectNode", function (params) {
-                params.previousSelection.nodes.forEach(nodeId => {
-                    var node = nodes.get(nodeId);
-                    gsap.to(node, {duration: 0.3, scale: 1, ease: 'power2.out'});
-                    nodes.update(node);
-                });
-            });
-
-            // Add zoom controls
-            var zoomIn = document.createElement('button');
-            zoomIn.innerHTML = '+';
-            zoomIn.style.position = 'absolute';
-            zoomIn.style.top = '10px';
-            zoomIn.style.left = '10px';
-            zoomIn.style.backgroundColor = '#e94560';
-            zoomIn.style.color = '#ffffff';
-            zoomIn.style.border = 'none';
-            zoomIn.style.borderRadius = '5px';
-            zoomIn.style.padding = '10px';
-            zoomIn.style.cursor = 'pointer';
-            zoomIn.onclick = function() { network.moveTo({scale: network.getScale() * 1.2}); };
-            container.appendChild(zoomIn);
-
-            var zoomOut = document.createElement('button');
-            zoomOut.innerHTML = '-';
-            zoomOut.style.position = 'absolute';
-            zoomOut.style.top = '10px';
-            zoomOut.style.left = '50px';
-            zoomOut.style.backgroundColor = '#e94560';
-            zoomOut.style.color = '#ffffff';
-            zoomOut.style.border = 'none';
-            zoomOut.style.borderRadius = '5px';
-            zoomOut.style.padding = '10px';
-            zoomOut.style.cursor = 'pointer';
-            zoomOut.onclick = function() { network.moveTo({scale: network.getScale() * 0.8}); };
-            container.appendChild(zoomOut);
-
-
-            // Fullscreen functionality
-            const flowchartContainer = document.getElementById('flowchart-container');
-            const fullscreenButton = document.getElementById('fullscreen-btn');
-
-            fullscreenButton.addEventListener('click', () => {
-                if (document.fullscreenElement) {
-                    document.exitFullscreen();
-                } else {
-                    flowchartContainer.requestFullscreen();
-                }
-            });
+        if (!topic && fileInput.files.length === 0) {
+          gsap.to("#error-message", {
+            duration: 0.5,
+            opacity: 1,
+            display: "block",
+            ease: "power2.inOut",
+          });
+          document.getElementById("error-message").innerText =
+            "Please enter a topic or upload a document.";
+          return;
         }
+
+        gsap.to("#flowchart-container", {
+          duration: 0.5,
+          opacity: 1,
+          display: "block",
+          scale: 1,
+          ease: "power3.out",
+        });
+        gsap.to("#loading-animation", {
+          duration: 0.3,
+          opacity: 1,
+          display: "flex",
+          ease: "power2.inOut",
+        });
+        gsap.to("#error-message", {
+          duration: 0.3,
+          opacity: 0,
+          display: "none",
+          ease: "power2.inOut",
+        });
+
+        const formData = new FormData(document.getElementById("generate-form"));
+
+        fetch("/get_flowchart_data", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            gsap.to("#loading-animation", {
+              duration: 0.3,
+              opacity: 0,
+              display: "none",
+              ease: "power2.inOut",
+            });
+            if (data.error) {
+              gsap.to("#error-message", {
+                duration: 0.5,
+                opacity: 1,
+                display: "block",
+                ease: "power2.inOut",
+              });
+              document.getElementById("error-message").innerText =
+                "Error: " + data.error;
+            } else {
+              animationData = data;
+              isAnimated = animationData.animation === "animated";
+              gsap.to("#error-message", {
+                duration: 0.3,
+                opacity: 0,
+                display: "none",
+                ease: "power2.inOut",
+              });
+              drawFlowchart(data);
+            }
+          })
+          .catch((error) => {
+            gsap.to("#loading-animation", {
+              duration: 0.3,
+              opacity: 0,
+              display: "none",
+              ease: "power2.inOut",
+            });
+            gsap.to("#error-message", {
+              duration: 0.5,
+              opacity: 1,
+              display: "block",
+              ease: "power2.inOut",
+            });
+            document.getElementById("error-message").innerText =
+              "An unexpected error occurred.";
+            console.error("Error:", error);
+          });
+      }
+
+      function drawFlowchart(data) {
+        console.log("drawFlowchart called with data:", data); // LOG 1
+        const container = document.getElementById("flowchart");
+        if (network) {
+          network.destroy();
+        }
+        nodesDataset.clear();
+        edgesDataset.clear();
+
+        const options = {
+          // *** IMPORTANT FIX: Disable physics by default ***
+          physics: {
+            enabled: false,
+          },
+          layout: {
+            hierarchical: {
+              enabled: true,
+              levelSeparation: 150,
+              nodeSpacing: 200,
+              treeSpacing: 250,
+              direction: "UD",
+              sortMethod: "directed",
+              parentCentralization: true,
+            },
+          },
+          nodes: {
+            shape: "box",
+            font: {
+              size: 15,
+              color: "#E2E8F0",
+              face: "var(--font-family-body)",
+            },
+            borderWidth: 2,
+            color: {
+              background: "#1E293B",
+              border: "#334155",
+              highlight: {
+                background: "#7C3AED",
+                border: "#A78BFA",
+              },
+            },
+            widthConstraint: {
+              maximum: 220,
+            },
+            shadow: {
+              enabled: true,
+              color: "rgba(0,0,0,0.5)",
+              size: 10,
+              x: 5,
+              y: 5,
+            },
+          },
+          edges: {
+            arrows: {
+              to: {
+                enabled: true,
+                scaleFactor: 0.7,
+                type: "arrow",
+              },
+            },
+            color: {
+              color: "#64748B",
+              highlight: "#94A3B8",
+            },
+            width: 2,
+            smooth: {
+              type: "cubicBezier",
+              forceDirection: "vertical",
+              roundness: 0.5,
+            },
+            shadow: true,
+          },
+          interaction: {
+            multiselect: true,
+            navigationButtons: true,
+            keyboard: true,
+            zoomSpeed: 0.5,
+          },
+          manipulation: {
+            enabled: true,
+            addNode: function (data, callback) {
+              console.log("Manipulation Add Node, data: ", data);
+              document.getElementById("addNodeModal").style.display = "block";
+              window.newNodeCallback = callback;
+            },
+            editNode: function (data, callback) {
+              console.log("Manipulation Edit Node, data: ", data);
+              data.label = prompt("Edit Node Label", data.label);
+              if (data.label !== null) {
+                fetch(`/edit_node/${data.id}`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ node: data }),
+                })
+                  .then((response) => response.json())
+                  .then((updatedNode) => {
+                    console.log("Response from Edit Node:", updatedNode);
+                    nodesDataset.update(updatedNode.node);
+                    console.log("Nodes Dataset After Edit:", nodesDataset);
+                    callback(data);
+                  })
+                  .catch((error) =>
+                    console.error("Error updating node:", error)
+                  );
+              } else {
+                callback(null); // Cancelled
+              }
+            },
+            deleteNode: function (data, callback) {
+              console.log("Manipulation Delete Node, data: ", data);
+              const nodeId = data.nodes[0];
+              if (confirm("Are you sure you want to delete this node?")) {
+                fetch(`/delete_node/${nodeId}`, {
+                  method: "DELETE",
+                })
+                  .then((response) => {
+                    console.log("Response from Delete Node:", response);
+                    if (response.ok) {
+                      console.log("Nodes Dataset before Delete:", nodesDataset);
+                      console.log("Edges Dataset before Delete:", edgesDataset);
+                      callback(data);
+                    } else {
+                      console.error("Error deleting node");
+                    }
+                  })
+                  .catch((error) =>
+                    console.error("Error deleting node:", error)
+                  );
+              }
+            },
+            addEdge: function (data, callback) {
+              console.log("Manipulation Add Edge, data: ", data);
+              if (data.from !== data.to) {
+                fetch("/add_edge", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ edge: data }),
+                })
+                  .then((response) => response.json())
+                  .then((newEdge) => {
+                    console.log("Response from Add Edge:", newEdge);
+                    edgesDataset.add(newEdge.edge);
+                    console.log("Edges Dataset After Add:", edgesDataset);
+                    callback(data);
+                  })
+                  .catch((error) => console.error("Error adding edge:", error));
+              }
+            },
+            deleteEdge: function (data, callback) {
+              console.log("Manipulation Delete Edge, data:", data);
+              if (confirm("Are you sure you want to delete this link?")) {
+                data.edges.forEach((edgeId) => {
+                  const edge = edgesDataset.get(edgeId);
+                  console.log("Deleting edge:", edge);
+                  fetch(`/delete_edge/${edge.from}/${edge.to}`, {
+                    method: "DELETE",
+                  })
+                    .then((response) => {
+                      console.log("Response from Delete Edge:", response);
+                      if (response.ok) {
+                        console.log(
+                          "Edges Dataset before Delete:",
+                          edgesDataset
+                        );
+                        callback(data);
+                      } else {
+                        console.error("Error deleting edge");
+                      }
+                    })
+                    .catch((error) =>
+                      console.error("Error deleting edge:", error)
+                    );
+                });
+              }
+            },
+          },
+          autoResize: true,
+          height: "100%",
+          width: "100%",
+        };
+        console.log("Nodes Before Adding: ", data.nodes); // LOG 2
+        console.log("Edges Before Adding: ", data.edges); // LOG 2
+        network = new vis.Network(
+          container,
+          { nodes: nodesDataset, edges: edgesDataset },
+          options
+        );
+
+        clearInterval(animationInterval);
+        animationData.currentStep = 0;
+
+        if (data.animation === "animated") {
+          document.getElementById("animation-controls").style.display = "flex";
+          initializeAnimation(data);
+        } else {
+          document.getElementById("animation-controls").style.display = "none";
+          nodesDataset.add(data.nodes);
+          edgesDataset.add(data.edges);
+          console.log("Nodes dataset after Adding:", nodesDataset);
+          console.log("Edges dataset after Adding:", edgesDataset);
+        }
+
+        network.on("doubleClick", function () {
+          network.fit({
+            animation: {
+              duration: 750,
+              easingFunction: "easeInOutQuint",
+            },
+          });
+        });
+      }
+
+      function closeModal(modalId) {
+        document.getElementById(modalId).style.display = "none";
+      }
+
+      function addNode() {
+        const label = document.getElementById("nodeLabel").value;
+        if (label) {
+          const newId = Math.max(...nodesDataset.getIds(), 0) + 1;
+          const newNode = { id: newId, label: label };
+          fetch("/add_node", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ node: newNode }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.status === "success") {
+                nodesDataset.add(data.node);
+                window.newNodeCallback(newNode); // Call the vis.js callback
+                closeModal("addNodeModal");
+              } else {
+                console.error("Error adding node:", data.message);
+              }
+            })
+            .catch((error) => console.error("Error adding node:", error));
+        }
+      }
+      function initializeAnimation(data) {
+        resetAnimation();
+        animationData.steps = [];
+        let combinedElements = data.nodes
+          .map((node) => ({ type: "node", element: node, order: node.order }))
+          .concat(
+            data.edges.map((edge) => ({
+              type: "edge",
+              element: edge,
+              order: edge.order,
+            }))
+          );
+        combinedElements.sort((a, b) => a.order - b.order);
+        animationData.steps = combinedElements;
+      }
+
+      function resetAnimation() {
+        nodesDataset.clear();
+        edgesDataset.clear();
+        animationData.currentStep = 0;
+      }
+
+      function playAnimation() {
+        pauseAnimation();
+        animationInterval = setInterval(() => {
+          if (animationData.currentStep >= animationData.steps.length) {
+            clearInterval(animationInterval);
+            animationInterval = null;
+            return;
+          }
+          animateStep(animationData.currentStep);
+          animationData.currentStep++;
+        }, 700);
+      }
+
+      function pauseAnimation() {
+        if (animationInterval) {
+          clearInterval(animationInterval);
+          animationInterval = null;
+        }
+      }
+
+      function forwardAnimation() {
+        if (animationData.currentStep < animationData.steps.length) {
+          animateStep(animationData.currentStep);
+          animationData.currentStep++;
+        }
+      }
+
+      function backwardAnimation() {
+        if (animationData.currentStep > 0) {
+          animationData.currentStep--;
+          revertStep(animationData.currentStep);
+        }
+      }
+
+      function animateStep(step) {
+        let stepData = animationData.steps[step];
+        if (stepData.type === "node") {
+          nodesDataset.add(stepData.element);
+          network.selectNodes([stepData.element.id]);
+          setTimeout(() => {
+            network.unselectAll();
+          }, 300);
+        } else if (stepData.type === "edge") {
+          edgesDataset.add(stepData.element);
+        }
+      }
+
+      function revertStep(step) {
+        let stepData = animationData.steps[step];
+        if (stepData.type === "node") {
+          nodesDataset.remove(stepData.element.id);
+        } else if (stepData.type === "edge") {
+          edgesDataset.remove(stepData.element.id);
+        }
+      }
+
+      document
+        .getElementById("start-animation-btn")
+        .addEventListener("click", () => {
+          resetAnimation();
+          playAnimation();
+        });
+
+      document
+        .getElementById("play-btn")
+        .addEventListener("click", playAnimation);
+      document
+        .getElementById("pause-btn")
+        .addEventListener("click", pauseAnimation);
+      document
+        .getElementById("forward-btn")
+        .addEventListener("click", forwardAnimation);
+      document
+        .getElementById("back-btn")
+        .addEventListener("click", backwardAnimation);
+
+      document.getElementById("zoom-in-btn").addEventListener("click", () => {
+        network.moveTo({
+          scale: network.getScale() * 1.2,
+          animation: {
+            duration: 250,
+            easingFunction: "easeInOutQuad",
+          },
+        });
+      });
+
+      document.getElementById("zoom-out-btn").addEventListener("click", () => {
+        network.moveTo({
+          scale: network.getScale() * 0.8,
+          animation: {
+            duration: 250,
+            easingFunction: "easeInOutQuad",
+          },
+        });
+      });
+      window.addEventListener("resize", () => {
+        if (network) {
+          network.fit({
+            animation: {
+              duration: 750,
+              easingFunction: "easeInOutQuint",
+            },
+          });
+        }
+      });
+      const flowchartContainer = document.getElementById("flowchart-container");
+      const fullscreenButton = document.getElementById("fullscreen-btn");
+      fullscreenButton.addEventListener("click", () => {
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else if (flowchartContainer.requestFullscreen) {
+          flowchartContainer.requestFullscreen();
+        } else if (flowchartContainer.mozRequestFullScreen) {
+          /* Firefox */
+          flowchartContainer.mozRequestFullScreen();
+        } else if (flowchartContainer.webkitRequestFullscreen) {
+          /* Chrome, Safari and Opera */
+          flowchartContainer.webkitRequestFullscreen();
+        } else if (flowchartContainer.msRequestFullscreen) {
+          /* IE/Edge */
+          flowchartContainer.msRequestFullscreen();
+        }
+      });
+
+      document
+        .getElementById("save-btn")
+        .addEventListener("click", function () {
+          const uiElements = document.querySelectorAll(
+            ".zoom-button, .control-panel, .utility-button"
+          );
+          uiElements.forEach((el) => (el.style.visibility = "hidden"));
+
+          const networkCanvas = document.querySelector(".vis-network canvas");
+          const dataURL = networkCanvas.toDataURL("image/png");
+
+          const link = document.createElement("a");
+          link.href = dataURL;
+          link.download = "chartforge_chart.png";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          uiElements.forEach((el) => (el.style.visibility = "visible"));
+        });
+
+      document
+        .getElementById("modify-btn")
+        .addEventListener("click", function () {
+          if (isModifying) {
+            gsap.to("#error-message", {
+              duration: 0.5,
+              opacity: 1,
+              display: "block",
+              ease: "power2.inOut",
+            });
+            document.getElementById("error-message").innerText =
+              "A modification is already in progress, please wait.";
+            return;
+          }
+
+          const prompt = document.getElementById("modify-prompt").value;
+          const chartType = document.getElementById("type-select").value; // Get current chart type
+
+          if (prompt.trim()) {
+            isModifying = true; // Set modification flag
+            gsap.to("#loading-animation", {
+              duration: 0.3,
+              opacity: 1,
+              display: "flex",
+              ease: "power2.inOut",
+            });
+            fetch("/modify_flowchart_prompt", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ prompt: prompt, chart_type: chartType }),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                gsap.to("#loading-animation", {
+                  duration: 0.3,
+                  opacity: 0,
+                  display: "none",
+                  ease: "power2.inOut",
+                });
+                isModifying = false; // Clear modification flag
+                if (data.status === "success") {
+                  drawFlowchart({
+                    nodes: data.nodes,
+                    edges: data.edges,
+                    animation: animationData.animation,
+                  });
+                } else {
+                  gsap.to("#error-message", {
+                    duration: 0.5,
+                    opacity: 1,
+                    display: "block",
+                    ease: "power2.inOut",
+                  });
+                  document.getElementById("error-message").innerText =
+                    "Error modifying chart: " + data.message;
+                }
+              })
+              .catch((error) => {
+                isModifying = false; // Clear modification flag in case of error
+                gsap.to("#loading-animation", {
+                  duration: 0.3,
+                  opacity: 0,
+                  display: "none",
+                  ease: "power2.inOut",
+                });
+                gsap.to("#error-message", {
+                  duration: 0.5,
+                  opacity: 1,
+                  display: "block",
+                  ease: "power2.inOut",
+                });
+                document.getElementById("error-message").innerText =
+                  "Error modifying chart.";
+                console.error("Error modifying chart:", error);
+              });
+          } else {
+            gsap.to("#error-message", {
+              duration: 0.5,
+              opacity: 1,
+              display: "block",
+              ease: "power2.inOut",
+            });
+            document.getElementById("error-message").innerText =
+              "Please enter a prompt to modify the chart.";
+          }
+        });
+      // Initial fade-in of the container
+      gsap.from(".container", {
+        opacity: 0,
+        y: 20,
+        duration: 0.8,
+        delay: 0.2,
+        ease: "power3.out",
+      });
     </script>
-</body>
+  </body>
 </html>
