@@ -11,8 +11,7 @@ PyMuPDF==1.23.7
 firebase-admin==6.2.0
 beautifulsoup4==4.12.2
 google-api-core==2.11.1
-Flask-Cors==5.0.0
-flask==2.0.1
-xhtml2pdf==0.2.11
+Flask-Cors
 Flask==3.0.0
+xhtml2pdf==0.2.11
 PyPDF2==3.0.1
