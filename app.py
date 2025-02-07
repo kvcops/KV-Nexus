@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, jsonify, send_file
 import os
+import PyPDF2
+from flask import Flask, render_template, request, jsonify, send_file, make_response
+import logging
 from werkzeug.utils import secure_filename
 from PIL import Image
 import io
-import logging
 import requests
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -27,11 +28,20 @@ import base64
 import tempfile
 from threading import Lock
 from functools import wraps
+import threading
+from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 
 import re
 import json
 import uuid
 import time
+import markdown
+from urllib.parse import quote
+from xhtml2pdf import pisa
+from io import BytesIO
+import random
+
 
 # Firebase imports
 import firebase_admin
@@ -60,6 +70,7 @@ from threading import Lock
 from functools import wraps
 
 app = Flask(__name__)
+executor = ThreadPoolExecutor(max_workers=10) #for story generation
 # Load environment variables
 load_dotenv()
 mail_API_KEY = os.environ.get("mail_API_KEY")  # Replace with your Mailjet API key
@@ -68,6 +79,8 @@ mailjet = Client(auth=(mail_API_KEY, mail_API_SECRET), version='v3.1')
 api_key = os.environ.get("API_KEY")
 unsplash_api_key = os.getenv('UNSPLASH_API_KEY')
 API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
+responsive_voice_key = os.environ.get("RESPONSIVE_VOICE_KEY") #for story generation
+
 # Set up logging
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -176,6 +189,16 @@ algorithm_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=ge
 model_vision = genai.GenerativeModel('gemini-1.5-flash-8b',generation_config=generation_config_health)
 model_text = genai.GenerativeModel('gemini-pro',generation_config=generation_config_health)
 model = genai.GenerativeModel('gemini-1.5-flash')  # Model for flowchart generation
+final_story_generation_model=genai.GenerativeModel('gemini-2.0-flash-exp',safety_settings=safety_settings) #for story generation
+
+# Configure upload folder and allowed extensions
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'docx'}
+
+# In-memory storage for the current flowchart data (replace with a database for persistence)
+current_flowchart_data = {"nodes": [], "edges": []}
+is_chart_modifying = False  # flag to prevent concurrent modifications
+
 
 def format_response(response_text):
     """Formats the response text for display."""
@@ -416,39 +439,7 @@ def get_recipe_details():
     recipe_details = generate_recipe_details(recipe_name, ingredients)
     return jsonify(recipe_details)
 
-@app.route('/story_generator', methods=['GET', 'POST'])
-def story_generator():
-    if request.method == 'POST':
-        user_input_words = request.form['keywords']
-        genre = request.form['genre']
-        prompt = f"""Generate an engaging short story based on the following words: {user_input_words}. The genre should be {genre}.
-        
-        Requirements:
-        1. Create a compelling narrative with well-developed characters and an interesting plot. Also use simple english.
-        2. Use vivid descriptions and sensory details to bring the story to life.
-        3. Include at least 3 advanced vocabulary words that fit naturally within the story.
-        4. End the story with a clear moral or lesson.
-        5. After the story, provide definitions for the advanced vocabulary words used.
 
-        Format the response as JSON with the following fields:
-        - 'title': The title of the story
-        - 'story': The main body of the story
-        - 'moral': The moral or lesson of the story
-        - 'vocabulary': A list of dictionaries, each containing 'word' and 'definition' fields for the advanced vocabulary used
-
-        Ensure that the JSON is properly formatted and can be parsed."""
-
-        try:
-            response = story_model.generate_content([prompt], safety_settings=safety_settings)
-            if response.candidates and response.candidates[0].content.parts:
-                response_text = response.candidates[0].content.parts[0].text
-                return jsonify({'response': response_text})
-            else:
-                return jsonify({'response': '```json {"title": "Error", "story": "Sorry, I couldn\'t generate a story with the provided input.", "moral": "", "vocabulary": []} ```'})
-        except Exception as e:
-            logging.error(f"Error generating story: {e}")
-            return jsonify({'response': '```json {"title": "Error", "story": "An error occurred while generating the story. Please try again.", "moral": "", "vocabulary": []} ```'}), 500
-    return render_template('story_generator.html')
 
 @app.route('/psychology_prediction', methods=['GET', 'POST'])
 def psychology_prediction():
@@ -649,95 +640,297 @@ Image data: data:image/png;base64,{image_base64}
 
 
 # Flowchart Generation Routes
-@app.route('/flowchart', methods=['GET', 'POST'])
-def flowchart():
-    return render_template('flowchart.html')
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
+def extract_text_from_docx(file_path):
+    doc = Document(file_path)
+    full_text = []
+    for para in doc.paragraphs:
+        if para.text.strip():  # Only include non-empty paragraphs
+            full_text.append(para.text)
+    return '\n'.join(full_text)
 
-def generate_flowchart(topic):
-    prompt = f"""
-    Generate a detailed flowchart or mind map for the topic/algorithm: "{topic}".
+def extract_text_from_pdf(file_path):
+    with open(file_path, 'rb') as f:
+        pdfReader = PyPDF2.PdfReader(f)
+        full_text = []
+        for page in pdfReader.pages:
+            text = page.extract_text()
+            if text.strip():  # Only include non-empty pages
+                full_text.append(text)
+    return '\n'.join(full_text)
 
-    The output should be in JSON format with the following structure:
+def clean_and_validate_json(text):
+    """Clean and validate JSON from the model's response."""
+    json_match = re.search(r'\{[\s\S]*\}', text)
+    if not json_match:
+        return None
 
-    {{
-        "nodes": [
-            {{"id": 1, "label": "Start", "level": 0, "shape": "ellipse"}},
-            {{"id": 2, "label": "Step 1", "level": 1, "shape": "box"}}
-        ],
-        "edges": [
-            {{"from": 1, "to": 2}}
-        ]
-    }}
+    json_str = json_match.group()
 
-    **Important Guidelines:**
+    json_str = re.sub(r'```json\s*', '', json_str)
+    json_str = re.sub(r'```\s*$', '', json_str)
+    json_str = json_str.strip()
 
-    1. **Unique IDs:**  Ensure each node has a unique integer `id`.
-    2. **Descriptive Labels:**  Provide clear and concise labels for each node (`"label"`).
-    3. **Hierarchical Levels:**  Use `level` to indicate the hierarchy (0 for the top level, 1 for the next level, etc.).
-    4. **Node Shapes:**  Choose appropriate shapes using the `shape` field:
-        - "ellipse": For start/end nodes
-        - "box": For process steps
-        - "diamond": For decision nodes
-        - "hexagon": For preparation steps
-        - "circle": For connectors (if needed)
-    5. **Edges:**  Specify connections using the `from` and `to` fields in the `edges` array.
-    6. **Flow:** Ensure a logical and easy-to-follow flow.
-    7. **Comprehensiveness:**  Include all major steps or concepts.
-    8. **Spacing:** Use a minimum horizontal spacing of 200 and vertical spacing of 150 between nodes to prevent overlapping. 
-    9. **No Isolated Nodes:** All nodes should be connected in a coherent structure.
-    10. **Clear Visualization:** The flowchart/mind map should be visually clear and easily understandable. Avoid overly complex visualizations. 
-    11. **Avoid Overlapping:**  Make sure nodes don't overlap with each other (at any level) due to their size or placement.
-    12. **Spacing Considerations:** Adjust the spacing between nodes based on the node size and content to ensure adequate readability.
+    try:
+        json_data = json.loads(json_str)
 
-    **Output Format:**
-    - Output only the JSON structure, no additional text or explanations.
-    - Ensure that the output is correctly formatted and adheres to the provided JSON structure.
-    
-    **Example (Simple Algorithm):**
-    
-    {{
-        "nodes": [
-            {{"id": 1, "label": "Start", "level": 0, "shape": "ellipse"}},
-            {{"id": 2, "label": "Get input", "level": 1, "shape": "box"}},
-            {{"id": 3, "label": "Process input", "level": 1, "shape": "box"}},
-            {{"id": 4, "label": "Output results", "level": 1, "shape": "box"}},
-            {{"id": 5, "label": "End", "level": 0, "shape": "ellipse"}}
-        ],
-        "edges": [
-            {{"from": 1, "to": 2}},
-            {{"from": 2, "to": 3}},
-            {{"from": 3, "to": 4}},
-            {{"from": 4, "to": 5}}
-        ]
-    }}
-    """  # Closing triple-quoted string correctly
+        if not all(key in json_data for key in ['nodes', 'edges']):
+            return None
 
-    response = model.generate_content(prompt)
-    print("Raw API response:", response.text)  # For debugging
-    
-    # Try to extract a JSON object from the response
-    json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
-    if json_match:
-        try:
-            flowchart_data = json.loads(json_match.group())
-            return flowchart_data
-        except json.JSONDecodeError:
-            return {"error": "Invalid JSON structure", "raw_response": response.text}
+        for node in json_data['nodes']:
+            if not all(key in node for key in ['id', 'label']):
+                return None
+            node['shape'] = node.get('shape', 'box')
+            node['level'] = node.get('level', 0)
+            node['order'] = node.get('order', 1)
+
+        for edge in json_data['edges']:
+            if not all(key in edge for key in ['from', 'to']):
+                return None
+            edge['order'] = edge.get('order', 1)
+
+        return json_data
+    except json.JSONDecodeError:
+        return None
+
+def generate_flowchart(topic, chart_type, animation, detail_level, document_text=None):
+    max_text_length = 4000
+    if document_text:
+        topic_prompt = f"Generate a hierarchical {'mind map' if chart_type == 'mind_map' else 'flowchart'} based on this content:\n\n{document_text}\n\n"
     else:
-        return {"error": "No JSON object found in the response", "raw_response": response.text}
+        topic_prompt = f"Generate a hierarchical {'mind map' if chart_type == 'mind_map' else 'flowchart'} for: \"{topic}\".\n\n"
 
+    prompt = topic_prompt + f"""
+Please create a {'mind map' if chart_type == 'mind_map' else 'flowchart'} that is {'animated' if animation == 'animated' else 'static'} and {'simple' if detail_level == 'simple' else 'normal' if detail_level == 'normal' else 'detailed'}.
+
+Output a JSON object with this exact structure:
+{{
+    "nodes": [
+        {{"id": 1, "label": "Start", "shape": "ellipse", "level": 0, "order": 1}},
+        {{"id": 2, "label": "Process", "shape": "box", "level": 1, "order": 2}}
+    ],
+    "edges": [
+        {{"from": 1, "to": 2, "order": 1}}
+    ]
+}}
+
+Rules:
+1. Use only these shapes: "ellipse", "box", "diamond", "hexagon", "circle"
+2. Each node must have a unique integer id
+3. Level 0 is root, increasing for each sub-level
+4. Include order for animation sequence
+5. Keep labels clear and concise
+6. Maximum 20 nodes for simple, 35 for normal, 50 for detailed
+7. Output ONLY the JSON, no other text"""
+
+    try:
+        response = model.generate_content(prompt)
+        flowchart_data = clean_and_validate_json(response.text)
+
+        if flowchart_data is None:
+            return {"error": "Invalid JSON structure", "raw_response": response.text}
+
+        return flowchart_data
+    except Exception as e:
+        return {"error": f"Error generating flowchart: {str(e)}"}
+
+def modify_flowchart(current_data, prompt, chart_type):
+    """Modifies the current flowchart based on a user prompt."""
+    current_data_str = json.dumps(current_data)
+    prompt_text = f"""Given the current {'mind map' if chart_type == 'mind_map' else 'flowchart'} data:\n\n{current_data_str}\n\nModify it according to the following prompt: \"{prompt}\".
+
+The output should be a JSON object with the same structure as before, representing the updated {'mind map' if chart_type == 'mind_map' else 'flowchart'}. Ensure that the node and edge IDs remain unique and consistent where applicable.
+
+Output ONLY the JSON, no other text."""
+
+    try:
+        response = model.generate_content(prompt_text)
+        modified_data = clean_and_validate_json(response.text)
+
+        if modified_data is None:
+            return {"error": "Invalid JSON structure from modification", "raw_response": response.text}
+
+        return modified_data
+    except Exception as e:
+        return {"error": f"Error modifying flowchart: {str(e)}"}
 
 @app.route('/get_flowchart_data', methods=['POST'])
 def get_flowchart_data():
-    topic = request.json['topic']
-    flowchart_data = generate_flowchart(topic)
+    global current_flowchart_data
+    try:
+        data = request.form
+        topic = data.get('topic', '').strip()
+        chart_type = data.get('type', 'flowchart')
+        animation = data.get('animation', 'static')
+        detail_level = data.get('detail_level', 'normal')
 
-    # Prepare the data for vis-network
-    nodes = [{"id": node["id"], "label": node["label"], "shape": node.get("shape", "box")} for node in flowchart_data.get('nodes', [])]
-    edges = [{"from": edge["from"], "to": edge["to"]} for edge in flowchart_data.get('edges', [])]
+        document_text = None
+        file = request.files.get('file')
 
-    return jsonify({"nodes": nodes, "edges": edges, "error": flowchart_data.get("error"), "raw_response": flowchart_data.get("raw_response")})
+        if file and file.filename:
+            if not allowed_file(file.filename):
+                return jsonify({"error": "Unsupported file type."}), 400
+
+            filename = secure_filename(file.filename)
+            temp_fd, temp_path = tempfile.mkstemp()
+
+            try:
+                with os.fdopen(temp_fd, 'wb') as temp_file:
+                    file.save(temp_file)
+
+                if filename.lower().endswith('.docx'):
+                    document_text = extract_text_from_docx(temp_path)
+                elif filename.lower().endswith('.pdf'):
+                    document_text = extract_text_from_pdf(temp_path)
+
+                if not topic and document_text:
+                    topic = "Flowchart from Document"
+
+            finally:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+
+        if not topic and not file:
+            return jsonify({"error": "Please provide a topic or upload a document."}), 400
+
+        flowchart_data = generate_flowchart(topic, chart_type, animation, detail_level, document_text)
+
+        if 'error' in flowchart_data:
+            return jsonify(flowchart_data), 500
+
+        current_flowchart_data = flowchart_data # Store the generated data
+
+        nodes = [{
+            "id": node["id"],
+            "label": node["label"],
+            "shape": node.get("shape", "box"),
+            "order": node.get("order", 1),
+            "level": node.get("level", 0)
+        } for node in flowchart_data.get('nodes', [])]
+
+        edges = [{
+            "from": edge["from"],
+            "to": edge["to"],
+            "id": f"{edge['from']}-{edge['to']}",
+            "order": edge.get("order", 1)
+        } for edge in flowchart_data.get('edges', [])]
+
+        nodes.sort(key=lambda x: x['order'])
+        edges.sort(key=lambda x: x['order'])
+
+        return jsonify({
+            "nodes": nodes,
+            "edges": edges,
+            "animation": animation,
+            "chart_type": chart_type
+        })
+
+    except Exception as e:
+        logging.error(f"Error in get_flowchart_data: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred."}), 500
+
+@app.route('/add_node', methods=['POST'])
+def add_node():
+    global current_flowchart_data
+    data = request.get_json()
+    new_node = data.get('node')
+    if new_node:
+        # Simple way to generate a new unique ID (can be improved)
+        new_id = max([node['id'] for node in current_flowchart_data['nodes']] or [0]) + 1
+        new_node['id'] = new_id
+        current_flowchart_data['nodes'].append(new_node)
+        return jsonify({"status": "success", "node": new_node})
+    return jsonify({"status": "error", "message": "Invalid node data"}), 400
+
+@app.route('/delete_node/<int:node_id>', methods=['DELETE'])
+def delete_node(node_id):
+    global current_flowchart_data
+    current_flowchart_data['nodes'] = [node for node in current_flowchart_data['nodes'] if node['id'] != node_id]
+    current_flowchart_data['edges'] = [edge for edge in current_flowchart_data['edges']
+                                       if edge['from'] != node_id and edge['to'] != node_id]
+    return jsonify({"status": "success"})
+
+@app.route('/edit_node/<int:node_id>', methods=['PUT'])
+def edit_node(node_id):
+     global current_flowchart_data
+     data = request.get_json()
+     new_label = data.get('node').get('label')
+     for node in current_flowchart_data['nodes']:
+          if node['id'] == node_id:
+                node['label'] = new_label
+                return jsonify({"status": "success", "node": node})
+     return jsonify({"status": "error", "message": "Node not found"}), 404
+
+@app.route('/add_edge', methods=['POST'])
+def add_edge():
+    global current_flowchart_data
+    data = request.get_json()
+    new_edge = data.get('edge')
+    if new_edge:
+        current_flowchart_data['edges'].append(new_edge)
+        return jsonify({"status": "success", "edge": new_edge})
+    return jsonify({"status": "error", "message": "Invalid edge data"}), 400
+
+@app.route('/delete_edge/<from_id>/<to_id>', methods=['DELETE'])
+def delete_edge(from_id, to_id):
+    global current_flowchart_data
+    current_flowchart_data['edges'] = [
+        edge for edge in current_flowchart_data['edges']
+        if not (str(edge['from']) == from_id and str(edge['to']) == to_id)
+    ]
+    return jsonify({"status": "success"})
+
+@app.route('/modify_flowchart_prompt', methods=['POST'])
+def modify_flowchart_prompt():
+    global current_flowchart_data, is_chart_modifying
+    data = request.get_json()
+    prompt = data.get('prompt')
+    chart_type = data.get('chart_type', 'flowchart')
+
+    if not prompt:
+        return jsonify({"status": "error", "message": "Prompt cannot be empty"}), 400
+
+    if is_chart_modifying:
+      return jsonify({"status": "error", "message": "Chart is currently being modified, please wait..."}), 400
+
+    is_chart_modifying = True  # set flag
+    try:
+        modified_data = modify_flowchart(current_flowchart_data, prompt, chart_type)
+
+        if 'error' in modified_data:
+            return jsonify(modified_data), 500
+
+        current_flowchart_data = modified_data # Update the current data
+        
+        # Prepare the data for vis-network
+        nodes = [{
+            "id": node["id"],
+            "label": node["label"],
+            "shape": node.get("shape", "box"),
+            "order": node.get("order", 1),
+            "level": node.get("level", 0)
+        } for node in modified_data.get('nodes', [])]
+
+        edges = [{
+            "from": edge["from"],
+            "to": edge["to"],
+            "id": f"{edge['from']}-{edge['to']}",
+            "order": edge.get("order", 1)
+        } for edge in modified_data.get('edges', [])]
+
+        return jsonify({
+            "status": "success",
+            "nodes": nodes,
+            "edges": edges
+        })
+    except Exception as e:
+       return jsonify({"error": f"Error modifying flowchart: {str(e)}"})
+    finally:
+      is_chart_modifying = False # clear flag
+
 
 @app.route('/send-email', methods=['POST'])
 def send_email():
@@ -775,8 +968,6 @@ def send_email():
 
 
 #docuement summarize 
-
-import threading
 
 # Token bucket for rate limiting
 # Rate limiting parameters
@@ -1251,5 +1442,547 @@ def check_status():
             'current_page': result.get('current_page', 0),
             'total_pages': result.get('total_pages', 0)
         }), 200
+
+# --- Story Generation and Editing Functions ---
+def generate_story(keywords, genre, num_chapters, tone, style, age_group, include_magic, include_superpowers, include_conflict, image_style):
+    """Generate story content using Gemini API with enhanced parameters."""
+    prompt = f"""
+    Create a captivating story based on the following:
+    Keywords: {keywords}
+    Genre: {genre}
+    Number of chapters: {num_chapters}
+    Tone: {tone}
+    Writing Style: {style}
+    Target Audience Age Group: {age_group}
+    Include Magical Elements: {'Yes' if include_magic else 'No'}
+    Include Superpowers/Special Abilities: {'Yes' if include_superpowers else 'No'}
+    Include Major Conflicts: {'Yes' if include_conflict else 'No'}
+    
+    Format the response exactly like this JSON structure (don't include any other text before or after the JSON):
+    {{
+        "title": "Story title",
+        "author": "AI Author",
+        "moral": "The moral of the story",
+        "chapters": [
+            {{
+                "chapter_number": 1,
+                "chapter_title": "Chapter title",
+                "content": "Chapter content (approximately 2-4 paragraphs, suitable for the target age group and writing style)",
+                "image_prompt": "Detailed visual description for a captivating chapter image, reflecting the chapter's mood and style",
+                "terminology": {{}}
+            }}
+        ]
+    }}
+    """
+
+    try:
+        response = final_story_generation_model.generate_content(prompt)
+        response_text = response.text
+
+        # Parse JSON with multiple fallback attempts
+        try:
+            story_data = json.loads(response_text)
+        except json.JSONDecodeError:
+            # Try finding JSON in markdown code blocks
+            json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
+            if json_match:
+                story_data = json.loads(json_match.group(1))
+            else:
+                # Try finding content between curly braces
+                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                if json_match:
+                    story_data = json.loads(json_match.group(0))
+                else:
+                    story_data = {
+                        "title": f"{genre.title()} Story",
+                        "author": "AI Author",
+                        "moral": "Could not generate a moral for the story",
+                        "chapters": [{
+                            "chapter_number": 1,
+                            "chapter_title": "Chapter 1",
+                            "content": "Story generation failed. Please try again.",
+                            "image_prompt": "A blank page with some text",
+                            "terminology": {}
+                        }]
+                    }
+
+        # Add terminology to each chapter
+        for chapter in story_data['chapters']:
+            chapter['terminology'] = extract_terminology(chapter['content'])
+
+        return story_data
+
+    except Exception as e:
+        print(f"Error generating story: {str(e)}")
+        return {
+            "title": f"{genre.title()} Story",
+            "author": "AI Author",
+            "moral": "Could not generate a moral for the story",
+            "chapters": [{
+                "chapter_number": 1,
+                "chapter_title": "Chapter 1",
+                "content": "Story generation failed. Please try again.",
+                "image_prompt": "A blank page with some text",
+                "terminology": {}
+            }]
+        }
+def regenerate_chapter(story_data, chapter_number, tone, style, include_magic, include_superpowers, include_conflict, image_style):
+    """Regenerate a specific chapter."""
+    chapter_index = chapter_number - 1
+    if not (0 <= chapter_index < len(story_data["chapters"])):
+        return "Invalid chapter number", 400
+    
+    # Previous context for regeneration
+    previous_context = ""
+    if chapter_index > 0:
+        previous_context = story_data['chapters'][chapter_index - 1]['content']
+
+    prompt = f"""
+    Regenerate chapter {chapter_number} of the story titled '{story_data['title']}'.
+    
+    Previous chapter context (if applicable): {previous_context}
+    
+    Overall Tone: {tone}
+    Writing Style: {style}
+    Include Magical Elements: {'Yes' if include_magic else 'No'}
+    Include Superpowers/Special Abilities: {'Yes' if include_superpowers else 'No'}
+    Include Major Conflicts: {'Yes' if include_conflict else 'No'}
+
+    Format the response exactly like this JSON structure (don't include any other text before or after the JSON):
+    {{
+        "chapter_number": {chapter_number},
+        "chapter_title": "New chapter title",
+        "content": "New chapter content (approximately 2-4 paragraphs, consistent with the story's style and tone)",
+        "image_prompt": "Detailed visual description for a captivating chapter image, furthering the narrative visually",
+        "terminology": {{}}
+    }}
+    """
+
+    try:
+        response = final_story_generation_model.generate_content(prompt)
+        try:
+            new_chapter = json.loads(response.text)
+        except json.JSONDecodeError:
+            json_match = re.search(r'```json\s*(.*?)\s*```', response.text, re.DOTALL)
+            if json_match:
+                new_chapter = json.loads(json_match.group(1))
+            else:
+                json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
+                if json_match:
+                    new_chapter = json.loads(json_match.group(0))
+                else:
+                    new_chapter = {
+                        "chapter_number": chapter_number,
+                        "chapter_title": "Regenerated Chapter",
+                        "content": "Failed to regenerate chapter. Please try again.",
+                        "image_prompt": "A blank page with some text",
+                        "terminology": {}
+                    }
+
+        # Add terminology
+        new_chapter['terminology'] = extract_terminology(new_chapter['content'])
+
+        # Replace old chapter with new chapter
+        story_data['chapters'][chapter_index] = new_chapter
+
+        # Regenerate image for the chapter
+        new_chapter['image'] = generate_image(new_chapter['image_prompt'], 800, 600, image_style)
+
+        return new_chapter
+
+    except Exception as e:
+        print(f"Error regenerating chapter: {str(e)}")
+        return {
+            "chapter_number": chapter_number,
+            "chapter_title": "Regenerated Chapter",
+            "content": "Failed to regenerate chapter. Please try again.",
+            "image_prompt": "A blank page with some text",
+            "terminology": {}
+        }
+def continue_story(previous_story, num_new_chapters, tone, style, include_magic, include_superpowers, include_conflict, image_style):
+    """Generate additional chapters for an existing story with enhanced parameters."""
+    prompt = f"""
+    Continue this story with {num_new_chapters} more chapters, maintaining the established themes and characters.
+    Previous story title: {previous_story['title']}
+    Last chapter content: {previous_story['chapters'][-1]['content']}
+    Overall Tone: {tone}
+    Writing Style: {style}
+    Include Magical Elements: {'Yes' if include_magic else 'No'}
+    Include Superpowers/Special Abilities: {'Yes' if include_superpowers else 'No'}
+    Include Major Conflicts: {'Yes' if include_conflict else 'No'}
+
+    Format the response exactly like this JSON structure (don't include any other text before or after the JSON):
+    {{
+        "chapters": [
+            {{
+                "chapter_number": {len(previous_story['chapters']) + 1},
+                "chapter_title": "New chapter title",
+                "content": "New chapter content (approximately 2-4 paragraphs, consistent with the story's style and tone)",
+                "image_prompt": "Detailed visual description for a captivating chapter image, furthering the narrative visually",
+                "terminology": {{}}
+            }}
+        ]
+    }}
+    """
+
+    try:
+        response = final_story_generation_model.generate_content(prompt)
+        try:
+            new_chapters = json.loads(response.text)
+        except json.JSONDecodeError:
+            json_match = re.search(r'```json\s*(.*?)\s*```', response.text, re.DOTALL)
+            if json_match:
+                new_chapters = json.loads(json_match.group(1))
+            else:
+                json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
+                if json_match:
+                    new_chapters = json.loads(json_match.group(0))
+                else:
+                    new_chapters = {
+                        "chapters": [{
+                            "chapter_number": len(previous_story['chapters']) + 1,
+                            "chapter_title": "New Chapter",
+                            "content": "Failed to generate new content. Please try again.",
+                            "image_prompt": "A blank page with some text",
+                            "terminology": {}
+                        }]
+                    }
+
+        # Add terminology to each new chapter
+        for chapter in new_chapters['chapters']:
+            chapter['terminology'] = extract_terminology(chapter['content'])
+
+        return new_chapters['chapters']
+    except Exception as e:
+        print(f"Error continuing story: {str(e)}")
+        return [{
+            "chapter_number": len(previous_story['chapters']) + 1,
+            "chapter_title": "New Chapter",
+            "content": "Failed to generate new content. Please try again.",
+            "image_prompt": "A blank page with some text",
+            "terminology": {}
+        }]
+
+def get_word_definitions(words):
+    """Get definitions using Gemini API with improved prompting and error handling."""
+    prompt = f"""
+    Define the following words clearly and concisely, focusing on their most common meanings in everyday usage.
+    Words to define: {', '.join(words)}
+
+    Respond ONLY with a JSON object in this exact format (no other text):
+    {{
+        "word1": "simple definition here",
+        "word2": "simple definition here"
+    }}
+
+    Make sure each definition is:
+    - Clear and simple
+    - 10-15 words maximum
+    - Suitable for the general audience
+    - Focuses on the most common meaning
+    """
+    
+    try:
+        response = final_story_generation_model.generate_content(prompt)
+        response_text = response.text.strip()
+        
+        # Clean up the response to ensure it's valid JSON
+        # Remove any markdown formatting if present
+        if '```json' in response_text:
+            response_text = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL).group(1)
+        elif '```' in response_text:
+            response_text = re.search(r'```\s*(.*?)\s*```', response_text, re.DOTALL).group(1)
+            
+        # Remove any remaining non-JSON text
+        response_text = re.search(r'\{.*\}', response_text, re.DOTALL).group(0)
+        
+        definitions = json.loads(response_text)
+        
+        # Ensure all requested words have definitions
+        final_definitions = {}
+        for word in words:
+            word_lower = word.lower()
+            # Try to find the word in the definitions (case-insensitive)
+            matching_key = next((k for k in definitions.keys() if k.lower() == word_lower), None)
+            if matching_key and definitions[matching_key].strip():
+                final_definitions[word] = definitions[matching_key]
+            else:
+                # If definition is missing, make another attempt for just this word
+                single_word_prompt = f"""
+                Define this word clearly and concisely in 10-15 words:
+                Word: {word}
+
+                Respond ONLY with the definition (no other text).
+                """
+                try:
+                    retry_response = final_story_generation_model.generate_content(single_word_prompt)
+                    definition = retry_response.text.strip()
+                    if definition:
+                        final_definitions[word] = definition
+                    else:
+                        final_definitions[word] = "No definition available"
+                except Exception:
+                    final_definitions[word] = "No definition available"
+                    
+        return final_definitions
+        
+    except Exception as e:
+        print(f"Error getting definitions: {str(e)}")
+        return {word: f"Definition not available due to error: {str(e)}" for word in words}
+
+def extract_terminology(text):
+    """Extract 4-5 significant terms and get their definitions using Gemini."""
+    # Find words that are potentially complex or important
+    words = re.findall(r'\b[A-Za-z]{5,}\b', text)
+    
+    # Remove common words and duplicates
+    common_words = {
+        'there', 'their', 'would', 'could', 'should', 'about', 'which', 'these', 
+        'those', 'were', 'have', 'that', 'what', 'when', 'where', 'while', 'from',
+        'been', 'being', 'other', 'another', 'every', 'everything', 'something',
+        'anything', 'nothing', 'through', 'although', 'though', 'without', 'within',
+        'around', 'before', 'after', 'under', 'over', 'because'
+    }
+    
+    # Filter words
+    filtered_words = []
+    for word in words:
+        word_lower = word.lower()
+        if (
+            word_lower not in common_words and
+            not word.isupper() and  # Skip acronyms
+            len(word) >= 6 and  # Focus on longer words
+            not any(char.isdigit() for char in word)  # Skip words with numbers
+        ):
+            filtered_words.append(word)
+    
+    # Remove duplicates while preserving case
+    unique_words = []
+    seen_words = set()
+    for word in filtered_words:
+        if word.lower() not in seen_words:
+            unique_words.append(word)
+            seen_words.add(word.lower())
+    
+    # Select the most interesting words (prioritize longer, less common words)
+    selected_words = sorted(unique_words, key=lambda x: (len(x), x.lower()), reverse=True)[:5]
+    
+    if selected_words:
+        # Get definitions using improved Gemini function
+        definitions = get_word_definitions(selected_words)
+        return {k: v for k, v in definitions.items() if v and v != "No definition available"}
+    return {}
+
+def generate_image(prompt, width=800, height=600, style="photographic"):
+    """Generate image using Pollinations AI with image style."""
+    try:
+        style_map = {
+            "photographic": "style photographic",
+            "anime": "style anime",
+            "cinematic": "style cinematic",
+            "watercolor": "style watercolor illustration",
+            "pencil sketch": "style pencil sketch",
+            "pop art": "style pop art",
+            "steampunk": "style steampunk",
+            "3d render": "style 3d render",
+        }
+        style_prompt = style_map.get(style, "style photographic")
+        full_prompt = f"{prompt}, {style_prompt}"
+
+        encoded_prompt = quote(full_prompt)
+        image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={width}&height={height}&nologo=true"
+        return image_url
+    except Exception as e:
+        print(f"Image generation error: {str(e)}")
+        return "https://image.pollinations.ai/prompt/scenic%20view?width=800&height=600&nologo=true"
+def generate_all_images_concurrent(story_data, image_style):
+    """Generate all images concurrently using ThreadPoolExecutor."""
+    try:
+        # Create tasks for cover and chapter images
+        cover_prompt = f"A professional book cover with a title on it, '{story_data['title']}', fantasy art"
+        cover_future = executor.submit(generate_image, cover_prompt, 400, 550, image_style)
+
+        chapter_futures = [executor.submit(generate_image, chapter['image_prompt'], 800, 600, image_style) for chapter in story_data['chapters']]
+
+        # Get results
+        cover_image = cover_future.result()
+        chapter_images = [future.result() for future in chapter_futures]
+
+        # Assign URLs to story data
+        for chapter, image_url in zip(story_data['chapters'], chapter_images):
+            chapter['image'] = image_url
+
+        return story_data, cover_image
+
+    except Exception as e:
+        print(f"Error in generate_all_images_concurrent: {str(e)}")
+        fallback_url = "https://image.pollinations.ai/prompt/scenic%20view?width=800&height=600&nologo=true"
+        cover_fallback = "https://image.pollinations.ai/prompt/book%20cover?width=400&height=550&nologo=true"
+
+        for chapter in story_data['chapters']:
+            chapter['image'] = fallback_url
+
+        return story_data, cover_fallback
+
+@app.route('/flowchart')
+def flowchart():
+    return render_template('flowchart.html')  # Changed to flowchart.html
+
+@app.route('/story_generation')
+def story_generation():
+    return render_template('story_generation.html', responsive_voice_key=responsive_voice_key)
+
+@app.route('/generate', methods=['POST'])
+def generate():
+    try:
+        data = request.get_json()
+        keywords = data.get('keywords')
+        genre = data.get('genre')
+        story_length = data.get('storyLength')
+        tone = data.get('tone')
+        style = data.get('style')
+        age_group = data.get('ageGroup')
+        include_magic = data.get('includeMagic')
+        include_superpowers = data.get('includeSuperpowers')
+        include_conflict = data.get('includeConflict')
+        image_style = data.get('imageStyle')  # Get the image style
+
+        # Determine the number of chapters based on story length
+        num_chapters = {
+            'short': 3,
+            'medium': 5,
+            'long': 7,
+            'grand': 10
+        }.get(story_length, 3)
+
+        # Generate story content
+        story = generate_story(keywords, genre, num_chapters, tone, style, age_group, include_magic, include_superpowers, include_conflict, image_style)
+
+        # Generate all images concurrently
+        story, cover_image = generate_all_images_concurrent(story, image_style)
+
+        return jsonify({
+            'story': story,
+            'cover_image': cover_image
+        })
+    except Exception as e:
+        print(f"Error in generate route: {str(e)}")
+        return jsonify({
+            'error': 'Failed to generate story',
+            'details': str(e)
+        }), 500
+
+@app.route('/regenerate', methods=['POST'])
+def regenerate():
+    try:
+        data = request.get_json()
+        story_data = data.get('story')
+        chapter_number = int(data.get('chapter_number'))
+        tone = data.get('tone')
+        style = data.get('style')
+        include_magic = data.get('includeMagic')
+        include_superpowers = data.get('includeSuperpowers')
+        include_conflict = data.get('includeConflict')
+        image_style = data.get('imageStyle')  # Get the image style
+
+        new_chapter = regenerate_chapter(story_data, chapter_number, tone, style, include_magic, include_superpowers, include_conflict, image_style)
+
+        return jsonify({'story': story_data, 'new_chapter': new_chapter})
+
+    except Exception as e:
+        print(f"Error in regenerate route: {str(e)}")
+        return jsonify({
+            'error': 'Failed to regenerate chapter',
+            'details': str(e)
+        }), 500
+
+@app.route('/continue', methods=['POST'])
+def continue_story_route():
+    try:
+        data = request.get_json()
+        previous_story = data.get('previous_story')
+        num_new_chapters = int(data.get('num_new_chapters', 3))
+        tone = data.get('tone')
+        style = data.get('style')
+        include_magic = data.get('includeMagic')
+        include_superpowers = data.get('includeSuperpowers')
+        include_conflict = data.get('includeConflict')
+        image_style = data.get('imageStyle')  # Get the image style
+
+        # Generate new chapters
+        new_chapters = continue_story(previous_story, num_new_chapters, tone, style, include_magic, include_superpowers, include_conflict, image_style)
+
+        # Generate images for new chapters concurrently
+        futures = [executor.submit(generate_image, chapter['image_prompt'], 800, 600, image_style)
+                  for chapter in new_chapters]
+
+        # Wait for all image generations to complete
+        for chapter, future in zip(new_chapters, futures):
+            chapter['image'] = future.result()
+
+        return jsonify({'new_chapters': new_chapters})
+    except Exception as e:
+        print(f"Error in continue route: {str(e)}")
+        return jsonify({
+            'error': 'Failed to continue story',
+            'details': str(e)
+        }), 500
+@app.route('/get_moral', methods=['POST'])
+def get_moral():
+    try:
+        data = request.get_json()
+        story_data = data.get('story')
+        return jsonify({'moral': story_data['moral']})
+    except Exception as e:
+        print(f"Error in get_moral route: {str(e)}")
+        return jsonify({
+            'error': 'Failed to retrieve moral',
+            'details': str(e)
+        }), 500
+
+@app.route('/download', methods=['POST'])
+def download_pdf():
+    try:
+        data = request.get_json()
+        story_data = data.get('story')
+        cover_image = data.get('cover_image')
+        
+        # Configure PDF options
+        pdf_options = {
+            'page-size': 'A4',
+            'margin-top': '2.5cm',
+            'margin-right': '2cm',
+            'margin-bottom': '2.5cm',
+            'margin-left': '2cm',
+            'encoding': 'UTF-8',
+        }
+        
+        # Generate HTML
+        pdf_html = render_template('pdf_template.html', story=story_data, cover_image=cover_image)
+        
+        # Create PDF
+        pdf_buffer = BytesIO()
+        pisa.CreatePDF(
+            pdf_html, 
+            dest=pdf_buffer,
+            encoding='utf-8',
+        )
+        
+        pdf_buffer.seek(0)
+        
+        # Create response
+        response = make_response(pdf_buffer.read())
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename="{story_data["title"].replace(" ", "_")}.pdf"'
+        
+        return response
+        
+    except Exception as e:
+        print(f"Download PDF Error: {str(e)}")
+        return jsonify({
+            "error": "Error generating PDF",
+            "details": str(e)
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
