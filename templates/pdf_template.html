@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ story.title }}</title>
+    <style>
+        @page {
+            margin: 2cm;
+            size: A4;
+        }
+
+        body {
+            font-family: 'CrimsonProRegular', serif;
+            background-color: #fdfcf9;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        /* Font Definitions */
+        @font-face {
+            font-family: 'CinzelBold';
+            src: url('fonts/Cinzel-Bold.ttf') format('truetype');
+            font-weight: bold;
+        }
+
+        @font-face {
+            font-family: 'CinzelRegular';
+            src: url('fonts/Cinzel-Regular.ttf') format('truetype');
+        }
+
+        @font-face {
+            font-family: 'CrimsonProRegular';
+            src: url('fonts/CrimsonPro-Regular.ttf') format('truetype');
+        }
+
+        /* Cover Page */
+        .cover-page {
+            text-align: center;
+            padding: 80px 40px;
+            page-break-after: always;
+            position: relative;
+            background-color: #2a1b3d;
+            color: #ffffff;
+        }
+
+        .cover-image {
+            width: 240px;
+            height: auto;
+            margin-bottom: 30px;
+        }
+
+        .cover-title {
+            font-family: 'CinzelBold', serif;
+            font-size: 48px;
+            font-weight: bold;
+            color: #f4e4bc;
+            margin: 20px 0;
+            text-transform: uppercase;
+        }
+
+        .cover-author {
+            font-size: 24px;
+            color: #e2d3b8;
+            margin: 10px 0;
+            font-style: italic;
+        }
+
+        /* Chapter Styling */
+        .chapter {
+            margin: 0 auto;
+            padding: 40px 30px;
+            page-break-before: always;
+            position: relative;
+        }
+
+        .chapter-header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .chapter-number {
+            font-size: 16px;
+            color: #666666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .chapter-title {
+            font-family: 'CinzelBold', serif;
+            font-size: 32px;
+            color: #2a1b3d;
+            margin: 10px 0;
+            font-weight: bold;
+            display: inline-block;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e98074;
+        }
+
+        .chapter-image {
+            width: 100%;
+            max-height: 400px;
+            margin: 20px 0;
+            display: block;
+        }
+
+        .chapter-content {
+            margin: 0 auto;
+            text-align: justify;
+            font-size: 14pt;
+            line-height: 1.6;
+            position: relative;
+            padding-top: 20px;
+        }
+
+        .chapter-content p {
+            margin-bottom: 15px;
+            text-indent: 40px;
+            position: relative;
+        }
+
+        .chapter-content p:first-of-type:first-letter {
+            font-size: 48px;
+            font-weight: bold;
+            color: #e85a4f;
+        }
+
+        /* Decorative Dividers */
+        .decorative-divider {
+            text-align: center;
+            margin: 40px 0;
+            color: #e85a4f;
+        }
+
+        .decorative-divider span {
+            font-size: 24px;
+            letter-spacing: 20px;
+        }
+
+        /* Page Numbers */
+        .page-number {
+            font-size: 10pt;
+            color: #666666;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            font-size: 10pt;
+            color: #999999;
+            margin-top: 20px;
+        }
+
+        /* Print Specific */
+        @media print {
+            body {
+                font-size: 12pt;
+            }
+
+            .chapter {
+                page-break-before: always;
+            }
+
+            .cover-page {
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Cover Page -->
+    <div class="cover-page">
+        <img class="cover-image" src="{{ cover_image }}" alt="Book Cover">
+        <h1 class="cover-title">{{ story.title }}</h1>
+        <p class="cover-author">By {{ story.author }}</p>
+    </div>
+
+    <!-- Chapters -->
+    {% for chapter in story.chapters %}
+    <div class="chapter">
+        <div class="chapter-header">
+            <div class="chapter-number">Chapter {{ chapter.chapter_number }}</div>
+            <h2 class="chapter-title">{{ chapter.chapter_title }}</h2>
+        </div>
+
+        <img class="chapter-image" src="{{ chapter.image }}" alt="Chapter {{ chapter.chapter_number }} Image">
+
+        <div class="chapter-content">
+            {% for paragraph in chapter.content.split('\n') if paragraph.strip() %}
+            <p>{{ paragraph }}</p>
+            {% endfor %}
+        </div>
+
+        {% if not loop.last %}
+        <div class="decorative-divider">
+            <span>***</span>
+        </div>
+        {% endif %}
+
+        <div class="page-number">Page {{ (loop.index * 2) }}</div>
+    </div>
+    {% endfor %}
+
+    <!-- Footer -->
+    <div class="footer">
+        © {{ story.author }} - All Rights Reserved
+    </div>
+
+</body>
+</html>
