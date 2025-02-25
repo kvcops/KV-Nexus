@@ -4,24 +4,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Health Insight Analyzer Pro</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>Health Insight Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
   <style>
     :root {
-      --primary: #3a86ff;
-      --primary-dark: #2563eb;
-      --primary-light: #60a5fa;
-      --secondary: #ff006e;
-      --tertiary: #8338ec;
-      --accent: #ffbe0b;
-      --dark: #18181b;
-      --light: #f8fafc;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      --transition-smooth: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      --primary-color: #007bff;
+      --secondary-color: #323538;
+      --accent-color: #17a2b8;
+      --background-color: #afd4f9;
     }
 
     * {
@@ -31,416 +22,191 @@
     }
 
     body {
-      font-family: 'Montserrat', sans-serif;
-      color: var(--dark);
-      line-height: 1.7;
-      background: linear-gradient(135deg, #f6f9fc 0%, #e9f2fe 100%);
-      min-height: 100vh;
-      overflow-x: hidden;
+      font-family: 'Poppins', sans-serif;
+      line-height: 1.6;
+      background-color: var(--background-color);
+      padding-bottom: 80px;
     }
 
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 60px 20px;
     }
 
-    /* ===== HEADER SECTION ===== */
-    .header {
-      padding: 30px 0;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .header-content {
+    header {
+      margin-bottom: 40px;
       text-align: center;
-      position: relative;
-      z-index: 2;
+      animation: fadeInDown 0.5s ease;
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 10px;
-    }
-
-    .logo-icon {
-      color: var(--primary);
-      font-size: 32px;
-      margin-right: 10px;
-      animation: pulse 2s infinite;
-    }
-
-    .site-title {
-      font-family: 'Raleway', sans-serif;
-      font-size: 3.5rem;
+    h1 {
+      color: #0056b3;
+      font-size: 48px;
       font-weight: 700;
-      background: linear-gradient(90deg, var(--primary) 0%, var(--tertiary) 50%, var(--secondary) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-fill-color: transparent;
-      margin: 0;
-      line-height: 1.2;
-      text-shadow: 0 5px 15px rgba(58, 134, 255, 0.3);
-      position: relative;
-      transition: var(--transition-smooth);
+      margin-bottom: 10px;
+      animation: fadeInGlow 1s ease-in-out, textGlow 2s ease-in-out infinite alternate;
+      text-shadow: 0 0 5px rgba(0, 86, 179, 0.6);
     }
 
-    .site-title:hover {
-      transform: translateY(-5px);
-      text-shadow: 0 10px 25px rgba(58, 134, 255, 0.5);
+    h1:hover {
+      cursor: pointer;
+    }
+
+    @keyframes fadeInGlow {
+      0% {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      70% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes textGlow {
+      0% {
+        text-shadow: 0 0 5px rgba(0, 86, 179, 0.6), 0 0 10px rgba(0, 86, 179, 0.4), 0 0 20px rgba(23, 162, 184, 0.3);
+      }
+
+      70% {
+        text-shadow: 0 0 10px rgba(0, 86, 179, 0.8), 0 0 20px rgba(0, 123, 255, 0.6), 0 0 30px rgba(23, 162, 184, 0.5);
+      }
     }
 
     .subtitle {
-      font-size: 1.2rem;
-      color: #64748b;
-      font-weight: 400;
-      margin-top: 10px;
+      color: var(--secondary-color);
+      font-size: 18px;
       opacity: 0;
-      transform: translateY(20px);
-      animation: fadeInUp 0.7s 0.3s forwards;
+      animation: fadeInSubtitle 1s ease forwards;
+      transition: color 0.3s ease;
     }
 
-    /* ===== FLOATING PARTICLES ===== */
-    .particles {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1;
+    .subtitle:hover {
+      color: darkblue;
     }
 
-    .particle {
-      position: absolute;
-      background-color: rgba(58, 134, 255, 0.2);
-      border-radius: 50%;
-      animation: float 15s infinite alternate;
+    @keyframes fadeInSubtitle {
+      to {
+        opacity: 1;
+      }
     }
 
-    .particle:nth-child(1) {
-      width: 80px;
-      height: 80px;
-      top: 10%;
-      left: 10%;
-      background-color: rgba(255, 0, 110, 0.1);
-      animation-delay: 0s;
-      animation-duration: 20s;
-    }
 
-    .particle:nth-child(2) {
-      width: 100px;
-      height: 100px;
-      top: 60%;
-      left: 80%;
-      background-color: rgba(58, 134, 255, 0.1);
-      animation-delay: 1s;
-      animation-duration: 25s;
-    }
-
-    .particle:nth-child(3) {
-      width: 60px;
-      height: 60px;
-      top: 30%;
-      left: 60%;
-      background-color: rgba(131, 56, 236, 0.1);
-      animation-delay: 2s;
-      animation-duration: 18s;
-    }
-
-    .particle:nth-child(4) {
-      width: 120px;
-      height: 120px;
-      top: 70%;
-      left: 20%;
-      background-color: rgba(255, 190, 11, 0.1);
-      animation-delay: 3s;
-      animation-duration: 22s;
-    }
-
-    .particle:nth-child(5) {
-      width: 70px;
-      height: 70px;
-      top: 20%;
-      left: 85%;
-      background-color: rgba(58, 134, 255, 0.1);
-      animation-delay: 4s;
-      animation-duration: 24s;
-    }
-
-    /* ===== MAIN SECTION ===== */
-    main {
-      position: relative;
-      z-index: 2;
-    }
-
-    .card {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 20px;
+    .input-section {
+      background: #fff;
       padding: 40px;
-      box-shadow: var(--shadow);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
       margin-bottom: 40px;
-      transform: translateY(20px);
-      opacity: 0;
-      animation: fadeInUp 0.7s forwards;
-      transition: var(--transition-smooth);
+      animation: fadeInUp 0.5s ease;
+      transition: box-shadow 0.3s ease, transform 0.3s ease, border 0.3s ease;
       position: relative;
-      overflow: hidden;
     }
 
-    .card::before {
+    .input-section::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 6px;
-      height: 100%;
-      background: linear-gradient(to bottom, var(--primary), var(--tertiary));
-      transform: scaleY(0);
-      transform-origin: top;
-      transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
-    }
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      border-radius: 14px;
 
-    .card:hover {
-      transform: translateY(-5px) scale(1.01);
-      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-    }
-
-    .card:hover::before {
-      transform: scaleY(1);
-    }
-
-    .input-card {
-      animation-delay: 0.1s;
-    }
-
-    .result-card {
-      animation-delay: 0.3s;
-    }
-
-    .card-title {
-      font-family: 'Raleway', sans-serif;
-      font-size: 2rem;
-      font-weight: 600;
-      color: var(--primary-dark);
-      margin-bottom: 30px;
-      display: flex;
-      align-items: center;
-      letter-spacing: -0.5px;
-    }
-
-    .card-title i {
-      margin-right: 15px;
-      background: linear-gradient(45deg, var(--primary), var(--tertiary));
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-fill-color: transparent;
-    }
-
-    /* ===== FORM ELEMENTS ===== */
-    .form-group {
-      margin-bottom: 25px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 12px;
-      color: #334155;
-      transform: translateY(0);
-      transition: var(--transition-smooth);
-    }
-
-    .form-label i {
-      color: var(--primary);
-      margin-right: 8px;
-      font-size: 1.1rem;
-    }
-
-    .form-control {
-      width: 100%;
-      padding: 20px 25px;
-      font-size: 1rem;
-      color: var(--dark);
-      border: 2px solid #e2e8f0;
-      border-radius: 12px;
-      background-color: rgba(255, 255, 255, 0.8);
-      transition: var(--transition-smooth);
-      font-family: 'Montserrat', sans-serif;
-    }
-
-    .form-control:focus {
-      outline: none;
-      border-color: var(--primary);
-      background-color: #fff;
-      box-shadow: 0 0 0 4px rgba(58, 134, 255, 0.2);
-      transform: translateY(-2px);
-    }
-
-    .form-group:hover .form-label {
-      color: var(--primary);
-      transform: translateY(-3px);
-    }
-
-    select.form-control {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233a86ff'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7' /%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 20px center;
-      background-size: 20px;
-    }
-
-    .file-input-wrapper {
-      position: relative;
-    }
-
-    .file-input-label {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      border: 2px dashed #cbd5e1;
-      border-radius: 12px;
-      cursor: pointer;
-      background-color: rgba(248, 250, 252, 0.8);
-      transition: var(--transition-smooth);
-    }
-
-    .file-input-wrapper:hover .file-input-label {
-      border-color: var(--primary);
-      background-color: rgba(224, 242, 254, 0.5);
-    }
-
-    .file-input-text {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-    }
-
-    .file-input-icon {
-      font-size: 2rem;
-      color: var(--primary);
-      margin-bottom: 10px;
-    }
-
-    input[type="file"] {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
       opacity: 0;
-      cursor: pointer;
-    }
-
-    /* ===== BUTTON STYLES ===== */
-    .btn {
-      display: inline-block;
-      font-weight: 600;
-      text-align: center;
-      white-space: nowrap;
-      vertical-align: middle;
-      user-select: none;
-      border: none;
-      padding: 16px 32px;
-      font-size: 1rem;
-      line-height: 1.5;
-      border-radius: 12px;
-      transition: var(--transition-smooth);
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      font-family: 'Montserrat', sans-serif;
-      z-index: 1;
-    }
-
-    .btn-primary {
-      color: white;
-      background: linear-gradient(45deg, var(--primary) 0%, var(--tertiary) 100%);
-      box-shadow: 0 10px 20px rgba(58, 134, 255, 0.3);
-    }
-
-    .btn-primary::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(45deg, var(--tertiary) 0%, var(--secondary) 100%);
-      transition: all 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+      transition: opacity 0.3s ease;
       z-index: -1;
     }
 
-    .btn-primary:hover {
-      box-shadow: 0 15px 25px rgba(58, 134, 255, 0.4);
-      transform: translateY(-5px);
-    }
-
-    .btn-primary:hover::before {
-      left: 0;
-    }
-
-    .btn-block {
-      width: 100%;
-    }
-
-    .btn-icon {
-      margin-right: 10px;
-    }
-
-    /* ===== IMAGE PREVIEW SECTION ===== */
-    .preview-section {
-      display: none;
-      margin: 30px 0;
-      text-align: center;
-      opacity: 0;
-      transform: scale(0.9);
-      transition: var(--transition-smooth);
-    }
-
-    .preview-section.visible {
+    .input-section:hover::before {
       opacity: 1;
-      transform: scale(1);
+      filter: blur(8px);
+      /* Creates a soft glow effect */
     }
 
-    .image-preview-container {
-      position: relative;
-      max-width: 400px;
-      margin: 0 auto;
-      overflow: hidden;
-      border-radius: 15px;
-      box-shadow: var(--shadow);
+    .input-section:hover {
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2), 0 0 20px rgba(23, 162, 184, 0.3);
+      transform: translateY(-5px);
+      background: #f9f9ff;
     }
 
-    .image-preview {
+
+    .form-group {
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--secondary-color);
+      font-weight: 500;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 14px 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      background-color: #f8f8f8;
+      transition: border-color 0.3s ease;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 16px 32px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 500;
+      width: 100%;
+      margin-bottom: 30px;
+      transition: background-color 0.3s ease;
+      animation: fadeInUp 0.5s ease;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .preview-section {
+      margin: 40px 0;
+      animation: fadeInUp 0.5s ease;
+    }
+
+    #image-preview {
       max-width: 100%;
       height: auto;
-      display: block;
-      transition: var(--transition-smooth);
-    }
-
-    .image-preview:hover {
-      transform: scale(1.03);
-    }
-
-    /* ===== RESULTS SECTION ===== */
-    .result-content {
-      padding: 20px;
-      background-color: rgba(248, 250, 252, 0.8);
       border-radius: 12px;
-      border-left: 4px solid var(--primary);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     }
 
-    /* ===== LOADER STYLES ===== */
+    .result-section {
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      animation: fadeInUp 0.5s ease;
+    }
+
+    .result-section h2 {
+      color: var(--primary-color);
+      margin-bottom: 20px;
+      font-size: 28px;
+      font-weight: 600;
+    }
+
+    /* Loading Animation Styles */
     .loader-container {
       display: none;
       position: fixed;
@@ -448,384 +214,198 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(8px);
+      background-color: rgba(255, 255, 255, 0.8);
       z-index: 9999;
       justify-content: center;
       align-items: center;
-      flex-direction: column;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .loader-container.active {
-      opacity: 1;
+      animation: fadeIn 0.5s ease;
     }
 
     .loader {
-      position: relative;
       width: 100px;
       height: 100px;
-    }
-
-    .loader-ring {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      border: 4px solid transparent;
-      border-top-color: var(--primary);
+      border: 6px solid var(--primary-color);
+      border-top: 6px solid var(--accent-color);
       border-radius: 50%;
-      animation: spin 1.2s linear infinite;
-    }
-
-    .loader-ring:nth-child(2) {
-      border: 4px solid transparent;
-      border-right-color: var(--secondary);
-      animation-duration: 1s;
-      animation-delay: 0.1s;
-    }
-
-    .loader-ring:nth-child(3) {
-      border: 4px solid transparent;
-      border-bottom-color: var(--tertiary);
-      animation-duration: 0.8s;
-      animation-delay: 0.2s;
+      animation: spin 1s linear infinite;
     }
 
     .loader-text {
-      margin-top: 25px;
-      font-size: 1.2rem;
-      font-weight: 500;
-      color: var(--primary-dark);
-      text-align: center;
-      background: linear-gradient(45deg, var(--primary) 0%, var(--tertiary) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-fill-color: transparent;
-    }
-
-    /* ===== TRANSLATIONS WIDGET ===== */
-    .gtranslate_wrapper {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 9;
-      transition: var(--transition-smooth);
-    }
-
-    .gtranslate_wrapper:hover {
-      transform: translateY(-5px);
-    }
-
-    /* ===== ANIMATIONS ===== */
-    @keyframes float {
-      0% {
-        transform: translateY(0) rotate(0deg);
-      }
-      50% {
-        transform: translateY(-20px) rotate(5deg);
-      }
-      100% {
-        transform: translateY(20px) rotate(-5deg);
-      }
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes pulse {
-      0% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.2);
-      }
-      100% {
-        transform: scale(1);
-      }
+      margin-top: 20px;
+      font-size: 18px;
+      color: var(--primary-color);
     }
 
     @keyframes spin {
       0% {
         transform: rotate(0deg);
       }
+
       100% {
         transform: rotate(360deg);
       }
     }
 
-    /* ===== RESPONSIVE DESIGN ===== */
-    @media (max-width: 768px) {
-      .site-title {
-        font-size: 2.5rem;
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
       }
 
-      .subtitle {
-        font-size: 1rem;
-      }
-
-      .card {
-        padding: 30px 20px;
-      }
-
-      .card-title {
-        font-size: 1.5rem;
-      }
-
-      .form-control {
-        padding: 15px 20px;
-      }
-
-      .btn {
-        padding: 14px 28px;
+      100% {
+        opacity: 1;
       }
     }
 
-    @media (max-width: 480px) {
-      .site-title {
-        font-size: 2rem;
+    @keyframes fadeInDown {
+      0% {
+        transform: translateY(-20px);
+        opacity: 0;
       }
 
-      .header {
-        padding: 20px 0;
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeInUp {
+      0% {
+        transform: translateY(20px);
+        opacity: 0;
       }
 
-      .card {
-        padding: 25px 15px;
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* Translation widget positioning */
+    .gtranslate_wrapper {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 999;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .container {
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 36px;
+      }
+
+      .input-section,
+      .result-section {
+        padding: 30px;
+      }
+
+      button {
+        margin-bottom: 60px;
       }
     }
   </style>
 </head>
-
 <body>
-  <!-- Floating Particles -->
-  <div class="particles">
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-  </div>
-
-  <!-- Loader -->
   <div class="loader-container" id="loader-container">
-    <div class="loader">
-      <div class="loader-ring"></div>
-      <div class="loader-ring"></div>
-      <div class="loader-ring"></div>
-    </div>
+    <div class="loader"></div>
     <div class="loader-text">Analyzing your health data...</div>
   </div>
-
   <div class="container">
-    <!-- Header Section -->
-    <header class="header">
-      <div class="header-content">
-        <div class="logo">
-          <i class="fas fa-heartbeat logo-icon"></i>
-        </div>
-        <h1 class="site-title">Health Insight Analyzer Pro</h1>
-        <p class="subtitle">Advanced analysis for personalized health insights</p>
-      </div>
+    <header>
+      <h1><i class="fas fa-heartbeat"></i> Health Insight Analyzer</h1>
+      <div class="subtitle">Get personalized insights into your health</div>
     </header>
-
     <main>
-      <!-- Input Section -->
-      <section class="card input-card">
-        <h2 class="card-title"><i class="fas fa-clipboard-check"></i>Health Information</h2>
+      <section class="input-section">
         <form id="health-form" enctype="multipart/form-data">
           <div class="form-group">
-            <label for="gender" class="form-label"><i class="fas fa-venus-mars"></i>Gender</label>
-            <select id="gender" name="gender" class="form-control" required>
+            <label for="gender"><i class="fas fa-venus-mars"></i> Gender</label>
+            <select id="gender" name="gender" required>
               <option value="">Select gender</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="other">Other</option>
             </select>
           </div>
-
           <div class="form-group">
-            <label for="symptoms" class="form-label"><i class="fas fa-thermometer"></i>Symptoms</label>
-            <input type="text" id="symptoms" name="symptoms" class="form-control" placeholder="E.g., headache, fever, fatigue" required>
+            <label for="symptoms"><i class="fas fa-thermometer"></i> Symptoms</label>
+            <input type="text" id="symptoms" name="symptoms" placeholder="E.g., headache, fever, fatigue" required>
           </div>
-
           <div class="form-group">
-            <label for="body-part" class="form-label"><i class="fas fa-child"></i>Affected Body Part</label>
-            <input type="text" id="body-part" name="body-part" class="form-control" placeholder="E.g., head, chest, arm" required>
+            <label for="body-part"><i class="fas fa-child"></i> Affected Body Part</label>
+            <input type="text" id="body-part" name="body-part" placeholder="E.g., head, chest, arm" required>
           </div>
-
           <div class="form-group">
-            <label for="layer" class="form-label"><i class="fas fa-layer-group"></i>Layer Affected</label>
-            <select id="layer" name="layer" class="form-control" required>
+            <label for="layer"><i class="fas fa-layer-group"></i> Layer Affected</label>
+            <select id="layer" name="layer" required>
               <option value="">Select layer</option>
               <option value="internal">Internal</option>
               <option value="external">External</option>
             </select>
           </div>
-
           <div class="form-group">
-            <label for="image" class="form-label"><i class="fas fa-image"></i>Upload Image (optional)</label>
-            <div class="file-input-wrapper">
-              <div class="file-input-label">
-                <div class="file-input-text">
-                  <i class="fas fa-cloud-upload-alt file-input-icon"></i>
-                  <span>Drag and drop your image here or click to browse</span>
-                </div>
-              </div>
-              <input type="file" id="image" name="image" accept="image/*" onchange="handleImageUpload()">
-            </div>
+            <label for="image"><i class="fas fa-image"></i> Upload Image (optional)</label>
+            <input type="file" id="image" name="image" accept="image/*" onchange="handleImageUpload()">
           </div>
-
-          <button type="submit" class="btn btn-primary btn-block">
-            <i class="fas fa-search btn-icon"></i>Analyze Health Data
-          </button>
+          <button type="submit"><i class="fas fa-search"></i> Analyze</button>
         </form>
       </section>
-
-      <!-- Image Preview Section -->
-      <section class="preview-section" id="preview-section">
-        <div class="image-preview-container">
-          <img id="image-preview" src="" alt="Image preview" class="image-preview">
-        </div>
-      </section>
-
-      <!-- Results Section -->
-      <section class="card result-card" id="result-section">
-        <h2 class="card-title"><i class="fas fa-clipboard-list"></i>Analysis Results</h2>
-        <div class="result-content" id="response">
-          <p>Your health analysis results will appear here after submission.</p>
+      <section class="preview-section" id="preview-section" style="display: none;">
+        <div id="image-preview-container">
+          <img id="image-preview" src="" alt="Image preview">
         </div>
       </section>
     </main>
+    <section class="result-section" id="result-section">
+      <h2><i class="fas fa-clipboard-list"></i> Analysis Results</h2>
+      <div id="response"></div>
+    </section>
   </div>
-
-  <!-- Translation Widget -->
   <div class="gtranslate_wrapper"></div>
-
   <script>
     // Set default language settings
-window.gtranslateSettings = {
-  "default_language": "en",
-  "detect_browser_language": false,
-  "wrapper_selector": ".gtranslate_wrapper"
-};
+    window.gtranslateSettings = {
+      "default_language": "en",
+      "detect_browser_language": false,
+      "wrapper_selector": ".gtranslate_wrapper"
+    };
 
-// Function to ensure English is set as default language
-function setDefaultLanguage() {
-  if (typeof window.gt === 'object' && window.gt.setLanguage) {
-    window.gt.setLanguage('en');
-  }
-}
-
-// Set English as default on page load
-window.addEventListener('load', setDefaultLanguage);
-
-// Set English as default after translation widget loads
-window.addEventListener('gtranslate_loaded', setDefaultLanguage);
-
-// Handle image upload preview
-function handleImageUpload() {
-  const input = document.getElementById('image');
-  const preview = document.getElementById('image-preview');
-  const previewSection = document.getElementById('preview-section');
-
-  if (input.files && input.files[0]) {
-    const reader = new FileReader();
-
-    reader.onload = function (e) {
-      preview.src = e.target.result;
-      previewSection.style.display = 'block';
-      setTimeout(() => {
-        previewSection.classList.add('visible');
-      }, 100);
+    // Function to ensure English is set as default language
+    function setDefaultLanguage() {
+      if (typeof window.gt === 'object' && window.gt.setLanguage) {
+        window.gt.setLanguage('en');
+      }
     }
 
-    reader.readAsDataURL(input.files[0]);
-  }
-}
+    // Set English as default on page load
+    window.addEventListener('load', setDefaultLanguage);
 
-// Form submission handling with loader animation
-document.getElementById('health-form').addEventListener('submit', function(e) {
-  e.preventDefault();
-  
-  // Show loader
-  const loader = document.getElementById('loader-container');
-  loader.style.display = 'flex';
-  setTimeout(() => {
-    loader.classList.add('active');
-  }, 10);
-  
-  // Get form data
-  const formData = new FormData(this);
-  
-  // Send data to API
-  fetch('/api/analyze', {
-    method: 'POST',
-    body: formData
-  })
-  .then(response => response.json())
-  .then(data => {
-    // Hide loader
-    loader.classList.remove('active');
-    setTimeout(() => {
-      loader.style.display = 'none';
-    }, 300);
-    
-    // Display actual API response
-    document.getElementById('response').innerHTML = data.result;
-  })
-  .catch(error => {
-    // Hide loader
-    loader.classList.remove('active');
-    setTimeout(() => {
-      loader.style.display = 'none';
-    }, 300);
-    
-    // Display error message
-    document.getElementById('response').innerHTML = `
-      <div style="color: #ef4444;">
-        <h3>Error Processing Request</h3>
-        <p>There was a problem analyzing your health data. Please try again later.</p>
-        <p>Technical details: ${error.message}</p>
-      </div>
-    `;
-  });
-});
+    // Set English as default after translation widget loads
+    window.addEventListener('gtranslate_loaded', setDefaultLanguage);
 
-// Add scroll reveal animation to elements
-document.addEventListener('DOMContentLoaded', function() {
-  const cards = document.querySelectorAll('.card');
-  
-  // Create intersection observer
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.style.opacity = '1';
-        entry.target.style.transform = 'translateY(0)';
-        observer.unobserve(entry.target);
+    // Handle image upload preview
+    function handleImageUpload() {
+      const input = document.getElementById('image');
+      const preview = document.getElementById('image-preview');
+      const previewSection = document.getElementById('preview-section');
+
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          preview.src = e.target.result;
+          previewSection.style.display = 'block';
+        }
+
+        reader.readAsDataURL(input.files[0]);
       }
-    });
-  }, {
-    threshold: 0.1
-  });
-  
-  // Observe each card
-  cards.forEach(card => {
-    observer.observe(card);
-  });
-});
+    }
   </script>
+  <script src="/static/script.js"></script>
   <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
 </body>
 </html>
