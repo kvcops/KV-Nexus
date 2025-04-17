@@ -187,7 +187,7 @@ psychology_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=g
 code_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
 algorithm_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
 model_vision = genai.GenerativeModel('gemini-1.5-flash-8b',generation_config=generation_config_health)
-model_text = genai.GenerativeModel('gemini-pro',generation_config=generation_config_health)
+model_text = genai.GenerativeModel('gemini-2.0-flash',generation_config=generation_config_health)
 model = genai.GenerativeModel('gemini-1.5-flash')  # Model for flowchart generation
 final_story_generation_model=genai.GenerativeModel('gemini-2.0-flash-exp',safety_settings=safety_settings) #for story generation
 
