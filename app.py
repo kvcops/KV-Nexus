@@ -177,19 +177,19 @@ Remember to:
 4. Use appropriate emojis occasionally to make conversations more engaging"""
 
 chat_model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
+    model_name="gemini-2.5-flash",
     generation_config=generation_config,
     system_instruction=persona
 )
-chef_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
-story_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
-psychology_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
-code_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
-algorithm_model = genai.GenerativeModel("gemini-1.5-flash", generation_config=generation_config)
-model_vision = genai.GenerativeModel('gemini-1.5-flash-8b',generation_config=generation_config_health)
-model_text = genai.GenerativeModel('gemini-2.0-flash',generation_config=generation_config_health)
-model = genai.GenerativeModel('gemini-1.5-flash')  # Model for flowchart generation
-final_story_generation_model=genai.GenerativeModel('gemini-2.0-flash-exp',safety_settings=safety_settings) #for story generation
+chef_model = genai.GenerativeModel("gemini-2.5-flash", generation_config=generation_config)
+story_model = genai.GenerativeModel("gemini-2.5-flash", generation_config=generation_config)
+psychology_model = genai.GenerativeModel("gemini-2.5-flash", generation_config=generation_config)
+code_model = genai.GenerativeModel("gemini-2.5-flash", generation_config=generation_config)
+algorithm_model = genai.GenerativeModel("gemini-2.5-flash", generation_config=generation_config)
+model_vision = genai.GenerativeModel('gemini-2.5-flash',generation_config=generation_config_health)
+model_text = genai.GenerativeModel('gemini-2.5-flash',generation_config=generation_config_health)
+model = genai.GenerativeModel('gemini-2.5-flash')  # Model for flowchart generation
+final_story_generation_model=genai.GenerativeModel('gemini-2.5-flash',safety_settings=safety_settings) #for story generation
 
 # Configure upload folder and allowed extensions
 app.config['UPLOAD_FOLDER'] = 'uploads'
